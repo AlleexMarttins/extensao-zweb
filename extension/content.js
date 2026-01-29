@@ -12,26 +12,26 @@
     try {
       if (!el || el.__blockedByExt) return;
       el.__blockedByExt = true;
-      // Preferência: ocultar completamente quando for ação de exclusão/edição
+      // Preferred: fully hide when it is a delete/edit action
       try {
         const aria = (el.getAttribute && el.getAttribute('aria-label')) || '';
         const txt = (el.innerText || el.value || '').toLowerCase();
         if (ARIA_LABELS.some(a => aria && aria.toLowerCase().indexOf(a.toLowerCase()) !== -1)
           || ICON_CLASSES.some(cls => el.querySelector && el.querySelector('.' + cls))) {
-          // hide
+          // Hide element outright
           el.style.display = 'none';
         } else {
           el.setAttribute && el.setAttribute('disabled', 'true');
           el.style.pointerEvents = 'none';
           el.style.opacity = '0.6';
-          el.title = 'Botão bloqueado pelo usuário';
+          el.title = 'BotÃ£o bloqueado pelo usuÃ¡rio';
         }
       } catch (e) {
         // fallback
         el.setAttribute && el.setAttribute('disabled', 'true');
         el.style.pointerEvents = 'none';
         el.style.opacity = '0.6';
-        el.title = 'Botão bloqueado pelo usuário';
+        el.title = 'BotÃ£o bloqueado pelo usuÃ¡rio';
       }
       // Remove inline onclick and stop future events
       try { el.onclick = null; } catch(e){}
@@ -119,7 +119,7 @@
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      // load enabled flag from storage
+      // Load enabled flag from storage
       try { chrome.storage.local.get({ enabled: true }, (res) => {
           ACTIVE = !!res.enabled;
           if (ACTIVE) scan();
@@ -144,10 +144,10 @@
         if (newVal === ACTIVE) return;
         ACTIVE = newVal;
         if (ACTIVE) {
-          // enable and scan immediately
+          // Enable and scan immediately
           scan();
         } else {
-          // disabled -> reload page to restore original state
+          // Disabled -> reload page to restore original state
           try { location.reload(); } catch (e) {}
         }
       }
