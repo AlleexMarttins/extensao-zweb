@@ -4,12 +4,12 @@ Chrome/Edge extension that blocks administrative actions (create, edit, delete) 
 
 ## Features
 
-- ✅ Blocks create button (`botaoCadastrar`)
-- ✅ Hides edit and delete buttons
-- ✅ Prevents double-click on rows (which opens edit)
-- ✅ Prevents right-click context menu for blocked actions
-- ✅ Control popup to enable/disable blocking
-- ✅ Works exclusively on `https://zweb.com.br/*`
+- Blocks create button (`botaoCadastrar`)
+- Hides edit and delete buttons
+- Prevents double-click on rows (which opens edit)
+- Prevents right-click context menu for blocked actions
+- Control popup to enable/disable blocking
+- Works exclusively on `https://zweb.com.br/*`
 
 ## Installation (Chrome/Edge)
 
@@ -63,7 +63,3 @@ extension/
 ## License
 
 MIT - Free for use and modification
-
-## Support
-
-For issues or suggestions, contact Zweb support.
