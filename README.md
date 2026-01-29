@@ -1,4 +1,4 @@
-# Bloqueador Botão Cadastrar
+# Bloqueador Administrativo
 
 Instalação (Chrome/Edge):
 
