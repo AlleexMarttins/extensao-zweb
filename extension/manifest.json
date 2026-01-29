@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Bloqueador Administrativo",
+  "version": "1.0",
+  "description": "Bloqueia ações específicas em páginas carregadas no navegador.",
+  "permissions": ["scripting","storage"],
+  "host_permissions": ["https://zweb.com.br/*"],
+  "action": {
+    "default_title": "Bloquear Botão Cadastro",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://zweb.com.br/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
