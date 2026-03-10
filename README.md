@@ -1,38 +1,38 @@
 # Admin Zweb
 
-Repositorio da extensao `Assistente Zweb` para automacoes administrativas e fiscais na Zweb.
+Repositório da extensão `Assistente Zweb` para automações administrativas e fiscais na Zweb.
 
-## O que a extensao faz
+## O que a extensão faz
 
-- bloqueia acoes sensiveis da Zweb por meio da feature `Protecao`
+- bloqueia ações sensíveis da Zweb por meio da feature `Proteção`
 - filtra o modal `Filtrar` com base nas colunas ativas
-- adiciona automacoes no fluxo de DAV
+- adiciona automações no fluxo de DAV
 - baixa XML da NF-e automaticamente
-- personaliza o menu `Acoes` da NF-e
+- personaliza o menu `Ações` da NF-e
 - adiciona o `Assistente de Nota` para fluxo com FSIST e Portal NF-e
-- cria a area `Calculo de Valores` em `Fiscal > Configuracoes > Notas fiscais`
-- calcula valores sugeridos no popup de importacao de compras
-- permite simular preco do produto a partir do lapis do cadastro no popup da compra
+- cria a área `Cálculo de Valores` em `Fiscal > Configurações > Notas fiscais`
+- calcula valores sugeridos no popup de importação de compras
+- permite simular preço do produto a partir do lápis do cadastro no popup da compra
 
-## Menu da extensao
+## Menu da extensão
 
-O popup da extensao organiza as automacoes por grupo e permite ativar ou desativar cada item individualmente.
+O popup da extensão organiza as automações por grupo e permite ativar ou desativar cada item individualmente.
 
 Grupos atuais:
 
-- `Geral`: Protecao
-- `Produtos`: Filtro, Botao Novo
+- `Geral`: Proteção
+- `Produtos`: Filtro, Botão Novo
 - `DAV`: Busca com #, Lote
-- `Fiscal`: Baixar XML, Calculo de Valores, Calculo em Compras, Simular Preco, Assistente de Nota, Personalizar Acoes
+- `Fiscal`: Baixar XML, Cálculo de Valores, Cálculo em Compras, Simular Preço, Assistente de Nota, Personalizar Ações
 
-## Instalacao
+## Instalação
 
 1. Abra `chrome://extensions/` ou `edge://extensions/`.
 2. Ative `Modo do desenvolvedor`.
-3. Clique em `Carregar sem compactacao`.
+3. Clique em `Carregar sem compactação`.
 4. Selecione a pasta [extension](/c:/Users/vendas/Desktop/zweb_html/extension).
 
-## Escopo da extensao
+## Escopo da extensão
 
 Hosts usados atualmente:
 
@@ -45,7 +45,7 @@ Hosts usados atualmente:
 
 ## Ferramentas locais
 
-O projeto inclui suporte a Playwright para QA manual e validacao em sessao logada.
+O projeto inclui suporte a Playwright para QA manual e validação em sessão logada.
 
 Comandos principais:
 
@@ -78,7 +78,7 @@ tools/playwright/
   stop-session.ps1
 ```
 
-## Observacoes
+## Observações
 
 - Artefatos locais de Playwright e screenshots de QA ficam fora do git por `.gitignore`.
-- O nome visivel da extensao no navegador continua `Assistente Zweb`.
+- O nome visível da extensão no navegador continua `Assistente Zweb`.

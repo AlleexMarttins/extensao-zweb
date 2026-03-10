@@ -1,16 +1,16 @@
-# Admin Zweb Playwright Tools
+# Ferramentas Playwright do Admin Zweb
 
-These scripts support live QA against the `Assistente Zweb` workspace.
+Estes scripts dão suporte ao QA ao vivo no workspace do `Assistente Zweb`.
 
 ## Scripts
 
-- `start-session.cjs`: starts a persistent Chromium session with the unpacked extension loaded.
-- `stop-session.ps1`: stops the persistent Chromium session by writing the stop signal file.
-- `run-live-qa.cjs`: runs the live QA matrix against the logged-in Zweb session.
+- `start-session.cjs`: inicia uma sessão persistente do Chromium com a extensão unpacked carregada.
+- `stop-session.ps1`: encerra a sessão persistente do Chromium gravando o arquivo de parada.
+- `run-live-qa.cjs`: executa a matriz de QA ao vivo na sessão logada da Zweb.
 
-## Recommended commands
+## Comandos recomendados
 
-From the workspace root:
+Na raiz do workspace:
 
 ```powershell
 npm run playwright:verify
@@ -19,8 +19,8 @@ npm run playwright:qa:live
 npm run playwright:session:stop
 ```
 
-## Notes
+## Observações
 
-- The browser profile and session files are created in the workspace root as temporary local artifacts.
-- Those artifacts are ignored by `.gitignore`.
-- The extension runtime itself lives under `extension/`.
+- O perfil do navegador e os arquivos de sessão são criados na raiz do workspace como artefatos locais temporários.
+- Esses artefatos são ignorados pelo `.gitignore`.
+- O runtime da extensão continua dentro de `extension/`.
