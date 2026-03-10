@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Assistente Zweb - Logs</title>
+  <link rel="stylesheet" href="logs.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Historico</div>
+        <h1>Logs do Assistente</h1>
+        <p class="subtitle">Eventos do fluxo de notas e diagnosticos internos da extensao.</p>
+      </div>
+      <div class="actions">
+        <button id="refresh" type="button">Atualizar</button>
+        <button id="clear" type="button" class="danger">Limpar</button>
+      </div>
+    </header>
+
+    <div class="meta" id="meta"></div>
+    <pre class="log" id="log">(carregando...)</pre>
+  </div>
+
+  <script src="logs.js"></script>
+</body>
+</html>

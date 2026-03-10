@@ -1,0 +1,15 @@
+{
+  "name": "zweb-html",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local tooling for the AdminBlock browser extension workspace.",
+  "scripts": {
+    "playwright:verify": "node -e \"import('playwright').then(() => console.log('playwright import ok')).catch((error) => { console.error(error); process.exit(1); })\"",
+    "playwright:session:start": "node tools/playwright/start-session.cjs",
+    "playwright:session:stop": "powershell -ExecutionPolicy Bypass -File tools/playwright/stop-session.ps1",
+    "playwright:qa:live": "node tools/playwright/run-live-qa.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.58.2"
+  }
+}

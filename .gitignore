@@ -27,3 +27,14 @@ dist/
 *.tmp
 *.temp
 ~*
+
+# Codex / Playwright local session artifacts
+.codex-chrome-profile/
+.codex-playwright-profile/
+.codex-playwright-session.json
+.codex-playwright-session.out.log
+.codex-playwright-session.err.log
+.codex-playwright-stop
+tools/playwright/*.jpg
+tools/playwright/*.png
+extension.rar
