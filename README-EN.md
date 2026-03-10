@@ -1,65 +1,84 @@
-# AdminBlock - Administrative Actions Blocker
+# Admin Zweb
 
-Chrome/Edge extension that blocks administrative actions (create, edit, delete) on Zweb pages (https://zweb.com.br/).
+Repository for the `Assistente Zweb` browser extension, focused on administrative and fiscal workflows inside Zweb.
 
-## Features
+## What the extension does
 
-- Blocks create button (`botaoCadastrar`)
-- Hides edit and delete buttons
-- Prevents double-click on rows (which opens edit)
-- Prevents right-click context menu for blocked actions
-- Control popup to enable/disable blocking
-- Works exclusively on `https://zweb.com.br/*`
+- blocks sensitive Zweb actions through the `Protecao` feature
+- filters the `Filtrar` modal based on active columns
+- adds DAV workflow automations
+- downloads NF-e XML files automatically
+- customizes the NF-e `Acoes` menu
+- adds the `Assistente de Nota` flow for FSIST and the official NF-e portal
+- adds the `Calculo de Valores` section under `Fiscal > Configuracoes > Notas fiscais`
+- calculates suggested values inside the purchase import popup
+- simulates product price updates from the inline pencil in the purchase popup
 
-## Installation (Chrome/Edge)
+## Extension menu
 
-1. Open `chrome://extensions/` (or `edge://extensions/`)
-2. Enable `Developer mode`
-3. Click `Load unpacked` and select the `extension` folder
-4. The extension is configured to run exclusively on `https://zweb.com.br/*`, but can be changed to work on any page (see end of this file)
+The popup groups automations and lets the user enable or disable each feature independently.
 
-## Behavior
+Current groups:
 
-- The extension searches for elements with id `botaoCadastrar`, text like `Cadastrar produto`, `aria-label` of actions ("Excluir", "Editar", "Abrir"), and common icons (`fa-pencil`, `fa-times`, `fa-trash`)
-- Delete/edit actions are hidden (`display: none`) when detected; the create button is disabled and neutralized
-- Also blocks `dblclick` and right-click context menu (`contextmenu`) on rows/cells that may trigger edit/delete actions
+- `Geral`: Protecao
+- `Produtos`: Filtro, Botao Novo
+- `DAV`: Busca com #, Lote
+- `Fiscal`: Baixar XML, Calculo de Valores, Calculo em Compras, Simular Preco, Assistente de Nota, Personalizar Acoes
 
-## Control (Enable/Disable)
+## Installation
 
-- Open the extension popup (click the extension icon in your browser toolbar). There's a checkbox to enable/disable blocking and a button to reload the active tab
-- When disabling, the extension reloads the active page (if you use the `Reload active page` button) to restore the original state
+1. Open `chrome://extensions/` or `edge://extensions/`.
+2. Enable `Developer mode`.
+3. Click `Load unpacked`.
+4. Select the [extension](/c:/Users/vendas/Desktop/zweb_html/extension) folder.
 
-## Change to work on any page
+## Extension scope
 
-- Open `manifest.json` and locate:
-  ```json
-  "host_permissions": ["https://zweb.com.br/*"],
-  ...
-  "content_scripts": [
-    {
-      "matches": ["https://zweb.com.br/*"],
-  ```
-- Replace `"https://zweb.com.br/*"` with `"<all_urls>"` in both fields:
-  ```json
-  "host_permissions": ["<all_urls>"],
-  ...
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-  ```
-- Save and reload the extension in `chrome://extensions/`
+Current host permissions:
 
-## File Structure
+- `https://zweb.com.br/*`
+- `https://compufour.s3.amazonaws.com/production/uploads/nfe/*`
+- `https://www.fsist.com.br/*`
+- `https://fsist.com.br/*`
+- `https://www.nfe.fazenda.gov.br/*`
+- `https://nfe.fazenda.gov.br/*`
 
+## Local tooling
+
+The repository includes Playwright helpers for live QA against a logged-in browser session.
+
+Main commands:
+
+```powershell
+npm run playwright:verify
+npm run playwright:session:start
+npm run playwright:qa:live
+npm run playwright:session:stop
 ```
+
+## Structure
+
+```text
 extension/
-├── manifest.json       # Extension configuration
-├── content.js          # Script that runs on pages
-├── popup.html          # Control interface
-├── popup.js            # Popup logic
-└── background.js       # Service Worker
+  background.js
+  content.js
+  features.js
+  fiscal-value-settings.js
+  note-assistant.js
+  page-bridge.js
+  popup.html
+  popup.js
+  purchase-value-sync.js
+  stock-price-simulation.js
+
+tools/playwright/
+  README.md
+  run-live-qa.cjs
+  start-session.cjs
+  stop-session.ps1
 ```
 
-## License
+## Notes
 
-MIT - Free for use and modification
+- Local Playwright artifacts and QA screenshots are ignored by `.gitignore`.
+- The browser-visible extension name remains `Assistente Zweb`.

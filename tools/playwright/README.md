@@ -1,6 +1,6 @@
-# Playwright Tools
+# Admin Zweb Playwright Tools
 
-These scripts support live QA against the Zweb extension workspace.
+These scripts support live QA against the `Assistente Zweb` workspace.
 
 ## Scripts
 
@@ -23,4 +23,4 @@ npm run playwright:session:stop
 
 - The browser profile and session files are created in the workspace root as temporary local artifacts.
 - Those artifacts are ignored by `.gitignore`.
-- The extension itself still lives under `extension/`.
+- The extension runtime itself lives under `extension/`.
