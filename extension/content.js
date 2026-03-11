@@ -36,6 +36,11 @@
   const BATCH_PROGRESS_FILL_ID = 'zweb-batch-progress-fill';
   const BATCH_PROGRESS_TEXT_ID = 'zweb-batch-progress-text';
   const PRODUCT_PREVIEW_BUTTON_ID = 'zweb-product-preview-button';
+  const PRODUCT_STYLE_CUSTOMIZE_BUTTON_ID = 'zweb-product-style-customize-button';
+  const PRODUCT_STYLE_CUSTOMIZE_ACTION_ID = 'zweb-product-style-customize-action';
+  const PRODUCT_STYLE_MODAL_ID = 'zweb-product-style-modal';
+  const PRODUCT_STYLE_BACKDROP_ID = 'zweb-product-style-backdrop';
+  const PRODUCT_STYLE_FORM_ID = 'zweb-product-style-form';
   const NFE_ACTION_CUSTOMIZE_BUTTON_ID = 'zweb-nfe-action-customize-button';
   const NFE_ACTION_MODAL_ID = 'zweb-nfe-action-modal';
   const NFE_ACTION_BACKDROP_ID = 'zweb-nfe-action-backdrop';
@@ -52,6 +57,7 @@
   const PRODUCT_TOOLBAR_SEARCH_SELECTOR = 'input#search\\.value.grid-toolbar-search';
   const PRODUCT_GRID_STORAGE_KEY = 'z_theme_config_grid';
   const PRODUCT_FILTER_OPTION_HIDDEN_ATTR = 'data-zweb-hidden-by-column-filter';
+  const PRODUCT_STYLE_PREFS_STORAGE_KEY = 'productStylePrefs';
   const XML_BRIDGE_SCRIPT_ID = 'zweb-xml-download-page-bridge';
   const XML_CONTENT_SOURCE = 'zweb-xml-content-script';
   const XML_BRIDGE_SOURCE = 'zweb-xml-page-bridge';
@@ -95,7 +101,25 @@
   let LAST_XML_DOWNLOAD_ARM_AT = 0;
   let LAST_NFE_CONTEXT_MENU_ANCHOR = null;
   const PRODUCT_LOW_STOCK_ATTR = 'data-zweb-low-stock-highlight';
+  const PRODUCT_ROW_STYLE_ATTR = 'data-zweb-product-style-managed';
   const PRODUCT_LOW_STOCK_STYLE_ID = 'zweb-low-stock-style';
+  const PRODUCT_STYLE_PREFS_DEFAULTS = {
+    fontFamily: '',
+    fontSizePx: '',
+    useNormalColor: false,
+    normalColor: '#181c32',
+    lowStockColor: '#ef9a9a'
+  };
+  let PRODUCT_STYLE_PREFS = Object.assign({}, PRODUCT_STYLE_PREFS_DEFAULTS);
+  const PRODUCT_FONT_OPTIONS = [
+    { value: '', label: 'Padrao da Zweb' },
+    { value: '"Segoe UI",Tahoma,Geneva,Verdana,sans-serif', label: 'Segoe UI' },
+    { value: 'Arial,sans-serif', label: 'Arial' },
+    { value: 'Tahoma,sans-serif', label: 'Tahoma' },
+    { value: 'Verdana,sans-serif', label: 'Verdana' },
+    { value: 'Georgia,serif', label: 'Georgia' },
+    { value: 'Consolas,"Courier New",monospace', label: 'Consolas' }
+  ];
 
   function isFeatureEnabled(key) {
     return FEATURE_STATE[key] !== false;
@@ -162,6 +186,15 @@
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function isTargetItemSearchInput(el) {
@@ -1237,7 +1270,10 @@
     if (!isFeatureEnabled('batchEnabled')) removeBatchUi();
     if (!isFeatureEnabled('productPreviewEnabled')) removeProductPreviewButton();
     if (!isFeatureEnabled('filterEnabled')) restoreProductFilterColumnOptions();
-    if (!isFeatureEnabled('lowStockHighlightEnabled')) clearProductLowStockHighlight();
+    if (!isFeatureEnabled('lowStockHighlightEnabled')) {
+      clearProductLowStockHighlight();
+      removeProductStyleCustomizeUi();
+    }
     if (!isFeatureEnabled('actionMenuCustomizeEnabled')) {
       removeNfeActionCustomizeUi();
       restoreNfeActionMenuItems();
@@ -1327,33 +1363,313 @@
     }
   }
 
+  function normalizeHexColor(value, fallback) {
+    const raw = String(value || '').trim();
+    if (/^#[0-9a-f]{6}$/i.test(raw)) return raw.toLowerCase();
+    if (/^#[0-9a-f]{3}$/i.test(raw)) {
+      const chars = raw.slice(1).split('');
+      return ('#' + chars.map(ch => ch + ch).join('')).toLowerCase();
+    }
+    return fallback || '';
+  }
+
+  function normalizeProductStylePrefs(rawPrefs) {
+    const next = Object.assign({}, PRODUCT_STYLE_PREFS_DEFAULTS, rawPrefs || {});
+    next.fontFamily = PRODUCT_FONT_OPTIONS.some(option => option.value === next.fontFamily)
+      ? next.fontFamily
+      : PRODUCT_STYLE_PREFS_DEFAULTS.fontFamily;
+    next.useNormalColor = next.useNormalColor === true;
+    next.normalColor = normalizeHexColor(next.normalColor, PRODUCT_STYLE_PREFS_DEFAULTS.normalColor);
+    next.lowStockColor = normalizeHexColor(next.lowStockColor, PRODUCT_STYLE_PREFS_DEFAULTS.lowStockColor);
+    const size = Number(String(next.fontSizePx || '').trim());
+    next.fontSizePx = Number.isFinite(size) && size >= 10 && size <= 24 ? String(Math.round(size)) : '';
+    return next;
+  }
+
+  function hasCustomProductRowStyle() {
+    return !!(PRODUCT_STYLE_PREFS.useNormalColor || PRODUCT_STYLE_PREFS.fontFamily || PRODUCT_STYLE_PREFS.fontSizePx);
+  }
+
+  function removeProductStyleCustomizeUi() {
+    const button = document.getElementById(PRODUCT_STYLE_CUSTOMIZE_BUTTON_ID);
+    const actionItem = document.getElementById(PRODUCT_STYLE_CUSTOMIZE_ACTION_ID);
+    const modal = document.getElementById(PRODUCT_STYLE_MODAL_ID);
+    const backdrop = document.getElementById(PRODUCT_STYLE_BACKDROP_ID);
+    if (button) button.remove();
+    if (actionItem) {
+      const listItem = actionItem.closest('li');
+      if (listItem) listItem.remove();
+      else actionItem.remove();
+    }
+    if (modal) modal.remove();
+    if (backdrop) backdrop.remove();
+  }
+
+  function closeProductStyleCustomizeModal() {
+    const modal = document.getElementById(PRODUCT_STYLE_MODAL_ID);
+    const backdrop = document.getElementById(PRODUCT_STYLE_BACKDROP_ID);
+    if (modal) modal.style.display = 'none';
+    if (backdrop) backdrop.style.display = 'none';
+  }
+
+  function saveProductStylePrefs(nextPrefs) {
+    PRODUCT_STYLE_PREFS = normalizeProductStylePrefs(nextPrefs);
+    try {
+      chrome.storage.local.set({ [PRODUCT_STYLE_PREFS_STORAGE_KEY]: PRODUCT_STYLE_PREFS });
+    } catch (error) {
+      refreshFeatureUi();
+    }
+  }
+
+  function fillProductStyleCustomizeForm() {
+    const form = document.getElementById(PRODUCT_STYLE_FORM_ID);
+    if (!form) return;
+
+    const fontFamily = form.querySelector('[name="fontFamily"]');
+    const fontSizePx = form.querySelector('[name="fontSizePx"]');
+    const useNormalColor = form.querySelector('[name="useNormalColor"]');
+    const normalColor = form.querySelector('[name="normalColor"]');
+    const lowStockColor = form.querySelector('[name="lowStockColor"]');
+
+    if (fontFamily) fontFamily.value = PRODUCT_STYLE_PREFS.fontFamily || '';
+    if (fontSizePx) fontSizePx.value = PRODUCT_STYLE_PREFS.fontSizePx || '';
+    if (useNormalColor) useNormalColor.checked = PRODUCT_STYLE_PREFS.useNormalColor === true;
+    if (normalColor) normalColor.value = PRODUCT_STYLE_PREFS.normalColor || PRODUCT_STYLE_PREFS_DEFAULTS.normalColor;
+    if (lowStockColor) lowStockColor.value = PRODUCT_STYLE_PREFS.lowStockColor || PRODUCT_STYLE_PREFS_DEFAULTS.lowStockColor;
+    if (normalColor) normalColor.disabled = !(useNormalColor && useNormalColor.checked);
+  }
+
+  function readProductStyleFormValues() {
+    const form = document.getElementById(PRODUCT_STYLE_FORM_ID);
+    if (!form) return PRODUCT_STYLE_PREFS;
+
+    return normalizeProductStylePrefs({
+      fontFamily: form.querySelector('[name="fontFamily"]') ? form.querySelector('[name="fontFamily"]').value : '',
+      fontSizePx: form.querySelector('[name="fontSizePx"]') ? form.querySelector('[name="fontSizePx"]').value : '',
+      useNormalColor: !!(form.querySelector('[name="useNormalColor"]') && form.querySelector('[name="useNormalColor"]').checked),
+      normalColor: form.querySelector('[name="normalColor"]') ? form.querySelector('[name="normalColor"]').value : PRODUCT_STYLE_PREFS_DEFAULTS.normalColor,
+      lowStockColor: form.querySelector('[name="lowStockColor"]') ? form.querySelector('[name="lowStockColor"]').value : PRODUCT_STYLE_PREFS_DEFAULTS.lowStockColor
+    });
+  }
+
+  function saveProductStyleCustomizeSelection() {
+    saveProductStylePrefs(readProductStyleFormValues());
+    closeProductStyleCustomizeModal();
+  }
+
+  function resetProductStyleCustomizeSelection() {
+    saveProductStylePrefs(PRODUCT_STYLE_PREFS_DEFAULTS);
+    closeProductStyleCustomizeModal();
+  }
+
+  function openProductStyleCustomizeModal() {
+    const modal = document.getElementById(PRODUCT_STYLE_MODAL_ID);
+    const backdrop = document.getElementById(PRODUCT_STYLE_BACKDROP_ID);
+    if (!modal || !backdrop) return;
+
+    fillProductStyleCustomizeForm();
+    backdrop.style.display = 'block';
+    modal.style.display = 'block';
+  }
+
+  function ensureProductStyleCustomizeModal() {
+    if (!document.body) return;
+
+    if (!document.getElementById(PRODUCT_STYLE_BACKDROP_ID)) {
+      const backdrop = document.createElement('div');
+      backdrop.id = PRODUCT_STYLE_BACKDROP_ID;
+      backdrop.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'inset:0',
+        'background:rgba(12, 23, 34, 0.38)',
+        'z-index:999998'
+      ].join(';');
+      backdrop.addEventListener('click', closeProductStyleCustomizeModal);
+      document.body.appendChild(backdrop);
+    }
+
+    if (!document.getElementById(PRODUCT_STYLE_MODAL_ID)) {
+      const modal = document.createElement('div');
+      modal.id = PRODUCT_STYLE_MODAL_ID;
+      modal.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'top:50%',
+        'left:50%',
+        'transform:translate(-50%, -50%)',
+        'width:440px',
+        'max-width:calc(100vw - 24px)',
+        'max-height:calc(100vh - 24px)',
+        'background:#ffffff',
+        'border:1px solid #d5dfe8',
+        'border-radius:16px',
+        'box-shadow:0 18px 44px rgba(0,0,0,0.22)',
+        'padding:16px',
+        'z-index:999999'
+      ].join(';');
+
+      const fontOptionsMarkup = PRODUCT_FONT_OPTIONS
+        .map((option) => '<option value="' + escapeHtml(option.value) + '">' + escapeHtml(option.label) + '</option>')
+        .join('');
+
+      modal.innerHTML = [
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px;">',
+        '  <div>',
+        '    <strong style="display:block;font-size:16px;color:#13283d;">Personalizar grade de produtos</strong>',
+        '    <span style="display:block;margin-top:4px;font-size:12px;color:#5b6d7d;">Ajuste fonte, tamanho e cores da lista de produtos, incluindo o destaque de estoque minimo.</span>',
+        '  </div>',
+        '  <button type="button" data-product-style-close class="btn btn-sm btn-light">x</button>',
+        '</div>',
+        '<form id="' + PRODUCT_STYLE_FORM_ID + '" style="display:grid;gap:12px;">',
+        '  <label style="display:grid;gap:6px;font-size:13px;color:#203040;">',
+        '    <span>Fonte</span>',
+        '    <select name="fontFamily" class="form-control">' + fontOptionsMarkup + '</select>',
+        '  </label>',
+        '  <label style="display:grid;gap:6px;font-size:13px;color:#203040;">',
+        '    <span>Tamanho da fonte (px)</span>',
+        '    <input name="fontSizePx" type="number" min="10" max="24" step="1" class="form-control" placeholder="Padrao da Zweb">',
+        '  </label>',
+        '  <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#203040;">',
+        '    <input name="useNormalColor" type="checkbox">',
+        '    <span>Usar cor padrao personalizada</span>',
+        '  </label>',
+        '  <label style="display:grid;gap:6px;font-size:13px;color:#203040;">',
+        '    <span>Cor padrao</span>',
+        '    <input name="normalColor" type="color" class="form-control" style="padding:4px 6px;height:40px;">',
+        '  </label>',
+        '  <label style="display:grid;gap:6px;font-size:13px;color:#203040;">',
+        '    <span>Cor de estoque minimo</span>',
+        '    <input name="lowStockColor" type="color" class="form-control" style="padding:4px 6px;height:40px;">',
+        '  </label>',
+        '</form>',
+        '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px;">',
+        '  <button type="button" data-product-style-reset class="btn btn-sm btn-light">Restaurar padrao</button>',
+        '  <div style="display:flex;gap:8px;">',
+        '    <button type="button" data-product-style-cancel class="btn btn-sm btn-transparent">Cancelar</button>',
+        '    <button type="button" data-product-style-save class="btn btn-sm btn-primary">Salvar</button>',
+        '  </div>',
+        '</div>'
+      ].join('');
+
+      modal.querySelector('[data-product-style-close]').addEventListener('click', closeProductStyleCustomizeModal);
+      modal.querySelector('[data-product-style-cancel]').addEventListener('click', closeProductStyleCustomizeModal);
+      modal.querySelector('[data-product-style-save]').addEventListener('click', saveProductStyleCustomizeSelection);
+      modal.querySelector('[data-product-style-reset]').addEventListener('click', resetProductStyleCustomizeSelection);
+      const useNormalColorInput = modal.querySelector('[name="useNormalColor"]');
+      const normalColorInput = modal.querySelector('[name="normalColor"]');
+      if (useNormalColorInput && normalColorInput) {
+        useNormalColorInput.addEventListener('change', () => {
+          normalColorInput.disabled = !useNormalColorInput.checked;
+        });
+      }
+
+      document.body.appendChild(modal);
+    }
+  }
+
+  function ensureProductStyleCustomizeButton() {
+    if (!isTargetProductRoute() || !isFeatureEnabled('lowStockHighlightEnabled')) {
+      removeProductStyleCustomizeUi();
+      return;
+    }
+
+    const toolbar = findVisibleProductToolbar();
+    if (!toolbar) return;
+
+    ensureProductStyleCustomizeModal();
+
+    const actionsContainer = toolbar.querySelector('.grid-toolbar-hidden-mobile') || toolbar;
+    const legacyButton = document.getElementById(PRODUCT_STYLE_CUSTOMIZE_BUTTON_ID);
+    if (legacyButton) legacyButton.remove();
+
+    const actionButton = Array.from(actionsContainer.querySelectorAll('button, a')).find((el) => {
+      const text = normalizeText(el.innerText || el.textContent || '');
+      return text === 'acoes' && isVisible(el);
+    });
+    if (!actionButton || !actionButton.id) return;
+
+    const actionMenu = Array.from(document.querySelectorAll('.dropdown-menu'))
+      .find((menu) => menu.getAttribute('aria-labelledby') === actionButton.id);
+    if (!actionMenu) return;
+
+    let actionItem = document.getElementById(PRODUCT_STYLE_CUSTOMIZE_ACTION_ID);
+    if (!actionItem) {
+      const listItem = document.createElement('li');
+      listItem.className = 'has-submenu';
+      listItem.innerHTML = [
+        '<a id="' + PRODUCT_STYLE_CUSTOMIZE_ACTION_ID + '" role="button" class="dropdown-item flex-container">',
+        '  <span class="label-item">Personalizar grade</span>',
+        '</a>'
+      ].join('');
+      actionItem = listItem.querySelector('a');
+      actionItem.addEventListener('click', function(event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openProductStyleCustomizeModal();
+      }, true);
+      actionMenu.appendChild(listItem);
+      return;
+    }
+
+    const actionListItem = actionItem.closest('li');
+    if (actionListItem && actionListItem.parentElement !== actionMenu) {
+      actionMenu.appendChild(actionListItem);
+    }
+  }
+
   function ensureLowStockHighlightStyle() {
-    if (document.getElementById(PRODUCT_LOW_STOCK_STYLE_ID)) return;
-    const style = document.createElement('style');
-    style.id = PRODUCT_LOW_STOCK_STYLE_ID;
+    let style = document.getElementById(PRODUCT_LOW_STOCK_STYLE_ID);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = PRODUCT_LOW_STOCK_STYLE_ID;
+      (document.head || document.documentElement).appendChild(style);
+    }
+
+    const defaultRules = [];
+    if (PRODUCT_STYLE_PREFS.useNormalColor && PRODUCT_STYLE_PREFS.normalColor) {
+      defaultRules.push('color:' + PRODUCT_STYLE_PREFS.normalColor + ' !important');
+    }
+    if (PRODUCT_STYLE_PREFS.fontFamily) {
+      defaultRules.push('font-family:' + PRODUCT_STYLE_PREFS.fontFamily + ' !important');
+    }
+    if (PRODUCT_STYLE_PREFS.fontSizePx) {
+      defaultRules.push('font-size:' + PRODUCT_STYLE_PREFS.fontSizePx + 'px !important');
+      defaultRules.push('line-height:1.35');
+    }
+
+    const defaultRuleBlock = defaultRules.length ? ' ' + defaultRules.join(';') + ';' : '';
+    const lowStockColor = PRODUCT_STYLE_PREFS.lowStockColor || PRODUCT_STYLE_PREFS_DEFAULTS.lowStockColor;
+
     style.textContent = `
+      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell {
+        ${defaultRuleBlock}
+      }
+
+      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell .cell-text,
+      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell span,
+      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell a,
+      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell strong {
+        ${defaultRuleBlock}
+      }
+
       .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell {
-        color: #c62828 !important;
+        color: ${lowStockColor} !important;
       }
 
       .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell .cell-text,
       .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell span,
       .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell a,
       .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell strong {
-        color: #c62828 !important;
+        color: ${lowStockColor} !important;
       }
 
-      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell.selected {
-        color: #b71c1c !important;
-        font-weight: 700;
-      }
-
+      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell.selected,
       .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell.selected .cell-text {
-        color: #b71c1c !important;
+        color: ${lowStockColor} !important;
         font-weight: 700;
       }
     `;
-    (document.head || document.documentElement).appendChild(style);
   }
 
   function parseProductGridNumber(value) {
@@ -1384,8 +1700,11 @@
   }
 
   function clearProductLowStockHighlight() {
-    const rows = Array.from(document.querySelectorAll('.table-row[' + PRODUCT_LOW_STOCK_ATTR + ']'));
-    rows.forEach((row) => row.removeAttribute(PRODUCT_LOW_STOCK_ATTR));
+    const rows = Array.from(document.querySelectorAll('.table-row[' + PRODUCT_LOW_STOCK_ATTR + '], .table-row[' + PRODUCT_ROW_STYLE_ATTR + ']'));
+    rows.forEach((row) => {
+      row.removeAttribute(PRODUCT_LOW_STOCK_ATTR);
+      row.removeAttribute(PRODUCT_ROW_STYLE_ATTR);
+    });
   }
 
   function syncProductLowStockHighlight() {
@@ -1401,8 +1720,12 @@
     }
 
     ensureLowStockHighlightStyle();
+    const hasRowStyle = hasCustomProductRowStyle();
     const rows = Array.from(document.querySelectorAll('.table-row')).filter((row) => !row.classList.contains('header'));
     rows.forEach((row) => {
+      if (hasRowStyle) row.setAttribute(PRODUCT_ROW_STYLE_ATTR, 'true');
+      else row.removeAttribute(PRODUCT_ROW_STYLE_ATTR);
+
       const cells = Array.from(row.children || []);
       const quantityCell = cells[headerMap.quantityIndex];
       const minimumCell = cells[headerMap.minimumIndex];
@@ -1969,10 +2292,12 @@
 
     if (isTargetProductRoute()) {
       ensureProductPreviewButton();
+      ensureProductStyleCustomizeButton();
       syncProductFilterColumnOptions();
       syncProductLowStockHighlight();
     } else {
       removeProductPreviewButton();
+      removeProductStyleCustomizeUi();
       restoreProductFilterColumnOptions();
       clearProductLowStockHighlight();
     }
@@ -1984,6 +2309,13 @@
     try {
       chrome.storage.local.get(FEATURE_DEFAULTS, (res) => {
         applyFeatureState(res);
+      });
+    } catch (e) {}
+
+    try {
+      chrome.storage.local.get({ [PRODUCT_STYLE_PREFS_STORAGE_KEY]: PRODUCT_STYLE_PREFS_DEFAULTS }, (res) => {
+        PRODUCT_STYLE_PREFS = normalizeProductStylePrefs(res && res[PRODUCT_STYLE_PREFS_STORAGE_KEY]);
+        refreshFeatureUi();
       });
     } catch (e) {}
 
@@ -2017,6 +2349,11 @@
         if (isTargetNfeRoute() && isFeatureEnabled('actionMenuCustomizeEnabled')) {
           ensureNfeActionCustomizeButton();
         }
+      }
+
+      if (changes[PRODUCT_STYLE_PREFS_STORAGE_KEY]) {
+        PRODUCT_STYLE_PREFS = normalizeProductStylePrefs(changes[PRODUCT_STYLE_PREFS_STORAGE_KEY].newValue);
+        refreshFeatureUi();
       }
 
       const nextState = {};
