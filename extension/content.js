@@ -1639,8 +1639,7 @@
 
     const defaultRuleBlock = defaultRules.length ? ' ' + defaultRules.join(';') + ';' : '';
     const lowStockColor = PRODUCT_STYLE_PREFS.lowStockColor || PRODUCT_STYLE_PREFS_DEFAULTS.lowStockColor;
-
-    style.textContent = `
+    const nextCss = `
       .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell {
         ${defaultRuleBlock}
       }
@@ -1669,6 +1668,10 @@
         font-weight: 700;
       }
     `;
+
+    if (style.textContent !== nextCss) {
+      style.textContent = nextCss;
+    }
   }
 
   function parseProductGridNumber(value) {
