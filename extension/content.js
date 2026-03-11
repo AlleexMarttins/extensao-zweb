@@ -1577,8 +1577,6 @@
     const toolbar = findVisibleProductToolbar();
     if (!toolbar) return;
 
-    ensureProductStyleCustomizeModal();
-
     const actionsContainer = toolbar.querySelector('.grid-toolbar-hidden-mobile') || toolbar;
     const legacyButton = document.getElementById(PRODUCT_STYLE_CUSTOMIZE_BUTTON_ID);
     if (legacyButton) legacyButton.remove();
@@ -1590,7 +1588,7 @@
     if (!actionButton || !actionButton.id) return;
 
     const actionMenu = Array.from(document.querySelectorAll('.dropdown-menu'))
-      .find((menu) => menu.getAttribute('aria-labelledby') === actionButton.id);
+      .find((menu) => menu.getAttribute('aria-labelledby') === actionButton.id && menu.classList.contains('show') && isVisible(menu));
     if (!actionMenu) return;
 
     let actionItem = document.getElementById(PRODUCT_STYLE_CUSTOMIZE_ACTION_ID);
@@ -1606,6 +1604,7 @@
       actionItem.addEventListener('click', function(event) {
         event.preventDefault();
         event.stopImmediatePropagation();
+        ensureProductStyleCustomizeModal();
         openProductStyleCustomizeModal();
       }, true);
       actionMenu.appendChild(listItem);
