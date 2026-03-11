@@ -1336,7 +1336,19 @@
         color: #c62828 !important;
       }
 
+      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell .cell-text,
+      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell span,
+      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell a,
+      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell strong {
+        color: #c62828 !important;
+      }
+
       .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell.selected {
+        color: #b71c1c !important;
+        font-weight: 700;
+      }
+
+      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell.selected .cell-text {
         color: #b71c1c !important;
         font-weight: 700;
       }
