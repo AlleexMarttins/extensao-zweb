@@ -194,6 +194,65 @@
       .trim();
   }
 
+  function parseRgbColor(value) {
+    const match = String(value || '').match(/rgba?\(([^)]+)\)/i);
+    if (!match) return null;
+
+    const parts = match[1].split(',').map(part => Number(String(part).trim()));
+    if (parts.length < 3 || parts.slice(0, 3).some(part => !Number.isFinite(part))) {
+      return null;
+    }
+
+    return {
+      r: parts[0],
+      g: parts[1],
+      b: parts[2],
+      a: Number.isFinite(parts[3]) ? parts[3] : 1
+    };
+  }
+
+  function getSurfaceColor(element) {
+    let current = element;
+    while (current && current !== document.documentElement) {
+      const color = parseRgbColor(window.getComputedStyle(current).backgroundColor);
+      if (color && color.a > 0) return color;
+      current = current.parentElement;
+    }
+
+    const rootColor = parseRgbColor(window.getComputedStyle(document.body || document.documentElement).backgroundColor);
+    return rootColor || { r: 255, g: 255, b: 255, a: 1 };
+  }
+
+  function isDarkSurface(element) {
+    const color = getSurfaceColor(element);
+    const luminance = (color.r * 0.299) + (color.g * 0.587) + (color.b * 0.114);
+    return luminance < 160;
+  }
+
+  function applyCommissionReportHintTheme(hint, modal) {
+    if (!hint) return;
+
+    const darkSurface = isDarkSurface(modal || hint.parentElement);
+    const themedStyles = darkSurface
+      ? {
+        borderColor: 'rgba(125, 185, 255, 0.30)',
+        background: 'rgba(26, 54, 93, 0.88)',
+        color: '#edf5ff',
+        boxShadow: '0 12px 24px rgba(0, 0, 0, 0.22)'
+      }
+      : {
+        borderColor: 'rgba(22, 100, 192, 0.18)',
+        background: 'rgba(22, 100, 192, 0.08)',
+        color: '#18456f',
+        boxShadow: 'none'
+      };
+
+    hint.style.borderColor = themedStyles.borderColor;
+    hint.style.background = themedStyles.background;
+    hint.style.color = themedStyles.color;
+    hint.style.boxShadow = themedStyles.boxShadow;
+  }
+
   function escapeHtml(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;')
@@ -1237,6 +1296,11 @@
       hint.textContent = 'Para ajustar devoluções automaticamente no relatório de comissões, a extensão usa o formato HTML. Depois você pode imprimir ou salvar em PDF pelo navegador.';
       actionsContainer.insertAdjacentElement('beforebegin', hint);
     }
+
+    hint.style.fontWeight = '600';
+    hint.style.transition = 'background .18s ease, color .18s ease, border-color .18s ease';
+    hint.textContent = 'Para ajustar devolu\u00e7\u00f5es automaticamente no relat\u00f3rio de comiss\u00f5es, a extens\u00e3o usa o formato HTML. Depois voc\u00ea pode imprimir ou salvar em PDF pelo navegador.';
+    applyCommissionReportHintTheme(hint, modal);
   }
 
   function getActiveProductColumnsFromStorage() {

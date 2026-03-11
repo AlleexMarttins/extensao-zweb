@@ -62,6 +62,7 @@
     style.textContent = [
       'tr[data-zweb-return-adjusted="true"] { background: rgba(239, 154, 154, 0.12) !important; }',
       'tr[data-zweb-return-adjusted="true"] td { color: #c85a5a !important; font-weight: 700; }',
+      'tr[data-zweb-return-adjusted="true"], tr[data-zweb-return-adjusted="true"] td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }',
       '#' + SUMMARY_ID + ' { margin: 12px 0 8px; padding: 10px 12px; border: 1px solid rgba(200, 90, 90, 0.22);',
       'border-radius: 12px; background: rgba(239, 154, 154, 0.12); color: #7a2f2f; font-size: 13px; }'
       + '\n'
@@ -72,6 +73,12 @@
       + '#' + DOWNLOAD_BUTTON_ID + '[disabled] { opacity:.65; cursor:progress; }'
       + '\n'
       + '#' + DOWNLOAD_STATUS_ID + ' { font-size:12px; color:#5d6b79; }'
+      + '\n'
+      + '@media print {'
+      + ' #' + ACTIONS_ID + ' { display:none !important; }'
+      + ' tr[data-zweb-return-adjusted="true"] { background: rgba(239, 154, 154, 0.18) !important; }'
+      + ' tr[data-zweb-return-adjusted="true"] td { color: #b93d3d !important; font-weight: 700 !important; }'
+      + '}'
     ].join('\n');
   }
 
