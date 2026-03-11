@@ -13,6 +13,14 @@
       defaultValue: true,
     },
     {
+      key: 'visualCustomizationEnabled',
+      group: 'Geral',
+      title: 'Personaliza\u00e7\u00e3o Visual',
+      description: 'Aplica fonte, tamanho e cores personalizados em toda a Zweb.',
+      reloadPrompt: false,
+      defaultValue: true,
+    },
+    {
       key: 'filterEnabled',
       group: 'Produtos',
       title: 'Filtro',

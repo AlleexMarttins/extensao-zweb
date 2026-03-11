@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const features = featureCatalog.definitions.slice();
   const featureGroups = document.getElementById('featureGroups');
   const reloadBtn = document.getElementById('reload');
+  const openVisualSettingsBtn = document.getElementById('openVisualSettings');
   const openLogsBtn = document.getElementById('openLogs');
   const inputsByKey = new Map();
   const RELOAD_WARNING = 'Salve os dados da p\u00e1gina antes de recarregar para evitar perda de informa\u00e7\u00f5es.';
@@ -155,6 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (openLogsBtn) {
     openLogsBtn.addEventListener('click', () => {
       chrome.tabs.create({ url: chrome.runtime.getURL('logs.html') });
+    });
+  }
+
+  if (openVisualSettingsBtn) {
+    openVisualSettingsBtn.addEventListener('click', () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL('visual-settings.html') });
     });
   }
 });

@@ -1270,9 +1270,9 @@
     if (!isFeatureEnabled('batchEnabled')) removeBatchUi();
     if (!isFeatureEnabled('productPreviewEnabled')) removeProductPreviewButton();
     if (!isFeatureEnabled('filterEnabled')) restoreProductFilterColumnOptions();
+    removeProductStyleCustomizeUi();
     if (!isFeatureEnabled('lowStockHighlightEnabled')) {
       clearProductLowStockHighlight();
-      removeProductStyleCustomizeUi();
     }
     if (!isFeatureEnabled('actionMenuCustomizeEnabled')) {
       removeNfeActionCustomizeUi();
@@ -1386,7 +1386,7 @@
     return next;
   }
 
-  function hasCustomProductRowStyle() {
+  function hasCustomZwebTextStyle() {
     return !!(PRODUCT_STYLE_PREFS.useNormalColor || PRODUCT_STYLE_PREFS.fontFamily || PRODUCT_STYLE_PREFS.fontSizePx);
   }
 
@@ -1625,30 +1625,74 @@
       (document.head || document.documentElement).appendChild(style);
     }
 
-    const defaultRules = [];
-    if (PRODUCT_STYLE_PREFS.useNormalColor && PRODUCT_STYLE_PREFS.normalColor) {
-      defaultRules.push('color:' + PRODUCT_STYLE_PREFS.normalColor + ' !important');
+    const visualCustomizationEnabled = isFeatureEnabled('visualCustomizationEnabled') && hasCustomZwebTextStyle();
+    const globalFontRules = [];
+    const globalColorRules = [];
+
+    if (visualCustomizationEnabled && PRODUCT_STYLE_PREFS.fontFamily) {
+      globalFontRules.push('font-family:' + PRODUCT_STYLE_PREFS.fontFamily + ' !important');
     }
-    if (PRODUCT_STYLE_PREFS.fontFamily) {
-      defaultRules.push('font-family:' + PRODUCT_STYLE_PREFS.fontFamily + ' !important');
+    if (visualCustomizationEnabled && PRODUCT_STYLE_PREFS.fontSizePx) {
+      globalFontRules.push('font-size:' + PRODUCT_STYLE_PREFS.fontSizePx + 'px !important');
+      globalFontRules.push('line-height:1.35');
     }
-    if (PRODUCT_STYLE_PREFS.fontSizePx) {
-      defaultRules.push('font-size:' + PRODUCT_STYLE_PREFS.fontSizePx + 'px !important');
-      defaultRules.push('line-height:1.35');
+    if (visualCustomizationEnabled && PRODUCT_STYLE_PREFS.useNormalColor && PRODUCT_STYLE_PREFS.normalColor) {
+      globalColorRules.push('color:' + PRODUCT_STYLE_PREFS.normalColor + ' !important');
     }
 
-    const defaultRuleBlock = defaultRules.length ? ' ' + defaultRules.join(';') + ';' : '';
-    const lowStockColor = PRODUCT_STYLE_PREFS.lowStockColor || PRODUCT_STYLE_PREFS_DEFAULTS.lowStockColor;
+    const globalFontRuleBlock = globalFontRules.length ? ' ' + globalFontRules.join(';') + ';' : '';
+    const globalColorRuleBlock = globalColorRules.length ? ' ' + globalColorRules.join(';') + ';' : '';
+    const lowStockColor = visualCustomizationEnabled
+      ? (PRODUCT_STYLE_PREFS.lowStockColor || PRODUCT_STYLE_PREFS_DEFAULTS.lowStockColor)
+      : PRODUCT_STYLE_PREFS_DEFAULTS.lowStockColor;
     const nextCss = `
-      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell {
-        ${defaultRuleBlock}
+      body,
+      body input,
+      body textarea,
+      body select,
+      body button,
+      body .table-row > .cell,
+      body .table-row > .cell .cell-text,
+      body .dropdown-item,
+      body .dropdown-item .label-item,
+      body .multiselect__input,
+      body .multiselect__single,
+      body .multiselect__option,
+      body .nav-link,
+      body .modal-title,
+      body .modal-body,
+      body .card-title,
+      body .card-body {
+        ${globalFontRuleBlock}
       }
 
-      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell .cell-text,
-      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell span,
-      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell a,
-      .table-row[${PRODUCT_ROW_STYLE_ATTR}="true"] > .cell strong {
-        ${defaultRuleBlock}
+      body label,
+      body p,
+      body small,
+      body strong,
+      body li,
+      body a:not(.btn),
+      body h1,
+      body h2,
+      body h3,
+      body h4,
+      body h5,
+      body h6,
+      body .table-row > .cell,
+      body .table-row > .cell .cell-text,
+      body .header-text,
+      body .dropdown-item,
+      body .dropdown-item .label-item,
+      body .form-control,
+      body .multiselect__input,
+      body .multiselect__single,
+      body .multiselect__option,
+      body .nav-link,
+      body .modal-title,
+      body .modal-body,
+      body .card-title,
+      body .card-body {
+        ${globalColorRuleBlock}
       }
 
       .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell {
@@ -1722,12 +1766,8 @@
     }
 
     ensureLowStockHighlightStyle();
-    const hasRowStyle = hasCustomProductRowStyle();
     const rows = Array.from(document.querySelectorAll('.table-row')).filter((row) => !row.classList.contains('header'));
     rows.forEach((row) => {
-      if (hasRowStyle) row.setAttribute(PRODUCT_ROW_STYLE_ATTR, 'true');
-      else row.removeAttribute(PRODUCT_ROW_STYLE_ATTR);
-
       const cells = Array.from(row.children || []);
       const quantityCell = cells[headerMap.quantityIndex];
       const minimumCell = cells[headerMap.minimumIndex];
@@ -2276,6 +2316,8 @@
       scan();
     }
 
+    ensureLowStockHighlightStyle();
+    removeProductStyleCustomizeUi();
     positionNfeContextMenuPopup();
     syncNfeActionMenuItems();
 
@@ -2294,12 +2336,10 @@
 
     if (isTargetProductRoute()) {
       ensureProductPreviewButton();
-      ensureProductStyleCustomizeButton();
       syncProductFilterColumnOptions();
       syncProductLowStockHighlight();
     } else {
       removeProductPreviewButton();
-      removeProductStyleCustomizeUi();
       restoreProductFilterColumnOptions();
       clearProductLowStockHighlight();
     }
