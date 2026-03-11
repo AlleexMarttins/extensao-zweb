@@ -46,6 +46,7 @@
   const NFE_ACTION_BACKDROP_ID = 'zweb-nfe-action-backdrop';
   const NFE_ACTION_LIST_ID = 'zweb-nfe-action-list';
   const COMMISSION_REPORT_HINT_ID = 'zweb-commission-report-hint';
+  const COMMISSION_REPORT_HINT_TEXT = 'Para ajustar devolu\u00e7\u00f5es automaticamente no relat\u00f3rio de comiss\u00f5es, a extens\u00e3o usa o formato HTML. Depois voc\u00ea pode imprimir ou salvar em PDF pelo navegador.';
   const NFE_CONTEXT_MENU_ID = 'menuId';
   const NFE_CONTEXT_MENU_STYLE_ID = 'zweb-nfe-context-menu-style';
   const NFE_CONTEXT_MENU_MAX_HEIGHT_VH = 48;
@@ -1299,7 +1300,9 @@
 
     hint.style.fontWeight = '600';
     hint.style.transition = 'background .18s ease, color .18s ease, border-color .18s ease';
-    hint.textContent = 'Para ajustar devolu\u00e7\u00f5es automaticamente no relat\u00f3rio de comiss\u00f5es, a extens\u00e3o usa o formato HTML. Depois voc\u00ea pode imprimir ou salvar em PDF pelo navegador.';
+    if (hint.textContent !== COMMISSION_REPORT_HINT_TEXT) {
+      hint.textContent = COMMISSION_REPORT_HINT_TEXT;
+    }
     applyCommissionReportHintTheme(hint, modal);
   }
 
