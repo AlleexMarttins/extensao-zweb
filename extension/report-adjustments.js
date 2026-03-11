@@ -85,8 +85,12 @@
     ].join('\n');
   }
 
-  function getReportTable() {
-    return document.querySelector('table.striped-table');
+  function getReportTables() {
+    return Array.from(document.querySelectorAll('table.striped-table'));
+  }
+
+  function getPrimaryReportTable() {
+    return getReportTables()[0] || null;
   }
 
   function getSummaryHost(table) {
@@ -95,7 +99,7 @@
   }
 
   function upsertSummary(message) {
-    const table = getReportTable();
+    const table = getPrimaryReportTable();
     const host = getSummaryHost(table);
     if (!host) return;
 
@@ -148,7 +152,7 @@
   }
 
   function ensureDownloadActions() {
-    const table = getReportTable();
+    const table = getPrimaryReportTable();
     const host = getSummaryHost(table);
     if (!host || !table) return;
 
@@ -231,32 +235,40 @@
     }
   }
 
-  function restoreReport() {
-    const table = getReportTable();
-    if (!table) return;
+  function rememberAllOriginalValues(tables) {
+    tables.forEach((table) => {
+      rememberOriginalValues(table, readRows(table));
+    });
+  }
 
-    Array.from(table.querySelectorAll('tbody tr')).forEach((row) => {
-      row.removeAttribute('data-zweb-return-adjusted');
-      const cells = Array.from(row.querySelectorAll('td'));
-      if (cells[4] && cells[4].hasAttribute('data-zweb-original-value')) {
-        cells[4].textContent = cells[4].getAttribute('data-zweb-original-value');
-      }
-      if (cells[5] && cells[5].hasAttribute('data-zweb-original-value')) {
-        cells[5].textContent = cells[5].getAttribute('data-zweb-original-value');
+  function restoreReport() {
+    const tables = getReportTables();
+    if (!tables.length) return;
+
+    tables.forEach((table) => {
+      Array.from(table.querySelectorAll('tbody tr')).forEach((row) => {
+        row.removeAttribute('data-zweb-return-adjusted');
+        const cells = Array.from(row.querySelectorAll('td'));
+        if (cells[4] && cells[4].hasAttribute('data-zweb-original-value')) {
+          cells[4].textContent = cells[4].getAttribute('data-zweb-original-value');
+        }
+        if (cells[5] && cells[5].hasAttribute('data-zweb-original-value')) {
+          cells[5].textContent = cells[5].getAttribute('data-zweb-original-value');
+        }
+      });
+
+      if (table.tFoot && table.tFoot.rows.length) {
+        const footerCells = table.tFoot.rows[0].cells;
+        if (footerCells && footerCells.length >= 3) {
+          if (footerCells[1].hasAttribute('data-zweb-original-value')) {
+            footerCells[1].textContent = footerCells[1].getAttribute('data-zweb-original-value');
+          }
+          if (footerCells[2].hasAttribute('data-zweb-original-value')) {
+            footerCells[2].textContent = footerCells[2].getAttribute('data-zweb-original-value');
+          }
+        }
       }
     });
-
-    if (table.tFoot && table.tFoot.rows.length) {
-      const footerCells = table.tFoot.rows[0].cells;
-      if (footerCells && footerCells.length >= 3) {
-        if (footerCells[1].hasAttribute('data-zweb-original-value')) {
-          footerCells[1].textContent = footerCells[1].getAttribute('data-zweb-original-value');
-        }
-        if (footerCells[2].hasAttribute('data-zweb-original-value')) {
-          footerCells[2].textContent = footerCells[2].getAttribute('data-zweb-original-value');
-        }
-      }
-    }
 
     upsertSummary('');
   }
@@ -276,39 +288,38 @@
 
   function adjustReport(historyMap) {
     if (!isCommissionReportPage()) return;
-    const table = getReportTable();
-    if (!table) return;
+    const tables = getReportTables();
+    if (!tables.length) return;
 
     ensureStyle();
     ensureDownloadActions();
 
-    const rows = readRows(table);
-    rememberOriginalValues(table, rows);
+    rememberAllOriginalValues(tables);
     restoreReport();
-
-    const freshRows = readRows(table);
     let adjustedCount = 0;
+    tables.forEach((table) => {
+      const freshRows = readRows(table);
+      freshRows.forEach((entry) => {
+        const historyEntry = historyMap && historyMap[entry.documentNumber];
+        const shouldAdjust = !!(historyEntry && historyEntry.active);
+        if (!shouldAdjust) return;
 
-    freshRows.forEach((entry) => {
-      const historyEntry = historyMap && historyMap[entry.documentNumber];
-      const shouldAdjust = !!(historyEntry && historyEntry.active);
-      if (!shouldAdjust) return;
+        adjustedCount += 1;
+        entry.row.setAttribute('data-zweb-return-adjusted', 'true');
 
-      adjustedCount += 1;
-      entry.row.setAttribute('data-zweb-return-adjusted', 'true');
+        if (Number.isFinite(entry.total) && entry.total > 0) {
+          entry.total = -Math.abs(entry.total);
+          entry.cells[4].textContent = formatCurrency(entry.total);
+        }
 
-      if (Number.isFinite(entry.total) && entry.total > 0) {
-        entry.total = -Math.abs(entry.total);
-        entry.cells[4].textContent = formatCurrency(entry.total);
-      }
+        if (Number.isFinite(entry.commission) && entry.commission > 0) {
+          entry.commission = -Math.abs(entry.commission);
+          entry.cells[5].textContent = formatCurrency(entry.commission);
+        }
+      });
 
-      if (Number.isFinite(entry.commission) && entry.commission > 0) {
-        entry.commission = -Math.abs(entry.commission);
-        entry.cells[5].textContent = formatCurrency(entry.commission);
-      }
+      recalcFooter(table, freshRows);
     });
-
-    recalcFooter(table, freshRows);
 
     if (adjustedCount) {
       upsertSummary(
