@@ -45,6 +45,7 @@
   const NFE_ACTION_MODAL_ID = 'zweb-nfe-action-modal';
   const NFE_ACTION_BACKDROP_ID = 'zweb-nfe-action-backdrop';
   const NFE_ACTION_LIST_ID = 'zweb-nfe-action-list';
+  const COMMISSION_REPORT_HINT_ID = 'zweb-commission-report-hint';
   const NFE_CONTEXT_MENU_ID = 'menuId';
   const NFE_CONTEXT_MENU_STYLE_ID = 'zweb-nfe-context-menu-style';
   const NFE_CONTEXT_MENU_MAX_HEIGHT_VH = 48;
@@ -58,6 +59,8 @@
   const PRODUCT_GRID_STORAGE_KEY = 'z_theme_config_grid';
   const PRODUCT_FILTER_OPTION_HIDDEN_ATTR = 'data-zweb-hidden-by-column-filter';
   const PRODUCT_STYLE_PREFS_STORAGE_KEY = 'productStylePrefs';
+  const NFE_RETURN_HISTORY_STORAGE_KEY = 'nfeReturnHistory';
+  const NFE_RETURN_HISTORY_MAX_ITEMS = 4000;
   const XML_BRIDGE_SCRIPT_ID = 'zweb-xml-download-page-bridge';
   const XML_CONTENT_SOURCE = 'zweb-xml-content-script';
   const XML_BRIDGE_SOURCE = 'zweb-xml-page-bridge';
@@ -100,6 +103,9 @@
   let BATCH_RUNNING = false;
   let LAST_XML_DOWNLOAD_ARM_AT = 0;
   let LAST_NFE_CONTEXT_MENU_ANCHOR = null;
+  let NFE_RETURN_HISTORY = {};
+  let LAST_NFE_RETURN_SIGNATURE = '';
+  let NFE_RETURN_SYNC_TIMER = 0;
   const PRODUCT_LOW_STOCK_ATTR = 'data-zweb-low-stock-highlight';
   const PRODUCT_ROW_STYLE_ATTR = 'data-zweb-product-style-managed';
   const PRODUCT_LOW_STOCK_STYLE_ID = 'zweb-low-stock-style';
@@ -1183,6 +1189,56 @@
     }) || null;
   }
 
+  function findVisibleCommissionReportModal() {
+    return Array.from(document.querySelectorAll('.modal.show')).find((modal) => {
+      if (!isVisible(modal)) return false;
+      const text = normalizeText(modal.innerText || modal.textContent || '');
+      return text.indexOf('comissoes') !== -1 && text.indexOf('formato') !== -1 && text.indexOf('gerar relatorio') !== -1;
+    }) || null;
+  }
+
+  function syncCommissionReportModal() {
+    const modal = findVisibleCommissionReportModal();
+    const existingHint = document.getElementById(COMMISSION_REPORT_HINT_ID);
+
+    if (!isFeatureEnabled('commissionReturnsEnabled')) {
+      if (existingHint) existingHint.remove();
+      return;
+    }
+
+    if (!modal) {
+      if (existingHint) existingHint.remove();
+      return;
+    }
+
+    const htmlInput = modal.querySelector('input[type="radio"][value="HTML"]');
+    if (htmlInput && !modal.hasAttribute('data-zweb-commission-format-initialized')) {
+      modal.setAttribute('data-zweb-commission-format-initialized', 'true');
+      if (!htmlInput.checked) {
+        htmlInput.click();
+      }
+    }
+
+    const actionsContainer = modal.querySelector('.modal-footer, .d-flex.justify-content-end, .text-end') || modal;
+    let hint = document.getElementById(COMMISSION_REPORT_HINT_ID);
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = COMMISSION_REPORT_HINT_ID;
+      hint.style.cssText = [
+        'margin-top:12px',
+        'padding:10px 12px',
+        'border:1px solid rgba(22,100,192,0.18)',
+        'border-radius:12px',
+        'background:rgba(22,100,192,0.08)',
+        'color:#18456f',
+        'font-size:12px',
+        'line-height:1.5'
+      ].join(';');
+      hint.textContent = 'Para ajustar devoluções automaticamente no relatório de comissões, a extensão usa o formato HTML. Depois você pode imprimir ou salvar em PDF pelo navegador.';
+      actionsContainer.insertAdjacentElement('beforebegin', hint);
+    }
+  }
+
   function getActiveProductColumnsFromStorage() {
     const config = parseJson(localStorage.getItem(PRODUCT_GRID_STORAGE_KEY));
     const headers = config && config.product && Array.isArray(config.product.headers)
@@ -1730,6 +1786,158 @@
     normalized = normalized.replace(/[^0-9.-]/g, '');
     const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  function trimNfeReturnHistory(historyMap) {
+    const entries = Object.values(historyMap || {})
+      .filter(Boolean)
+      .sort((a, b) => Number(b && b.capturedAt || 0) - Number(a && a.capturedAt || 0))
+      .slice(0, NFE_RETURN_HISTORY_MAX_ITEMS);
+    return entries.reduce((acc, entry) => {
+      if (!entry || !entry.documentNumber) return acc;
+      acc[entry.documentNumber] = entry;
+      return acc;
+    }, {});
+  }
+
+  function isNfeReturnNature(text) {
+    return normalizeText(text).indexOf('devolucao') !== -1;
+  }
+
+  function isInactiveNfeStatus(text) {
+    const normalized = normalizeText(text);
+    return (
+      normalized.indexOf('cancelada') !== -1 ||
+      normalized.indexOf('cancelado') !== -1 ||
+      normalized.indexOf('rejeitada') !== -1 ||
+      normalized.indexOf('rejeitado') !== -1 ||
+      normalized.indexOf('denegada') !== -1 ||
+      normalized.indexOf('denegado') !== -1 ||
+      normalized.indexOf('inutilizada') !== -1 ||
+      normalized.indexOf('inutilizado') !== -1
+    );
+  }
+
+  function getNfeGridHeaderMap() {
+    if (!isTargetNfeRoute()) return null;
+    const headerRow = document.querySelector('.table-row.header');
+    if (!headerRow) return null;
+
+    const headers = Array.from(headerRow.children || []).map((cell) => normalizeText(cell.textContent || ''));
+    const customerIndex = headers.findIndex((text) => text === 'cliente');
+    const documentIndex = headers.findIndex((text) => text === 'numero');
+    const natureIndex = headers.findIndex((text) => text === 'natureza de operacao');
+    const dateIndex = headers.findIndex((text) => text === 'emissao');
+    const statusIndex = headers.findIndex((text) => text === 'status');
+    const totalIndex = headers.findIndex((text) => text === 'total r$');
+
+    if (documentIndex === -1 || natureIndex === -1) return null;
+    return { customerIndex, documentIndex, natureIndex, dateIndex, statusIndex, totalIndex };
+  }
+
+  function collectVisibleNfeReturnEntries() {
+    const headerMap = getNfeGridHeaderMap();
+    if (!headerMap) return [];
+
+    const rows = Array.from(document.querySelectorAll('.table-row'))
+      .filter((row) => !row.classList.contains('header'));
+
+    return rows
+      .map((row) => {
+        const cells = Array.from(row.children || []);
+        const documentCell = cells[headerMap.documentIndex];
+        const natureCell = cells[headerMap.natureIndex];
+        if (!documentCell || !natureCell) return null;
+
+        const documentNumber = String(documentCell.textContent || '').replace(/\D+/g, '').trim();
+        const nature = String(natureCell.textContent || '').trim();
+        if (!documentNumber || !isNfeReturnNature(nature)) return null;
+
+        const customer = headerMap.customerIndex >= 0 && cells[headerMap.customerIndex]
+          ? String(cells[headerMap.customerIndex].textContent || '').trim()
+          : '';
+        const status = headerMap.statusIndex >= 0 && cells[headerMap.statusIndex]
+          ? String(cells[headerMap.statusIndex].textContent || '').trim()
+          : '';
+        const issueDate = headerMap.dateIndex >= 0 && cells[headerMap.dateIndex]
+          ? String(cells[headerMap.dateIndex].textContent || '').trim()
+          : '';
+        const totalText = headerMap.totalIndex >= 0 && cells[headerMap.totalIndex]
+          ? String(cells[headerMap.totalIndex].textContent || '').trim()
+          : '';
+        const total = parseProductGridNumber(totalText);
+
+        return {
+          documentNumber,
+          customer,
+          nature,
+          issueDate,
+          status,
+          total: Number.isFinite(total) ? total : null,
+          active: !isInactiveNfeStatus(status),
+          capturedAt: Date.now()
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function syncNfeReturnHistory() {
+    if (!isFeatureEnabled('commissionReturnsEnabled') || !isTargetNfeRoute()) return;
+
+    const entries = collectVisibleNfeReturnEntries();
+    if (!entries.length) return;
+
+    const signature = JSON.stringify(entries.map((entry) => [
+      entry.documentNumber,
+      entry.customer,
+      entry.nature,
+      entry.issueDate,
+      entry.status,
+      entry.total,
+      entry.active
+    ]));
+    if (signature === LAST_NFE_RETURN_SIGNATURE) return;
+    LAST_NFE_RETURN_SIGNATURE = signature;
+
+    if (NFE_RETURN_SYNC_TIMER) clearTimeout(NFE_RETURN_SYNC_TIMER);
+    NFE_RETURN_SYNC_TIMER = setTimeout(() => {
+      NFE_RETURN_SYNC_TIMER = 0;
+      const nextHistory = Object.assign({}, NFE_RETURN_HISTORY);
+      let changed = false;
+
+      entries.forEach((entry) => {
+        const previous = nextHistory[entry.documentNumber];
+        const comparablePrevious = previous
+          ? JSON.stringify([
+              previous.customer,
+              previous.nature,
+              previous.issueDate,
+              previous.status,
+              previous.total,
+              previous.active
+            ])
+          : '';
+        const comparableNext = JSON.stringify([
+          entry.customer,
+          entry.nature,
+          entry.issueDate,
+          entry.status,
+          entry.total,
+          entry.active
+        ]);
+
+        if (comparablePrevious !== comparableNext) {
+          nextHistory[entry.documentNumber] = entry;
+          changed = true;
+        }
+      });
+
+      if (!changed) return;
+      NFE_RETURN_HISTORY = trimNfeReturnHistory(nextHistory);
+      try {
+        chrome.storage.local.set({ [NFE_RETURN_HISTORY_STORAGE_KEY]: NFE_RETURN_HISTORY });
+      } catch (error) {}
+    }, 250);
   }
 
   function getProductGridHeaderMap() {
@@ -2320,6 +2528,8 @@
     removeProductStyleCustomizeUi();
     positionNfeContextMenuPopup();
     syncNfeActionMenuItems();
+    syncNfeReturnHistory();
+    syncCommissionReportModal();
 
     if (isTargetNfeRoute()) {
       ensureNfeActionCustomizeButton();
@@ -2351,6 +2561,14 @@
     try {
       chrome.storage.local.get(FEATURE_DEFAULTS, (res) => {
         applyFeatureState(res);
+      });
+    } catch (e) {}
+
+    try {
+      chrome.storage.local.get({ [NFE_RETURN_HISTORY_STORAGE_KEY]: {} }, (res) => {
+        NFE_RETURN_HISTORY = res && res[NFE_RETURN_HISTORY_STORAGE_KEY] && typeof res[NFE_RETURN_HISTORY_STORAGE_KEY] === 'object'
+          ? res[NFE_RETURN_HISTORY_STORAGE_KEY]
+          : {};
       });
     } catch (e) {}
 
@@ -2396,6 +2614,10 @@
       if (changes[PRODUCT_STYLE_PREFS_STORAGE_KEY]) {
         PRODUCT_STYLE_PREFS = normalizeProductStylePrefs(changes[PRODUCT_STYLE_PREFS_STORAGE_KEY].newValue);
         refreshFeatureUi();
+      }
+
+      if (changes[NFE_RETURN_HISTORY_STORAGE_KEY]) {
+        NFE_RETURN_HISTORY = changes[NFE_RETURN_HISTORY_STORAGE_KEY].newValue || {};
       }
 
       const nextState = {};

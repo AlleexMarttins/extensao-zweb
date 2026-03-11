@@ -7,6 +7,7 @@
   "host_permissions": [
     "https://zweb.com.br/*",
     "https://compufour.s3.amazonaws.com/production/uploads/nfe/*",
+    "https://compufour.s3.amazonaws.com/production/uploads/reports/report/*",
     "https://www.fsist.com.br/*",
     "https://fsist.com.br/*",
     "https://www.nfe.fazenda.gov.br/*",
@@ -45,6 +46,13 @@
         "https://nfe.fazenda.gov.br/*"
       ],
       "js": ["features.js", "note-assistant.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://compufour.s3.amazonaws.com/production/uploads/reports/report/*"
+      ],
+      "js": ["features.js", "report-adjustments.js"],
       "run_at": "document_idle"
     }
   ],

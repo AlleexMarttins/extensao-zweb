@@ -107,6 +107,14 @@
       description: 'Exibe o bot\u00e3o Personalizar e filtra op\u00e7\u00f5es do menu A\u00e7\u00f5es da NF-e.',
       reloadPrompt: false,
       defaultValue: true,
+    },
+    {
+      key: 'commissionReturnsEnabled',
+      group: 'Documentos',
+      title: 'Ajustar Comiss\u00f5es',
+      description: 'Usa o hist\u00f3rico de devolu\u00e7\u00f5es da NF-e para inverter valores no relat\u00f3rio HTML de comiss\u00f5es.',
+      reloadPrompt: false,
+      defaultValue: true,
     }
   ];
 
