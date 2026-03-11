@@ -1249,12 +1249,27 @@
     }) || null;
   }
 
+  function isCommissionReportModal(modal) {
+    if (!modal || !isVisible(modal)) return false;
+
+    const htmlInput = modal.querySelector('input[type="radio"][value="HTML"]');
+    const pdfInput = modal.querySelector('input[type="radio"][value="PDF"]');
+    const generateButton = Array.from(modal.querySelectorAll('button'))
+      .find((button) => normalizeText(button.innerText || button.textContent || '').indexOf('gerar relatorio') !== -1);
+
+    if (!htmlInput || !pdfInput || !generateButton) return false;
+
+    const title = modal.querySelector('.modal-header h1, .modal-header h2, .modal-header h3, .modal-title');
+    const titleText = normalizeText(title ? title.textContent : '');
+    if (titleText.indexOf('comisso') !== -1) return true;
+
+    const bodyText = normalizeText(modal.innerText || modal.textContent || '');
+    return bodyText.indexOf('comisso') !== -1 || bodyText.indexOf('vendedor') !== -1;
+  }
+
   function findVisibleCommissionReportModal() {
-    return Array.from(document.querySelectorAll('.modal.show')).find((modal) => {
-      if (!isVisible(modal)) return false;
-      const text = normalizeText(modal.innerText || modal.textContent || '');
-      return text.indexOf('comissoes') !== -1 && text.indexOf('formato') !== -1 && text.indexOf('gerar relatorio') !== -1;
-    }) || null;
+    return Array.from(document.querySelectorAll('.modal.show, [role="dialog"]'))
+      .find((modal) => isCommissionReportModal(modal)) || null;
   }
 
   function syncCommissionReportModal() {
