@@ -12,18 +12,26 @@ const NOTE_ASSISTANT_LOGS_KEY = 'assistantLogs';
 const NOTE_ASSISTANT_LOG_LIMIT = 300;
 const NOTE_ASSISTANT_FSIST_URL = 'https://www.fsist.com.br/';
 const NOTE_ASSISTANT_NFE_URL_PATTERN = /^https?:\/\/(www\.)?nfe\.fazenda\.gov\.br\//i;
+const COMMISSION_REPORT_URL_PATTERN = /^https:\/\/compufour\.s3\.amazonaws\.com\/production\/uploads\/reports\/report\/.+\.html(?:[?#].*)?$/i;
+const DEBUGGER_PROTOCOL_VERSION = '1.3';
+const OFFSCREEN_DOWNLOAD_DOCUMENT_PATH = 'offscreen-download.html';
+const OFFSCREEN_DOWNLOAD_DOCUMENT_URL = chrome.runtime.getURL(OFFSCREEN_DOWNLOAD_DOCUMENT_PATH);
 const FEATURE_DEFAULTS = self.ZWEB_FEATURES && typeof self.ZWEB_FEATURES.getDefaults === 'function'
   ? self.ZWEB_FEATURES.getDefaults()
   : {
       xmlDownloadEnabled: true,
       noteAssistantEnabled: true,
       stockPriceSimulationEnabled: true,
+      commissionReturnsEnabled: true,
     };
 const pendingXmlDownloads = new Map();
 const recentDirectXmlDownloads = new Map();
+const pendingAdjustedReportDownloads = new Map();
 let XML_DOWNLOAD_ENABLED = FEATURE_DEFAULTS.xmlDownloadEnabled !== false;
 let NOTE_ASSISTANT_ENABLED = FEATURE_DEFAULTS.noteAssistantEnabled !== false;
 let STOCK_PRICE_SIMULATION_ENABLED = FEATURE_DEFAULTS.stockPriceSimulationEnabled !== false;
+let COMMISSION_RETURNS_ENABLED = FEATURE_DEFAULTS.commissionReturnsEnabled !== false;
+let offscreenDownloadDocumentPromise = null;
 let lastFsistTabId = null;
 let lastNfePortalTabId = null;
 let lastZwebTabId = null;
@@ -49,6 +57,13 @@ function now() {
   return Date.now();
 }
 
+function getErrorMessage(error) {
+  if (!error) return '';
+  if (typeof error === 'string') return error;
+  if (error && typeof error.message === 'string') return error.message;
+  return String(error);
+}
+
 function cleanupExpiredXmlDownloads() {
   const cutoff = now() - XML_DOWNLOAD_TTL_MS;
   for (const [key, pending] of pendingXmlDownloads.entries()) {
@@ -60,6 +75,12 @@ function cleanupExpiredXmlDownloads() {
   for (const [key, createdAt] of recentDirectXmlDownloads.entries()) {
     if (!createdAt || createdAt < cutoff) {
       recentDirectXmlDownloads.delete(key);
+    }
+  }
+
+  for (const [key, pending] of pendingAdjustedReportDownloads.entries()) {
+    if (!pending || pending.createdAt < cutoff) {
+      pendingAdjustedReportDownloads.delete(key);
     }
   }
 }
@@ -103,6 +124,8 @@ function syncFeatureFlags() {
 
       XML_DOWNLOAD_ENABLED = state.xmlDownloadEnabled !== false;
       NOTE_ASSISTANT_ENABLED = state.noteAssistantEnabled !== false;
+      STOCK_PRICE_SIMULATION_ENABLED = state.stockPriceSimulationEnabled !== false;
+      COMMISSION_RETURNS_ENABLED = state.commissionReturnsEnabled !== false;
       if (!XML_DOWNLOAD_ENABLED) {
         pendingXmlDownloads.clear();
         recentDirectXmlDownloads.clear();
@@ -274,6 +297,192 @@ function buildXmlDownloadOptions(url, fileNameHint) {
     filename: inferXmlFileName(url, fileNameHint),
     saveAs: false,
   };
+}
+
+function isCommissionReportUrl(url) {
+  return COMMISSION_REPORT_URL_PATTERN.test(String(url || ''));
+}
+
+function inferAdjustedReportFileName(fileNameHint) {
+  const hinted = sanitizeFileName(String(fileNameHint || '').replace(/\.pdf$/i, ''));
+  if (hinted) return hinted + '.pdf';
+  return 'relatorio-ajustado-' + now() + '.pdf';
+}
+
+async function ensureOffscreenDownloadDocument() {
+  if (!chrome.offscreen || typeof chrome.offscreen.createDocument !== 'function') {
+    throw new Error('Offscreen indisponivel para gerar o PDF ajustado.');
+  }
+
+  if (offscreenDownloadDocumentPromise) {
+    return offscreenDownloadDocumentPromise;
+  }
+
+  offscreenDownloadDocumentPromise = (async () => {
+    if (chrome.runtime && typeof chrome.runtime.getContexts === 'function') {
+      try {
+        const contexts = await chrome.runtime.getContexts({
+          contextTypes: ['OFFSCREEN_DOCUMENT'],
+          documentUrls: [OFFSCREEN_DOWNLOAD_DOCUMENT_URL],
+        });
+        if (Array.isArray(contexts) && contexts.length) {
+          return;
+        }
+      } catch (error) {}
+    }
+
+    try {
+      await chrome.offscreen.createDocument({
+        url: OFFSCREEN_DOWNLOAD_DOCUMENT_PATH,
+        reasons: ['BLOBS'],
+        justification: 'Gerar o PDF ajustado do relatorio de comissoes.',
+      });
+    } catch (error) {
+      const message = getErrorMessage(error);
+      if (!/single offscreen document|already exists/i.test(message)) {
+        throw error;
+      }
+    }
+  })();
+
+  try {
+    await offscreenDownloadDocumentPromise;
+  } finally {
+    offscreenDownloadDocumentPromise = null;
+  }
+}
+
+function revokeOffscreenObjectUrl(url) {
+  if (!url) return;
+  try {
+    chrome.runtime.sendMessage({
+      type: 'offscreen-revoke-object-url',
+      url,
+    });
+  } catch (error) {}
+}
+
+function requestOffscreenPdfBlobUrl(base64Data, filename) {
+  return new Promise((resolve, reject) => {
+    ensureOffscreenDownloadDocument()
+      .then(() => {
+        chrome.runtime.sendMessage({
+          type: 'offscreen-create-pdf-object-url',
+          base64Data,
+          filename,
+        }, (response) => {
+          const error = chrome.runtime.lastError;
+          if (error) {
+            reject(new Error(error.message));
+            return;
+          }
+
+          if (!response || response.ok !== true) {
+            reject(new Error(response && response.message ? response.message : 'Falha ao baixar o PDF ajustado.'));
+            return;
+          }
+
+          resolve({
+            blobUrl: response.blobUrl,
+            filename: response.filename || filename,
+          });
+        });
+      })
+      .catch((error) => {
+        reject(error instanceof Error ? error : new Error(getErrorMessage(error)));
+      });
+  });
+}
+
+function debuggerAttach(target) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.attach(target, DEBUGGER_PROTOCOL_VERSION, () => {
+      const error = chrome.runtime.lastError;
+      if (error) {
+        reject(new Error(error.message));
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+function debuggerDetach(target) {
+  return new Promise((resolve) => {
+    chrome.debugger.detach(target, () => {
+      resolve();
+    });
+  });
+}
+
+function debuggerSendCommand(target, method, params) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.sendCommand(target, method, params || {}, (result) => {
+      const error = chrome.runtime.lastError;
+      if (error) {
+        reject(new Error(error.message));
+        return;
+      }
+      resolve(result || {});
+    });
+  });
+}
+
+async function generateAdjustedCommissionReportPdf(tabId, fileNameHint) {
+  const target = { tabId };
+  let attached = false;
+
+  try {
+    await debuggerAttach(target);
+    attached = true;
+    await debuggerSendCommand(target, 'Page.enable');
+    await debuggerSendCommand(target, 'Emulation.setEmulatedMedia', {
+      media: 'print'
+    }).catch(() => {});
+
+    const result = await debuggerSendCommand(target, 'Page.printToPDF', {
+      printBackground: true,
+      preferCSSPageSize: true,
+      marginTop: 0.4,
+      marginBottom: 0.4,
+      marginLeft: 0.3,
+      marginRight: 0.3,
+    });
+
+    if (!result || !result.data) {
+      throw new Error('PDF vazio');
+    }
+
+    const filename = inferAdjustedReportFileName(fileNameHint);
+    const offscreenDownload = await requestOffscreenPdfBlobUrl(result.data, filename);
+    pendingAdjustedReportDownloads.set(offscreenDownload.blobUrl, {
+      filename: offscreenDownload.filename,
+      createdAt: now(),
+    });
+
+    return await new Promise((resolve, reject) => {
+      chrome.downloads.download({
+        url: offscreenDownload.blobUrl,
+        saveAs: false,
+      }, (downloadId) => {
+        const error = chrome.runtime.lastError;
+        setTimeout(() => revokeOffscreenObjectUrl(offscreenDownload.blobUrl), 60000);
+        if (error) {
+          pendingAdjustedReportDownloads.delete(offscreenDownload.blobUrl);
+          reject(new Error(error.message));
+          return;
+        }
+        resolve({
+          downloadId,
+          filename: offscreenDownload.filename,
+        });
+      });
+    });
+  } finally {
+    if (attached) {
+      await debuggerDetach(target);
+    }
+  }
 }
 
 function runDownload(url, fileNameHint, pending) {
@@ -506,6 +715,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     triggerXmlContentDownload(message.content, pending, message.fileName || message.title);
     sendResponse({ ok: true });
+    return;
+  }
+
+  if (message.type === 'commission-report-download-pdf') {
+    if (!COMMISSION_RETURNS_ENABLED) {
+      sendResponse({ ok: false, reason: 'disabled' });
+      return;
+    }
+
+    const tabId = sender && sender.tab && isNumber(sender.tab.id) ? sender.tab.id : null;
+    const tabUrl = sender && sender.tab ? sender.tab.url : '';
+    if (!isNumber(tabId) || !isCommissionReportUrl(tabUrl)) {
+      sendResponse({ ok: false, reason: 'invalid_report_tab' });
+      return;
+    }
+
+    generateAdjustedCommissionReportPdf(tabId, message.fileNameHint)
+      .then((result) => {
+        sendResponse({ ok: true, filename: result.filename, downloadId: result.downloadId });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'pdf_generation_failed', message: error && error.message ? error.message : String(error) });
+      });
+    return true;
   }
 });
 
@@ -605,6 +838,20 @@ chrome.downloads.onCreated.addListener((item) => {
   }
 });
 
+chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
+  cleanupExpiredXmlDownloads();
+  if (!item || !item.url) return;
+
+  const pending = pendingAdjustedReportDownloads.get(item.url);
+  if (!pending || !pending.filename) return;
+
+  pendingAdjustedReportDownloads.delete(item.url);
+  suggest({
+    filename: pending.filename,
+    conflictAction: 'uniquify',
+  });
+});
+
 try {
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
@@ -619,6 +866,10 @@ try {
 
     if (changes.stockPriceSimulationEnabled) {
       STOCK_PRICE_SIMULATION_ENABLED = changes.stockPriceSimulationEnabled.newValue !== false;
+    }
+
+    if (changes.commissionReturnsEnabled) {
+      COMMISSION_RETURNS_ENABLED = changes.commissionReturnsEnabled.newValue !== false;
     }
 
     if (!XML_DOWNLOAD_ENABLED) {

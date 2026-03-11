@@ -3,7 +3,7 @@
   "name": "Assistente Zweb",
   "version": "1.1",
   "description": "Bloqueios e automacoes para fluxos administrativos, fiscais e de notas na Zweb.",
-  "permissions": ["contextMenus", "downloads", "scripting", "storage", "tabs"],
+  "permissions": ["contextMenus", "debugger", "downloads", "offscreen", "scripting", "storage", "tabs"],
   "host_permissions": [
     "https://zweb.com.br/*",
     "https://compufour.s3.amazonaws.com/production/uploads/nfe/*",

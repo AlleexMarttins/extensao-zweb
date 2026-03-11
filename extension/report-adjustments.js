@@ -7,6 +7,9 @@
   const HISTORY_STORAGE_KEY = 'nfeReturnHistory';
   const STYLE_ID = 'zweb-commission-report-adjustments-style';
   const SUMMARY_ID = 'zweb-commission-report-adjustments-summary';
+  const ACTIONS_ID = 'zweb-commission-report-adjustments-actions';
+  const DOWNLOAD_BUTTON_ID = 'zweb-commission-report-download-pdf';
+  const DOWNLOAD_STATUS_ID = 'zweb-commission-report-download-status';
 
   function normalizeText(value) {
     return String(value || '')
@@ -61,6 +64,14 @@
       'tr[data-zweb-return-adjusted="true"] td { color: #c85a5a !important; font-weight: 700; }',
       '#' + SUMMARY_ID + ' { margin: 12px 0 8px; padding: 10px 12px; border: 1px solid rgba(200, 90, 90, 0.22);',
       'border-radius: 12px; background: rgba(239, 154, 154, 0.12); color: #7a2f2f; font-size: 13px; }'
+      + '\n'
+      + '#' + ACTIONS_ID + ' { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin: 10px 0 14px; }'
+      + '\n'
+      + '#' + DOWNLOAD_BUTTON_ID + ' { appearance:none; border:0; border-radius:10px; padding:10px 14px; font-size:13px; font-weight:700; cursor:pointer; color:#fff; background:linear-gradient(135deg,#0f4c92 0%,#1664c0 100%); box-shadow:0 10px 18px rgba(22,100,192,0.18); }'
+      + '\n'
+      + '#' + DOWNLOAD_BUTTON_ID + '[disabled] { opacity:.65; cursor:progress; }'
+      + '\n'
+      + '#' + DOWNLOAD_STATUS_ID + ' { font-size:12px; color:#5d6b79; }'
     ].join('\n');
   }
 
@@ -91,6 +102,81 @@
     }
 
     summary.textContent = message;
+  }
+
+  function extractReportMeta() {
+    const bodyText = document.body ? document.body.innerText || '' : '';
+    const vendorMatch = bodyText.match(/Vendedor\(a\):\s*(.+)/i);
+    const rangeMatch = bodyText.match(/(\d{2}\/\d{2}\/\d{4})\s+até\s+(\d{2}\/\d{2}\/\d{4})/i);
+    return {
+      vendor: vendorMatch ? vendorMatch[1].trim() : '',
+      from: rangeMatch ? rangeMatch[1] : '',
+      to: rangeMatch ? rangeMatch[2] : ''
+    };
+  }
+
+  function buildPdfFileNameHint() {
+    const meta = extractReportMeta();
+    const parts = ['comissoes'];
+    if (meta.vendor) parts.push(meta.vendor);
+    if (meta.from && meta.to) parts.push(meta.from + '-a-' + meta.to);
+    parts.push('ajustado');
+    return parts.join('-');
+  }
+
+  function setDownloadStatus(message) {
+    const status = document.getElementById(DOWNLOAD_STATUS_ID);
+    if (!status) return;
+    status.textContent = message || '';
+  }
+
+  function setDownloadBusy(isBusy) {
+    const button = document.getElementById(DOWNLOAD_BUTTON_ID);
+    if (!button) return;
+    button.disabled = !!isBusy;
+    button.textContent = isBusy ? 'Gerando PDF...' : 'Baixar PDF ajustado';
+  }
+
+  function ensureDownloadActions() {
+    const table = getReportTable();
+    const host = getSummaryHost(table);
+    if (!host || !table) return;
+
+    let actions = document.getElementById(ACTIONS_ID);
+    if (!actions) {
+      actions = document.createElement('div');
+      actions.id = ACTIONS_ID;
+      actions.innerHTML = [
+        '<button type="button" id="' + DOWNLOAD_BUTTON_ID + '">Baixar PDF ajustado</button>',
+        '<span id="' + DOWNLOAD_STATUS_ID + '"></span>'
+      ].join('');
+      host.insertBefore(actions, table);
+    }
+
+    const button = document.getElementById(DOWNLOAD_BUTTON_ID);
+    if (button && !button.hasAttribute('data-zweb-bound')) {
+      button.setAttribute('data-zweb-bound', 'true');
+      button.addEventListener('click', () => {
+        setDownloadBusy(true);
+        setDownloadStatus('Preparando PDF corrigido...');
+        chrome.runtime.sendMessage({
+          type: 'commission-report-download-pdf',
+          fileNameHint: buildPdfFileNameHint()
+        }, (response) => {
+          setDownloadBusy(false);
+          const error = chrome.runtime.lastError;
+          if (error) {
+            setDownloadStatus('Falha ao gerar o PDF ajustado: ' + error.message);
+            return;
+          }
+          if (!response || response.ok !== true) {
+            setDownloadStatus('Falha ao gerar o PDF ajustado' + (response && response.message ? ': ' + response.message : '.'));
+            return;
+          }
+          setDownloadStatus('PDF ajustado enviado para Downloads: ' + response.filename);
+        });
+      });
+    }
   }
 
   function readRows(table) {
@@ -184,6 +270,7 @@
     if (!table) return;
 
     ensureStyle();
+    ensureDownloadActions();
 
     const rows = readRows(table);
     rememberOriginalValues(table, rows);
