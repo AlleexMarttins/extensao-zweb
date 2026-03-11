@@ -78,10 +78,11 @@
   ];
   const FEATURE_DEFAULTS = globalThis.ZWEB_FEATURES && typeof globalThis.ZWEB_FEATURES.getDefaults === 'function'
     ? globalThis.ZWEB_FEATURES.getDefaults()
-    : {
+      : {
         enabled: true,
         filterEnabled: true,
         productPreviewEnabled: true,
+        lowStockHighlightEnabled: true,
         itemSearchHashEnabled: true,
         batchEnabled: true,
         xmlDownloadEnabled: true,
@@ -93,6 +94,8 @@
   let BATCH_RUNNING = false;
   let LAST_XML_DOWNLOAD_ARM_AT = 0;
   let LAST_NFE_CONTEXT_MENU_ANCHOR = null;
+  const PRODUCT_LOW_STOCK_ATTR = 'data-zweb-low-stock-highlight';
+  const PRODUCT_LOW_STOCK_STYLE_ID = 'zweb-low-stock-style';
 
   function isFeatureEnabled(key) {
     return FEATURE_STATE[key] !== false;
@@ -1234,6 +1237,7 @@
     if (!isFeatureEnabled('batchEnabled')) removeBatchUi();
     if (!isFeatureEnabled('productPreviewEnabled')) removeProductPreviewButton();
     if (!isFeatureEnabled('filterEnabled')) restoreProductFilterColumnOptions();
+    if (!isFeatureEnabled('lowStockHighlightEnabled')) clearProductLowStockHighlight();
     if (!isFeatureEnabled('actionMenuCustomizeEnabled')) {
       removeNfeActionCustomizeUi();
       restoreNfeActionMenuItems();
@@ -1321,6 +1325,93 @@
     if (button.parentElement !== actionsContainer) {
       actionsContainer.appendChild(button);
     }
+  }
+
+  function ensureLowStockHighlightStyle() {
+    if (document.getElementById(PRODUCT_LOW_STOCK_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = PRODUCT_LOW_STOCK_STYLE_ID;
+    style.textContent = `
+      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell {
+        color: #c62828 !important;
+      }
+
+      .table-row[${PRODUCT_LOW_STOCK_ATTR}="true"] > .cell.selected {
+        color: #b71c1c !important;
+        font-weight: 700;
+      }
+    `;
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function parseProductGridNumber(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return NaN;
+    let normalized = raw.replace(/\s+/g, '');
+    if (normalized.indexOf(',') !== -1 && normalized.indexOf('.') !== -1) {
+      normalized = normalized.replace(/\./g, '').replace(',', '.');
+    } else if (normalized.indexOf(',') !== -1) {
+      normalized = normalized.replace(',', '.');
+    }
+    normalized = normalized.replace(/[^0-9.-]/g, '');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  function getProductGridHeaderMap() {
+    const headerRow = document.querySelector('.table-row.header');
+    if (!headerRow) return null;
+
+    const children = Array.from(headerRow.children || []);
+    const titles = children.map((cell) => normalizeText(cell.textContent || ''));
+    const quantityIndex = titles.findIndex((text) => text === 'quantidade');
+    const minimumIndex = titles.findIndex((text) => text === 'qtd. minima' || text === 'qtd minima');
+
+    if (quantityIndex === -1 || minimumIndex === -1) return null;
+    return { quantityIndex, minimumIndex };
+  }
+
+  function clearProductLowStockHighlight() {
+    const rows = Array.from(document.querySelectorAll('.table-row[' + PRODUCT_LOW_STOCK_ATTR + ']'));
+    rows.forEach((row) => row.removeAttribute(PRODUCT_LOW_STOCK_ATTR));
+  }
+
+  function syncProductLowStockHighlight() {
+    if (!isTargetProductRoute() || !isFeatureEnabled('lowStockHighlightEnabled')) {
+      clearProductLowStockHighlight();
+      return;
+    }
+
+    const headerMap = getProductGridHeaderMap();
+    if (!headerMap) {
+      clearProductLowStockHighlight();
+      return;
+    }
+
+    ensureLowStockHighlightStyle();
+    const rows = Array.from(document.querySelectorAll('.table-row')).filter((row) => !row.classList.contains('header'));
+    rows.forEach((row) => {
+      const cells = Array.from(row.children || []);
+      const quantityCell = cells[headerMap.quantityIndex];
+      const minimumCell = cells[headerMap.minimumIndex];
+      if (!quantityCell || !minimumCell) {
+        row.removeAttribute(PRODUCT_LOW_STOCK_ATTR);
+        return;
+      }
+
+      const quantity = parseProductGridNumber(quantityCell.textContent || '');
+      const minimum = parseProductGridNumber(minimumCell.textContent || '');
+      if (!Number.isFinite(quantity) || !Number.isFinite(minimum)) {
+        row.removeAttribute(PRODUCT_LOW_STOCK_ATTR);
+        return;
+      }
+
+      if (quantity <= minimum) {
+        row.setAttribute(PRODUCT_LOW_STOCK_ATTR, 'true');
+      } else {
+        row.removeAttribute(PRODUCT_LOW_STOCK_ATTR);
+      }
+    });
   }
 
   function parseBatchCodes(raw) {
@@ -1867,9 +1958,11 @@
     if (isTargetProductRoute()) {
       ensureProductPreviewButton();
       syncProductFilterColumnOptions();
+      syncProductLowStockHighlight();
     } else {
       removeProductPreviewButton();
       restoreProductFilterColumnOptions();
+      clearProductLowStockHighlight();
     }
   }
 

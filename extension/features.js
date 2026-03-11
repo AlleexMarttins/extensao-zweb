@@ -29,6 +29,14 @@
       defaultValue: true,
     },
     {
+      key: 'lowStockHighlightEnabled',
+      group: 'Produtos',
+      title: 'Estoque M\u00ednimo',
+      description: 'Destaca em vermelho produtos cuja Quantidade esteja menor ou igual \u00e0 Qtd. m\u00ednima.',
+      reloadPrompt: false,
+      defaultValue: true,
+    },
+    {
       key: 'itemSearchHashEnabled',
       group: 'DAV',
       title: 'Busca com #',
