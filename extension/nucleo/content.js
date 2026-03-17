@@ -721,6 +721,152 @@
     }) || null;
   }
 
+  function getVisibleNativeProductFilterChips() {
+    if (!isTargetProductRoute()) return [];
+    return Array.from(document.querySelectorAll('.content-filter .col-filter')).filter((chip) => {
+      if (!chip || !isVisible(chip)) return false;
+      if (chip.closest('#' + PRODUCT_CODE_RANGE_PANEL_ID)) return false;
+      if (chip.closest('#' + PRODUCT_CODE_RANGE_STATUS_ID)) return false;
+      return true;
+    });
+  }
+
+  function readNativeProductFilterChipCriterion(chip) {
+    if (!chip) return null;
+    const input = chip.querySelector('input.form-check-input');
+    if (input && !input.checked) return null;
+
+    const prefixNode = chip.querySelector('.filter-prefix');
+    const prefixText = String(prefixNode ? prefixNode.textContent || '' : '').trim();
+    const fullText = String(chip.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!fullText) return null;
+
+    let title = prefixText.replace(/:\s*$/, '').trim();
+    let valueText = '';
+
+    if (prefixText) {
+      valueText = fullText.indexOf(prefixText) === 0
+        ? fullText.slice(prefixText.length).trim()
+        : fullText;
+      if (valueText.charAt(0) === ':') valueText = valueText.slice(1).trim();
+    } else {
+      const separatorIndex = fullText.indexOf(':');
+      if (separatorIndex === -1) return null;
+      title = fullText.slice(0, separatorIndex).trim();
+      valueText = fullText.slice(separatorIndex + 1).trim();
+    }
+
+    const columnKey = normalizeText(title);
+    const valueNormalized = normalizeText(valueText);
+    if (!columnKey || !valueNormalized) return null;
+
+    return {
+      title,
+      columnKey,
+      valueText,
+      valueNormalized
+    };
+  }
+
+  function getActiveNativeProductFilterCriteria() {
+    return getVisibleNativeProductFilterChips()
+      .map(readNativeProductFilterChipCriterion)
+      .filter(Boolean);
+  }
+
+  function isSupportedProductCodeRangeColumnKey(columnKey) {
+    switch (columnKey) {
+      case 'codigo':
+      case 'descricao':
+      case 'quantidade':
+      case 'qtd. minima':
+      case 'qtd minima':
+      case 'estoque minimo':
+      case 'preco':
+      case 'preco r$':
+      case 'preco venda':
+      case 'preco de venda':
+      case 'valor':
+      case 'valor r$':
+      case 'custo':
+      case 'custo r$':
+      case 'referencia':
+      case 'observacao':
+      case 'ultimo fornecedor':
+      case 'ultima nf. compra':
+      case 'ultima nf compra':
+      case 'ultima nfe compra':
+      case 'nf compra':
+      case 'data ult. compra':
+      case 'data ult compra':
+      case 'ultima compra':
+      case 'data ult. venda':
+      case 'data ult venda':
+      case 'ultima venda':
+      case 'codigo de barras':
+      case 'cod barras':
+      case 'codigo barras':
+      case 'grupo':
+      case 'unidade':
+      case 'un':
+      case 'ativo':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  function getVisibleNativeProductSequences(tableWrapper) {
+    const wrapper = tableWrapper || getVisibleNativeGridTableWrapper();
+    const structure = getProductCodeRangeGridStructure(wrapper);
+    if (!wrapper || !structure || !Number.isInteger(structure.codeColumnIndex) || structure.codeColumnIndex < 0) {
+      return new Set();
+    }
+
+    const sequences = new Set();
+    Array.from(wrapper.querySelectorAll('.table-row'))
+      .filter((row) => !row.classList.contains('header') && isVisible(row))
+      .forEach((row) => {
+        const cell = row.children[structure.codeColumnIndex];
+        const sequence = normalizeText(cell ? (cell.textContent || '') : '');
+        if (sequence) sequences.add(sequence);
+      });
+    return sequences;
+  }
+
+  function filterProductCodeRangeItemsByNativeCriteria(items, tableWrapper) {
+    const sourceItems = Array.isArray(items) ? items : [];
+    if (!sourceItems.length) return [];
+
+    const criteria = getActiveNativeProductFilterCriteria();
+    if (!criteria.length) return sourceItems;
+
+    const supportedCriteria = criteria.filter((criterion) => isSupportedProductCodeRangeColumnKey(criterion.columnKey));
+    const unsupportedCriteria = criteria.filter((criterion) => !isSupportedProductCodeRangeColumnKey(criterion.columnKey));
+
+    let filteredItems = sourceItems;
+
+    if (supportedCriteria.length) {
+      filteredItems = filteredItems.filter((item) => {
+        return supportedCriteria.every((criterion) => {
+          const sourceText = normalizeText(getProductCodeRangeColumnValue(item, criterion.columnKey));
+          return sourceText.indexOf(criterion.valueNormalized) !== -1;
+        });
+      });
+    }
+
+    if (unsupportedCriteria.length) {
+      const visibleSequences = getVisibleNativeProductSequences(tableWrapper);
+      if (visibleSequences.size) {
+        filteredItems = filteredItems.filter((item) => {
+          return visibleSequences.has(normalizeText(getProductCodeRangeItemSequence(item)));
+        });
+      }
+    }
+
+    return filteredItems;
+  }
+
   function findProductFilterStatusInsertAnchor(toolbarRow, toolbarColumn, statusElement) {
     if (!toolbarRow) return null;
     const children = Array.from(toolbarRow.children || []).filter((child) => child && child !== statusElement);
@@ -3096,6 +3242,8 @@
       case 'preco r$':
       case 'preco venda':
       case 'preco de venda':
+      case 'valor':
+      case 'valor r$':
         return formatProductRangeCurrency(item && item.price);
       case 'custo':
       case 'custo r$':
@@ -3459,8 +3607,12 @@
     const theme = getProductCodeRangeTheme(toolbar || tableWrapper);
     const typography = getProductCodeRangeTypography(tableWrapper);
     syncProductCodeRangeToolbarStatus(toolbar, theme, typography);
-    const nativeGrid = PRODUCT_CODE_RANGE_STATE.items.length
-      ? buildProductCodeRangeGrid(tableWrapper, PRODUCT_CODE_RANGE_STATE.items)
+    const nativeFilterCriteria = getActiveNativeProductFilterCriteria();
+    const displayItems = PRODUCT_CODE_RANGE_STATE.items.length
+      ? filterProductCodeRangeItemsByNativeCriteria(PRODUCT_CODE_RANGE_STATE.items, tableWrapper)
+      : [];
+    const nativeGrid = displayItems.length
+      ? buildProductCodeRangeGrid(tableWrapper, displayItems)
       : null;
 
     const signature = JSON.stringify({
@@ -3470,11 +3622,12 @@
       start: PRODUCT_CODE_RANGE_STATE.startCode,
       end: PRODUCT_CODE_RANGE_STATE.endCode,
       error: PRODUCT_CODE_RANGE_STATE.error,
-      count: PRODUCT_CODE_RANGE_STATE.items.length,
-      first: PRODUCT_CODE_RANGE_STATE.items[0] ? PRODUCT_CODE_RANGE_STATE.items[0].sequence : '',
-      last: PRODUCT_CODE_RANGE_STATE.items[PRODUCT_CODE_RANGE_STATE.items.length - 1]
-        ? PRODUCT_CODE_RANGE_STATE.items[PRODUCT_CODE_RANGE_STATE.items.length - 1].sequence
+      count: displayItems.length,
+      first: displayItems[0] ? displayItems[0].sequence : '',
+      last: displayItems[displayItems.length - 1]
+        ? displayItems[displayItems.length - 1].sequence
         : '',
+      nativeCriteria: nativeFilterCriteria.map((criterion) => criterion.columnKey + ':' + criterion.valueNormalized).join('|'),
       lowStockColor,
       isDark: theme.isDark,
       bodyFontFamily: typography.bodyFontFamily,
@@ -3507,12 +3660,14 @@
       embeddedBodyMarkup = '<div style="margin:8px 0 0;padding:10px 0;font-size:13px;color:' + escapeHtml(theme.errorTextColor) + ';">'
         + escapeHtml(PRODUCT_CODE_RANGE_STATE.error)
         + '</div>';
-    } else if (PRODUCT_CODE_RANGE_STATE.items.length) {
+    } else if (displayItems.length) {
       embeddedBodyMarkup = nativeGrid
         ? '<div data-product-code-range-grid-host></div>'
         : '<div style="margin:8px 0 0;padding:10px 0;font-size:13px;color:' + escapeHtml(theme.mutedColor) + ';">Recarregando a grade filtrada...</div>';
+    } else if (PRODUCT_CODE_RANGE_STATE.items.length && nativeFilterCriteria.length) {
+      embeddedBodyMarkup = '<div style="margin:8px 0 0;padding:10px 0;font-size:13px;color:' + escapeHtml(theme.panelEmptyColor) + ';">Nenhum produto dessa faixa corresponde aos filtros ativos.</div>';
     } else {
-      embeddedBodyMarkup = '<div style="margin:8px 0 0;padding:10px 0;font-size:13px;color:' + escapeHtml(theme.panelEmptyColor) + ';">Nenhum produto foi encontrado nessa faixa de codigos.</div>';
+      embeddedBodyMarkup = '<div style="margin:8px 0 0;padding:10px 0;font-size:13px;color:' + escapeHtml(theme.panelEmptyColor) + ';">Nenhum produto foi encontrado nessa faixa de códigos.</div>';
     }
 
     panel.innerHTML = [
