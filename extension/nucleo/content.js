@@ -44,6 +44,7 @@
   const PRODUCT_CODE_RANGE_PANEL_ID = 'zweb-product-code-range-panel';
   const PRODUCT_CODE_RANGE_FORM_ID = 'zweb-product-code-range-form';
   const PRODUCT_CODE_RANGE_GRID_ATTR = 'data-zweb-product-code-range-grid';
+  const PRODUCT_NATIVE_GRID_HIDDEN_ATTR = 'data-zweb-product-native-grid-hidden-display';
   const PRODUCT_CODE_RANGE_STATUS_ID = 'zweb-product-code-range-status';
   const PRODUCT_CODE_RANGE_MODAL_STYLE_ID = 'zweb-product-code-range-modal-style';
   const PRODUCT_CODE_RANGE_SNACKBAR_ID = 'zweb-product-code-range-snackbar';
@@ -2812,7 +2813,33 @@
   function setNativeProductTableVisible(isVisibleNext) {
     const wrapper = getProductTableWrapper();
     if (!wrapper) return;
-    wrapper.style.display = isVisibleNext ? '' : 'none';
+    const host = wrapper.parentElement;
+    const targets = host
+      ? Array.from(host.children || []).filter((element) => {
+          if (!element || element.id === PRODUCT_CODE_RANGE_PANEL_ID) return false;
+          if (element.tagName === 'THEAD') return false;
+          return true;
+        })
+      : [wrapper];
+
+    targets.forEach((element) => {
+      if (!element || !element.style) return;
+      if (isVisibleNext) {
+        if (element.hasAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR)) {
+          const previousDisplay = element.getAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR) || '';
+          element.style.display = previousDisplay;
+          element.removeAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR);
+        } else {
+          element.style.display = '';
+        }
+        return;
+      }
+
+      if (!element.hasAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR)) {
+        element.setAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR, element.style.display || '');
+      }
+      element.style.display = 'none';
+    });
   }
 
   function closeProductCodeRangeModal(options) {
