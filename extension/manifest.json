@@ -2,10 +2,11 @@
   "manifest_version": 3,
   "name": "Assistente Zweb",
   "version": "1.1",
-  "description": "Bloqueios e automacoes para fluxos administrativos, fiscais e de notas na Zweb.",
+  "description": "Bloqueios e automações para fluxos administrativos, fiscais e de notas na Zweb.",
   "permissions": ["contextMenus", "debugger", "downloads", "offscreen", "scripting", "storage", "tabs"],
   "host_permissions": [
     "https://zweb.com.br/*",
+    "https://api.zweb.com.br/*",
     "https://compufour.s3.amazonaws.com/production/uploads/nfe/*",
     "https://compufour.s3.amazonaws.com/production/uploads/reports/report/*",
     "https://www.fsist.com.br/*",
@@ -15,7 +16,7 @@
   ],
   "action": {
     "default_title": "Assistente Zweb",
-    "default_popup": "popup.html",
+    "default_popup": "ui/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -30,12 +31,19 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "nucleo/background.js"
   },
   "content_scripts": [
     {
       "matches": ["https://zweb.com.br/*"],
-      "js": ["features.js", "note-assistant.js", "fiscal-value-settings.js", "purchase-value-sync.js", "stock-price-simulation.js", "content.js"],
+      "js": [
+        "nucleo/features.js",
+        "setores/notas/note-assistant.js",
+        "setores/fiscal/fiscal-value-settings.js",
+        "setores/fiscal/purchase-value-sync.js",
+        "setores/produtos/stock-price-simulation.js",
+        "nucleo/content.js"
+      ],
       "run_at": "document_idle"
     },
     {
@@ -45,20 +53,20 @@
         "https://www.nfe.fazenda.gov.br/*",
         "https://nfe.fazenda.gov.br/*"
       ],
-      "js": ["features.js", "note-assistant.js"],
+      "js": ["nucleo/features.js", "setores/notas/note-assistant.js"],
       "run_at": "document_idle"
     },
     {
       "matches": [
         "https://compufour.s3.amazonaws.com/production/uploads/reports/report/*"
       ],
-      "js": ["features.js", "report-adjustments.js"],
+      "js": ["nucleo/features.js", "setores/fiscal/report-adjustments.js"],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["page-bridge.js"],
+      "resources": ["nucleo/page-bridge.js"],
       "matches": ["https://zweb.com.br/*"]
     }
   ]

@@ -38,3 +38,4 @@ dist/
 tools/playwright/*.jpg
 tools/playwright/*.png
 extension.rar
+credentials-zweb.txt

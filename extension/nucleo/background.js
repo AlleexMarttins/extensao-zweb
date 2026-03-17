@@ -3,8 +3,13 @@ try {
 } catch (error) {}
 
 const XML_DOWNLOAD_TTL_MS = 15000;
+const PDF_DOWNLOAD_TTL_MS = 20000;
 const NFE_ROUTE_FRAGMENT = '#/fiscal/nfe';
 const XML_DOWNLOAD_SOURCE_PREFIXES = [
+  'https://compufour.s3.amazonaws.com/production/uploads/nfe/'
+];
+const PDF_DOWNLOAD_SOURCE_PREFIXES = [
+  'https://compufour.s3.amazonaws.com/production/uploads/reports/report/',
   'https://compufour.s3.amazonaws.com/production/uploads/nfe/'
 ];
 const NOTE_ASSISTANT_CONTEXT_MENU_ID = 'note-assistant-retry';
@@ -14,20 +19,24 @@ const NOTE_ASSISTANT_FSIST_URL = 'https://www.fsist.com.br/';
 const NOTE_ASSISTANT_NFE_URL_PATTERN = /^https?:\/\/(www\.)?nfe\.fazenda\.gov\.br\//i;
 const COMMISSION_REPORT_URL_PATTERN = /^https:\/\/compufour\.s3\.amazonaws\.com\/production\/uploads\/reports\/report\/.+\.html(?:[?#].*)?$/i;
 const DEBUGGER_PROTOCOL_VERSION = '1.3';
-const OFFSCREEN_DOWNLOAD_DOCUMENT_PATH = 'offscreen-download.html';
+const OFFSCREEN_DOWNLOAD_DOCUMENT_PATH = 'nucleo/offscreen-download.html';
 const OFFSCREEN_DOWNLOAD_DOCUMENT_URL = chrome.runtime.getURL(OFFSCREEN_DOWNLOAD_DOCUMENT_PATH);
 const FEATURE_DEFAULTS = self.ZWEB_FEATURES && typeof self.ZWEB_FEATURES.getDefaults === 'function'
   ? self.ZWEB_FEATURES.getDefaults()
   : {
       xmlDownloadEnabled: true,
+      nfeBatchDownloadEnabled: true,
       noteAssistantEnabled: true,
       stockPriceSimulationEnabled: true,
       commissionReturnsEnabled: true,
     };
 const pendingXmlDownloads = new Map();
 const recentDirectXmlDownloads = new Map();
+const pendingPdfDownloads = new Map();
+const recentDirectPdfDownloads = new Map();
 const pendingAdjustedReportDownloads = new Map();
 let XML_DOWNLOAD_ENABLED = FEATURE_DEFAULTS.xmlDownloadEnabled !== false;
+let NFE_BATCH_DOWNLOAD_ENABLED = FEATURE_DEFAULTS.nfeBatchDownloadEnabled !== false;
 let NOTE_ASSISTANT_ENABLED = FEATURE_DEFAULTS.noteAssistantEnabled !== false;
 let STOCK_PRICE_SIMULATION_ENABLED = FEATURE_DEFAULTS.stockPriceSimulationEnabled !== false;
 let COMMISSION_RETURNS_ENABLED = FEATURE_DEFAULTS.commissionReturnsEnabled !== false;
@@ -66,8 +75,11 @@ function getErrorMessage(error) {
 
 function cleanupExpiredXmlDownloads() {
   const cutoff = now() - XML_DOWNLOAD_TTL_MS;
+  const pdfCutoff = now() - PDF_DOWNLOAD_TTL_MS;
   for (const [key, pending] of pendingXmlDownloads.entries()) {
     if (!pending || pending.armedAt < cutoff || pending.handled) {
+      clearPendingXmlFallbackTimer(pending);
+      clearPendingFocusTimers(pending);
       pendingXmlDownloads.delete(key);
     }
   }
@@ -78,11 +90,37 @@ function cleanupExpiredXmlDownloads() {
     }
   }
 
+  for (const [key, pending] of pendingPdfDownloads.entries()) {
+    if (!pending || pending.armedAt < pdfCutoff || pending.handled) {
+      clearPendingPdfFallbackTimer(pending);
+      clearPendingFocusTimers(pending);
+      pendingPdfDownloads.delete(key);
+    }
+  }
+
+  for (const [key, createdAt] of recentDirectPdfDownloads.entries()) {
+    if (!createdAt || createdAt < pdfCutoff) {
+      recentDirectPdfDownloads.delete(key);
+    }
+  }
+
   for (const [key, pending] of pendingAdjustedReportDownloads.entries()) {
     if (!pending || pending.createdAt < cutoff) {
       pendingAdjustedReportDownloads.delete(key);
     }
   }
+}
+
+function isGenericDownloadName(value, extension) {
+  const normalized = sanitizeFileName(String(value || '').replace(new RegExp('\\.' + extension + '$', 'i'), ''))
+    .toLowerCase();
+  return !normalized
+    || normalized === 'download'
+    || normalized === 'file'
+    || normalized === 'arquivo'
+    || normalized === 'documento'
+    || normalized === extension
+    || normalized === 'blob';
 }
 
 function appendLog(message, level) {
@@ -123,12 +161,17 @@ function syncFeatureFlags() {
         : Object.assign({}, FEATURE_DEFAULTS, stored || {});
 
       XML_DOWNLOAD_ENABLED = state.xmlDownloadEnabled !== false;
+      NFE_BATCH_DOWNLOAD_ENABLED = state.nfeBatchDownloadEnabled !== false;
       NOTE_ASSISTANT_ENABLED = state.noteAssistantEnabled !== false;
       STOCK_PRICE_SIMULATION_ENABLED = state.stockPriceSimulationEnabled !== false;
       COMMISSION_RETURNS_ENABLED = state.commissionReturnsEnabled !== false;
       if (!XML_DOWNLOAD_ENABLED) {
         pendingXmlDownloads.clear();
         recentDirectXmlDownloads.clear();
+      }
+      if (!NFE_BATCH_DOWNLOAD_ENABLED) {
+        pendingPdfDownloads.clear();
+        recentDirectPdfDownloads.clear();
       }
 
     });
@@ -146,9 +189,6 @@ function sanitizeFileName(value) {
 }
 
 function inferXmlFileName(url, fileNameHint) {
-  const hinted = sanitizeFileName(String(fileNameHint || '').replace(/\.xml$/i, ''));
-  if (hinted) return hinted + '.xml';
-
   try {
     const parsed = new URL(url);
     const pathPart = parsed.pathname.split('/').filter(Boolean).pop() || '';
@@ -158,10 +198,29 @@ function inferXmlFileName(url, fileNameHint) {
     }
   } catch (error) {}
 
+  const hinted = sanitizeFileName(String(fileNameHint || '').replace(/\.xml$/i, ''));
+  if (hinted && !isGenericDownloadName(hinted, 'xml')) return hinted + '.xml';
+
   return 'nfe-xml-' + now() + '.xml';
 }
 
-function armXmlDownload(sourceTabId, sourceWindowId, requestId) {
+function inferPdfFileName(url, fileNameHint) {
+  const hinted = sanitizeFileName(String(fileNameHint || '').replace(/\.pdf$/i, ''));
+  if (hinted && !isGenericDownloadName(hinted, 'pdf')) return hinted + '.pdf';
+
+  try {
+    const parsed = new URL(url);
+    const pathPart = parsed.pathname.split('/').filter(Boolean).pop() || '';
+    if (/\.pdf$/i.test(pathPart)) {
+      const sanitized = sanitizeFileName(pathPart);
+      if (sanitized) return sanitized;
+    }
+  } catch (error) {}
+
+  return 'danfe-' + now() + '.pdf';
+}
+
+function armXmlDownload(sourceTabId, sourceWindowId, requestId, fileNameHint) {
   if (!XML_DOWNLOAD_ENABLED) return null;
   cleanupExpiredXmlDownloads();
 
@@ -174,6 +233,7 @@ function armXmlDownload(sourceTabId, sourceWindowId, requestId) {
     armedAt,
     candidateTabId: null,
     handled: false,
+    fileNameHint: fileNameHint || ''
   });
 
   return key;
@@ -202,6 +262,76 @@ function getPendingXmlDownloadForTab(tabId, tab) {
   return null;
 }
 
+function armPdfDownload(sourceTabId, sourceWindowId, requestId, fileNameHint) {
+  if (!NFE_BATCH_DOWNLOAD_ENABLED) return null;
+  cleanupExpiredXmlDownloads();
+
+  const armedAt = now();
+  const key = requestId || ('pdf:' + sourceTabId + ':' + armedAt);
+  pendingPdfDownloads.set(key, {
+    requestId: key,
+    sourceTabId,
+    sourceWindowId,
+    armedAt,
+    candidateTabId: null,
+    handled: false,
+    fileNameHint: fileNameHint || ''
+  });
+
+  return key;
+}
+
+function getPendingPdfDownloadByRequestId(requestId) {
+  cleanupExpiredXmlDownloads();
+  if (!requestId) return null;
+
+  const pending = pendingPdfDownloads.get(requestId);
+  if (!pending || pending.handled) return null;
+  return pending;
+}
+
+function getPendingPdfDownloadForTab(tabId, tab) {
+  cleanupExpiredXmlDownloads();
+
+  for (const pending of pendingPdfDownloads.values()) {
+    if (!pending || pending.handled) continue;
+
+    if (tabId === pending.sourceTabId) return pending;
+    if (pending.candidateTabId && tabId === pending.candidateTabId) return pending;
+    if (tab && isNumber(tab.openerTabId) && tab.openerTabId === pending.sourceTabId) return pending;
+  }
+
+  return null;
+}
+
+function getPendingPdfDownloadForKnownUrl(url, tab) {
+  cleanupExpiredXmlDownloads();
+  if (!isKnownPdfSourceUrl(url)) return null;
+
+  let latest = null;
+  for (const pending of pendingPdfDownloads.values()) {
+    if (!pending || pending.handled) continue;
+    if (
+      tab
+      && isNumber(tab.windowId)
+      && isNumber(pending.sourceWindowId)
+      && tab.windowId !== pending.sourceWindowId
+    ) {
+      continue;
+    }
+
+    if (!latest || pending.armedAt > latest.armedAt) {
+      latest = pending;
+    }
+  }
+
+  if (latest && tab && isNumber(tab.id) && !latest.candidateTabId) {
+    latest.candidateTabId = tab.id;
+  }
+
+  return latest;
+}
+
 function isEligibleXmlUrl(url) {
   if (!url) return false;
   if (/^data:(?:text|application)\/xml/i.test(url)) return true;
@@ -227,6 +357,27 @@ function isEligibleXmlUrl(url) {
 function isKnownXmlSourceUrl(url) {
   const value = String(url || '').toLowerCase();
   return XML_DOWNLOAD_SOURCE_PREFIXES.some((prefix) => value.indexOf(prefix) === 0);
+}
+
+function isKnownPdfSourceUrl(url) {
+  const value = String(url || '').toLowerCase();
+  return PDF_DOWNLOAD_SOURCE_PREFIXES.some((prefix) => value.indexOf(prefix) === 0);
+}
+
+function isEligiblePdfUrl(url) {
+  if (!url) return false;
+  if (/^data:application\/pdf/i.test(url)) return true;
+  if (/^blob:/i.test(url)) return true;
+  if (isKnownPdfSourceUrl(url)) return true;
+
+  try {
+    const parsed = new URL(url);
+    const protocol = String(parsed.protocol || '').toLowerCase();
+    if (protocol !== 'http:' && protocol !== 'https:') return false;
+    return /\.pdf(?:$|[?#])/i.test(String(parsed.pathname || ''));
+  } catch (error) {
+    return false;
+  }
 }
 
 function getPendingXmlDownloadForKnownUrl(url, tab) {
@@ -291,12 +442,128 @@ function maybeTriggerXmlDownloadFromOpener(url, tab) {
   });
 }
 
+function maybeTriggerPdfDownloadFromOpener(url, tab) {
+  if (!NFE_BATCH_DOWNLOAD_ENABLED) return;
+  if (!isEligiblePdfUrl(url)) return;
+  if (!tab || !isNumber(tab.openerTabId)) return;
+
+  chrome.tabs.get(tab.openerTabId, (openerTab) => {
+    const error = chrome.runtime.lastError;
+    if (error || !openerTab || !isTargetNfeOpenerUrl(openerTab.url || '')) return;
+
+    const key = String((tab && tab.id) || url || now());
+    if (recentDirectPdfDownloads.has(key)) return;
+    recentDirectPdfDownloads.set(key, now());
+
+    runPdfDownload(url, '', {
+      handled: false,
+      fileNameHint: ''
+    });
+  });
+}
+
 function buildXmlDownloadOptions(url, fileNameHint) {
   return {
     url,
     filename: inferXmlFileName(url, fileNameHint),
     saveAs: false,
   };
+}
+
+function buildPdfDownloadOptions(url, fileNameHint) {
+  return {
+    url,
+    filename: inferPdfFileName(url, fileNameHint),
+    saveAs: false,
+  };
+}
+
+function clearPendingXmlFallbackTimer(pending) {
+  if (!pending || !pending.fallbackTimer) return;
+  clearTimeout(pending.fallbackTimer);
+  pending.fallbackTimer = null;
+}
+
+function clearPendingPdfFallbackTimer(pending) {
+  if (!pending || !pending.fallbackTimer) return;
+  clearTimeout(pending.fallbackTimer);
+  pending.fallbackTimer = null;
+}
+
+function clearPendingFocusTimers(pending) {
+  if (!pending || !Array.isArray(pending.focusTimers)) return;
+  pending.focusTimers.forEach((timerId) => clearTimeout(timerId));
+  pending.focusTimers = [];
+}
+
+function keepPendingSourceTabActive(pending) {
+  if (!pending || !isNumber(pending.sourceTabId)) return;
+
+  try {
+    chrome.tabs.update(pending.sourceTabId, { active: true }, () => {});
+  } catch (error) {}
+
+  if (isNumber(pending.sourceWindowId)) {
+    try {
+      chrome.windows.update(pending.sourceWindowId, { focused: true }, () => {});
+    } catch (error) {}
+  }
+}
+
+function reinforcePendingSourceTabActive(pending) {
+  if (!pending) return;
+  clearPendingFocusTimers(pending);
+  keepPendingSourceTabActive(pending);
+
+  pending.focusTimers = [80, 220, 480, 900].map((delayMs) => (
+    setTimeout(() => keepPendingSourceTabActive(pending), delayMs)
+  ));
+}
+
+function closePendingCandidateTab(pending) {
+  if (!pending || !isNumber(pending.candidateTabId)) return;
+  if (isNumber(pending.sourceTabId) && pending.candidateTabId === pending.sourceTabId) return;
+
+  const tabId = pending.candidateTabId;
+  pending.candidateTabId = null;
+  clearPendingFocusTimers(pending);
+
+  try {
+    chrome.tabs.remove(tabId, () => {});
+  } catch (error) {}
+}
+
+function keepPendingDownloadInBackground(pending, tab) {
+  if (!pending || !tab || !isNumber(tab.id)) return;
+  pending.candidateTabId = tab.id;
+  reinforcePendingSourceTabActive(pending);
+}
+
+function schedulePendingCandidateClose(pending, delayMs) {
+  if (!pending) return;
+  if (pending.closeTimer) {
+    clearTimeout(pending.closeTimer);
+  }
+  pending.closeTimer = setTimeout(() => {
+    pending.closeTimer = null;
+    reinforcePendingSourceTabActive(pending);
+    closePendingCandidateTab(pending);
+  }, delayMs || 1200);
+}
+
+function scheduleTabClose(tabId, pending, delayMs) {
+  if (!isNumber(tabId)) return;
+  if (pending) {
+    pending.candidateTabId = tabId;
+  }
+  setTimeout(() => {
+    if (pending) {
+      reinforcePendingSourceTabActive(pending);
+    }
+    try {
+      chrome.tabs.remove(tabId, () => {});
+    } catch (error) {}
+  }, delayMs || 1200);
 }
 
 function isCommissionReportUrl(url) {
@@ -489,6 +756,7 @@ function runDownload(url, fileNameHint, pending) {
   if (!url || !pending || pending.handled) return;
   pending.handled = true;
   pending.fetching = false;
+  clearPendingXmlFallbackTimer(pending);
 
   chrome.downloads.download(buildXmlDownloadOptions(url, fileNameHint), () => {
     const error = chrome.runtime.lastError;
@@ -498,8 +766,52 @@ function runDownload(url, fileNameHint, pending) {
       return;
     }
 
+    keepPendingSourceTabActive(pending);
+    closePendingCandidateTab(pending);
     cleanupExpiredXmlDownloads();
   });
+}
+
+function runPdfDownload(url, fileNameHint, pending) {
+  if (!url || !pending || pending.handled) return;
+  pending.handled = true;
+  clearPendingPdfFallbackTimer(pending);
+
+  chrome.downloads.download(buildPdfDownloadOptions(url, fileNameHint || pending.fileNameHint), () => {
+    const error = chrome.runtime.lastError;
+    if (error) {
+      pending.handled = false;
+      console.warn('pdf download failed', error.message);
+      return;
+    }
+
+    keepPendingSourceTabActive(pending);
+    closePendingCandidateTab(pending);
+    cleanupExpiredXmlDownloads();
+  });
+}
+
+function triggerPdfDownload(url, pending, fileNameHint) {
+  if (!NFE_BATCH_DOWNLOAD_ENABLED) return;
+  if (!url || !pending || pending.handled) return;
+  if (!isEligiblePdfUrl(url)) return;
+  const resolvedHint = fileNameHint || pending.fileNameHint || '';
+
+  if (isKnownPdfSourceUrl(url)) {
+    if (pending.fetching || pending.handled) return;
+    pending.fetching = true;
+    clearPendingPdfFallbackTimer(pending);
+    pending.nativeCreated = false;
+    pending.fallbackTimer = setTimeout(() => {
+      pending.fallbackTimer = null;
+      if (pending.handled || pending.nativeCreated) return;
+      pending.fetching = false;
+      runPdfDownload(url, resolvedHint, pending);
+    }, 900);
+    return;
+  }
+
+  runPdfDownload(url, resolvedHint, pending);
 }
 
 async function fetchXmlContent(url) {
@@ -527,25 +839,32 @@ async function fetchXmlContent(url) {
 function triggerXmlDownload(url, pending, fileNameHint) {
   if (!XML_DOWNLOAD_ENABLED) return;
   if (!isEligibleXmlUrl(url)) return;
+  const resolvedHint = fileNameHint || (pending && pending.fileNameHint) || '';
 
   if (isKnownXmlSourceUrl(url)) {
     if (pending.fetching || pending.handled) return;
     pending.fetching = true;
+    clearPendingXmlFallbackTimer(pending);
+    pending.nativeCreated = false;
+    pending.fallbackTimer = setTimeout(() => {
+      pending.fallbackTimer = null;
+      if (pending.handled || pending.nativeCreated) return;
 
-    fetchXmlContent(url)
-      .then((content) => {
-        if (!content || pending.handled) return;
-        triggerXmlContentDownload(content, pending, inferXmlFileName(url, fileNameHint));
-      })
-      .catch(() => {
-        if (pending.handled) return;
-        pending.fetching = false;
-        runDownload(url, fileNameHint, pending);
-      });
+      fetchXmlContent(url)
+        .then((content) => {
+          if (!content || pending.handled || pending.nativeCreated) return;
+          triggerXmlContentDownload(content, pending, inferXmlFileName(url, resolvedHint));
+        })
+        .catch(() => {
+          if (pending.handled || pending.nativeCreated) return;
+          pending.fetching = false;
+          runDownload(url, resolvedHint, pending);
+        });
+    }, 900);
     return;
   }
 
-  runDownload(url, fileNameHint, pending);
+  runDownload(url, resolvedHint, pending);
 }
 
 function triggerXmlContentDownload(content, pending, fileNameHint) {
@@ -674,7 +993,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     const requestId = typeof message.requestId === 'string' && message.requestId ? message.requestId : null;
-    const armId = armXmlDownload(sourceTabId, sourceWindowId, requestId);
+    const armId = armXmlDownload(sourceTabId, sourceWindowId, requestId, message.fileNameHint || '');
+    sendResponse({ ok: true, armId });
+    return;
+  }
+
+  if (message.type === 'pdf-download-arm') {
+    if (!NFE_BATCH_DOWNLOAD_ENABLED) {
+      sendResponse({ ok: false, reason: 'disabled' });
+      return;
+    }
+
+    const sourceTabId = isNumber(message.sourceTabId) ? message.sourceTabId : sender.tab && sender.tab.id;
+    const sourceWindowId = isNumber(message.sourceWindowId)
+      ? message.sourceWindowId
+      : sender.tab && sender.tab.windowId;
+
+    if (!isNumber(sourceTabId)) {
+      sendResponse({ ok: false, reason: 'missing_source_tab' });
+      return;
+    }
+
+    const requestId = typeof message.requestId === 'string' && message.requestId ? message.requestId : null;
+    const armId = armPdfDownload(sourceTabId, sourceWindowId, requestId, message.fileNameHint || '');
     sendResponse({ ok: true, armId });
     return;
   }
@@ -776,7 +1117,7 @@ chrome.tabs.onCreated.addListener((tab) => {
 
   const pending = getPendingXmlDownloadForTab(tab.id, tab);
   if (pending) {
-    pending.candidateTabId = tab.id;
+    keepPendingDownloadInBackground(pending, tab);
     return;
   }
 
@@ -784,7 +1125,27 @@ chrome.tabs.onCreated.addListener((tab) => {
   for (const entry of pendingXmlDownloads.values()) {
     if (!entry || entry.handled) continue;
     if (isNumber(tab.openerTabId) && tab.openerTabId === entry.sourceTabId) {
-      entry.candidateTabId = tab.id;
+      keepPendingDownloadInBackground(entry, tab);
+      break;
+    }
+  }
+});
+
+chrome.tabs.onCreated.addListener((tab) => {
+  if (!NFE_BATCH_DOWNLOAD_ENABLED) return;
+  if (!tab || !isNumber(tab.id)) return;
+
+  const pending = getPendingPdfDownloadForTab(tab.id, tab);
+  if (pending) {
+    keepPendingDownloadInBackground(pending, tab);
+    return;
+  }
+
+  cleanupExpiredXmlDownloads();
+  for (const entry of pendingPdfDownloads.values()) {
+    if (!entry || entry.handled) continue;
+    if (isNumber(tab.openerTabId) && tab.openerTabId === entry.sourceTabId) {
+      keepPendingDownloadInBackground(entry, tab);
       break;
     }
   }
@@ -804,6 +1165,31 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
   if (!isEligibleXmlUrl(url)) return;
   triggerXmlDownload(url, pending);
+  if (isKnownXmlSourceUrl(url)) {
+    if (!pending || tabId !== pending.sourceTabId) {
+      scheduleTabClose(tabId, pending, 1400);
+    }
+    schedulePendingCandidateClose(pending, 1400);
+  }
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (!NFE_BATCH_DOWNLOAD_ENABLED) return;
+  const url = changeInfo.url || (tab && tab.url) || '';
+  const pending = getPendingPdfDownloadForTab(tabId, tab) || getPendingPdfDownloadForKnownUrl(url, tab);
+  const ready = /^data:|^blob:/i.test(url) || changeInfo.status === 'complete' || (tab && tab.status === 'complete');
+  if (!ready) return;
+
+  if (!pending) {
+    maybeTriggerPdfDownloadFromOpener(url, tab);
+    return;
+  }
+
+  if (!isEligiblePdfUrl(url)) return;
+  triggerPdfDownload(url, pending, pending.fileNameHint);
+  if (isKnownPdfSourceUrl(url) && (!pending || tabId !== pending.sourceTabId)) {
+    scheduleTabClose(tabId, pending, 1400);
+  }
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -818,6 +1204,30 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 chrome.downloads.onCreated.addListener((item) => {
+  if (XML_DOWNLOAD_ENABLED && item && item.url && isKnownXmlSourceUrl(item.url)) {
+    const pending = getPendingXmlDownloadForKnownUrl(item.url, null);
+    if (pending && !pending.handled) {
+      pending.nativeCreated = true;
+      pending.handled = true;
+      pending.fetching = false;
+      clearPendingXmlFallbackTimer(pending);
+      keepPendingSourceTabActive(pending);
+      closePendingCandidateTab(pending);
+    }
+  }
+
+  if (NFE_BATCH_DOWNLOAD_ENABLED && item && item.url && isKnownPdfSourceUrl(item.url)) {
+    const pending = getPendingPdfDownloadForKnownUrl(item.url, null);
+    if (pending && !pending.handled) {
+      pending.nativeCreated = true;
+      pending.handled = true;
+      pending.fetching = false;
+      clearPendingPdfFallbackTimer(pending);
+      keepPendingSourceTabActive(pending);
+      closePendingCandidateTab(pending);
+    }
+  }
+
   if (!NOTE_ASSISTANT_ENABLED || !item || !item.url) return;
   if (!NOTE_ASSISTANT_NFE_URL_PATTERN.test(item.url)) return;
 
@@ -843,13 +1253,38 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
   if (!item || !item.url) return;
 
   const pending = pendingAdjustedReportDownloads.get(item.url);
-  if (!pending || !pending.filename) return;
+  if (pending && pending.filename) {
+    pendingAdjustedReportDownloads.delete(item.url);
+    suggest({
+      filename: pending.filename,
+      conflictAction: 'uniquify',
+    });
+    return;
+  }
 
-  pendingAdjustedReportDownloads.delete(item.url);
-  suggest({
-    filename: pending.filename,
-    conflictAction: 'uniquify',
-  });
+  const downloadUrl = String(item.finalUrl || item.url || '');
+  const currentFileName = String(item.filename || '').split(/[\\/]/).pop() || '';
+
+  if (XML_DOWNLOAD_ENABLED && isEligibleXmlUrl(downloadUrl)) {
+    const filename = inferXmlFileName(downloadUrl, '');
+    if (filename && (isGenericDownloadName(currentFileName, 'xml') || isKnownXmlSourceUrl(downloadUrl))) {
+      suggest({
+        filename,
+        conflictAction: 'uniquify',
+      });
+      return;
+    }
+  }
+
+  if (NFE_BATCH_DOWNLOAD_ENABLED && isEligiblePdfUrl(downloadUrl)) {
+    const filename = inferPdfFileName(downloadUrl, '');
+    if (filename && (isGenericDownloadName(currentFileName, 'pdf') || isKnownPdfSourceUrl(downloadUrl))) {
+      suggest({
+        filename,
+        conflictAction: 'uniquify',
+      });
+    }
+  }
 });
 
 try {
@@ -858,6 +1293,10 @@ try {
 
     if (changes.xmlDownloadEnabled) {
       XML_DOWNLOAD_ENABLED = changes.xmlDownloadEnabled.newValue !== false;
+    }
+
+    if (changes.nfeBatchDownloadEnabled) {
+      NFE_BATCH_DOWNLOAD_ENABLED = changes.nfeBatchDownloadEnabled.newValue !== false;
     }
 
     if (changes.noteAssistantEnabled) {
@@ -875,6 +1314,11 @@ try {
     if (!XML_DOWNLOAD_ENABLED) {
       pendingXmlDownloads.clear();
       recentDirectXmlDownloads.clear();
+    }
+
+    if (!NFE_BATCH_DOWNLOAD_ENABLED) {
+      pendingPdfDownloads.clear();
+      recentDirectPdfDownloads.clear();
     }
 
     if (!NOTE_ASSISTANT_ENABLED) {

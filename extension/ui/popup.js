@@ -155,13 +155,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (openLogsBtn) {
     openLogsBtn.addEventListener('click', () => {
-      chrome.tabs.create({ url: chrome.runtime.getURL('logs.html') });
+      chrome.tabs.create({ url: chrome.runtime.getURL('ui/logs.html') });
     });
   }
 
   if (openVisualSettingsBtn) {
     openVisualSettingsBtn.addEventListener('click', () => {
-      chrome.tabs.create({ url: chrome.runtime.getURL('visual-settings.html') });
+      chrome.tabs.create({ url: chrome.runtime.getURL('ui/visual-settings.html') });
     });
   }
 });

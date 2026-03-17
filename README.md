@@ -1,51 +1,112 @@
 # Admin Zweb
 
-Repositório da extensão `Assistente Zweb` para automações administrativas e fiscais na Zweb.
+Extensão `Assistente Zweb` para automações administrativas, fiscais, de produtos e de documentos dentro da Zweb.
 
-## O que a extensão faz
+## Visão geral
 
-- bloqueia ações sensíveis da Zweb por meio da feature `Proteção`
-- filtra o modal `Filtrar` com base nas colunas ativas
-- adiciona automações no fluxo de DAV
-- baixa XML da NF-e automaticamente
-- personaliza o menu `Ações` da NF-e
-- adiciona o `Assistente de Nota` para fluxo com FSIST e Portal NF-e
-- cria a área `Cálculo de Valores` em `Fiscal > Configurações > Notas fiscais`
-- calcula valores sugeridos no popup de importação de compras
-- permite simular preço do produto a partir do lápis do cadastro no popup da compra
+O projeto concentra ajustes de fluxo e interface que a Zweb não entrega nativamente, com foco em:
 
-## Menu da extensão
+- proteção de ações sensíveis
+- produtividade em produtos, DAV, compras e NF-e
+- apoio operacional em relatórios e documentos
+- QA local com Playwright em sessão logada
 
-O popup da extensão organiza as automações por grupo e permite ativar ou desativar cada item individualmente.
+## Funcionalidades atuais
 
-Grupos atuais:
+### Geral
 
-- `Geral`: Proteção
-- `Produtos`: Filtro, Botão Novo
-- `DAV`: Busca com #, Lote
-- `Fiscal`: Baixar XML, Cálculo de Valores, Cálculo em Compras, Simular Preço, Assistente de Nota, Personalizar Ações
+- `Proteção`: bloqueia botões, campos e ações sensíveis da Zweb.
+- `Personalização Visual`: aplica fonte, tamanho e cores personalizadas em toda a Zweb, exceto no login.
 
-## Instalação
+### Produtos
+
+- `Filtro`: no modal `Filtrar`, mostra apenas colunas ativas.
+- `Filtro Composto`: permite usar múltiplos termos no mesmo filtro, como `LAMP 12V`.
+- `Filtro de Códigos`: adiciona um filtro por faixa de códigos na lista de produtos.
+- `Fornecedor Preferencial`: adiciona a opção de replicar fornecedor preferencial em `Ações > Replicar alterações`.
+- `Estoque Mínimo`: destaca em vermelho produtos cuja quantidade esteja menor ou igual à quantidade mínima.
+
+### DAV
+
+- `Lote`: adiciona o botão `Lote` para inserir vários itens.
+- `Busca com #`: normaliza a busca por código no DAV.
+- quantidade padrão com substituição inteligente do `1` inicial
+- bloqueio de casas decimais indevidas na quantidade do DAV
+
+### Fiscal
+
+- `Busca com #`: também funciona em `Fiscal > NF-e > Itens`.
+- `Baixar XML`: baixa automaticamente o XML gerado na NF-e.
+- `Downloads em Lote`: adiciona ações para baixar XML e DANFE em lote na tela de NF-e.
+- `Personalizar Ações`: filtra opções do menu `Ações` da NF-e.
+- `Cálculo de Valores`: cria a área de parâmetros em `Fiscal > Configurações > Notas fiscais`.
+- `Cálculo em Compras`: aplica os parâmetros no popup de importação de XML em compras.
+- `Simular Preço`: usa o lápis do produto no popup de importação para preencher o preço sem salvar.
+- `Assistente de Nota`: detecta chave de acesso na Zweb e continua o fluxo no FSIST e no Portal NF-e.
+
+### Documentos
+
+- `Ajustar Comissões`: usa o histórico de devoluções da NF-e para inverter valores no relatório HTML de comissões.
+- exportação do relatório ajustado para PDF
+
+## Como instalar
 
 1. Abra `chrome://extensions/` ou `edge://extensions/`.
 2. Ative `Modo do desenvolvedor`.
 3. Clique em `Carregar sem compactação`.
-4. Selecione a pasta [extension](/c:/Users/vendas/Desktop/zweb_html/extension).
+4. Selecione a pasta `extension/`.
 
-## Escopo da extensão
+## Como usar
+
+1. Abra a Zweb normalmente.
+2. Clique no popup da extensão `Assistente Zweb`.
+3. Ative ou desative as automações por grupo.
+4. Recarregue a aba quando a própria feature pedir isso.
+
+### Fluxos principais
+
+- `Produtos > Códigos`: filtra por faixa de códigos sem depender do filtro nativo.
+- `Fiscal > NF-e`: usa `Baixar XML`, `Baixar DANFE` e `Personalizar Ações`.
+- `Fiscal > Configurações > Notas fiscais`: gerencia os parâmetros de `Cálculo de Valores`.
+- `Fiscal > Compras`: usa o cálculo no popup de importação do XML.
+- `Documentos > Relatórios > Comissões`: gere em HTML para aplicar o ajuste de devoluções e, depois, exporte o PDF ajustado.
+
+## Menu da extensão
+
+Os grupos atuais do popup são:
+
+- `Geral`
+- `Produtos`
+- `DAV`
+- `Fiscal`
+- `Documentos`
+
+Cada feature tem toggle próprio, com persistência em `chrome.storage.local`.
+
+## Permissões e escopo
 
 Hosts usados atualmente:
 
 - `https://zweb.com.br/*`
+- `https://api.zweb.com.br/*`
 - `https://compufour.s3.amazonaws.com/production/uploads/nfe/*`
+- `https://compufour.s3.amazonaws.com/production/uploads/reports/report/*`
 - `https://www.fsist.com.br/*`
 - `https://fsist.com.br/*`
 - `https://www.nfe.fazenda.gov.br/*`
 - `https://nfe.fazenda.gov.br/*`
 
-## Ferramentas locais
+Permissões principais:
 
-O projeto inclui suporte a Playwright para QA manual e validação em sessão logada.
+- `storage`
+- `tabs`
+- `downloads`
+- `debugger`
+- `offscreen`
+- `contextMenus`
+- `scripting`
+
+## QA local com Playwright
 
 Comandos principais:
 
@@ -56,20 +117,44 @@ npm run playwright:qa:live
 npm run playwright:session:stop
 ```
 
-## Estrutura
+Uso recomendado:
+
+1. Rode `npm run playwright:verify` para confirmar que o Playwright está disponível.
+2. Rode `npm run playwright:session:start` para abrir o Chromium persistente com a extensão.
+3. Faça login na Zweb.
+4. Execute QA manual ou use os scripts auxiliares.
+5. Finalize com `npm run playwright:session:stop`.
+
+## Estrutura do projeto
 
 ```text
 extension/
-  background.js
-  content.js
-  features.js
-  fiscal-value-settings.js
-  note-assistant.js
-  page-bridge.js
-  popup.html
-  popup.js
-  purchase-value-sync.js
-  stock-price-simulation.js
+  manifest.json
+  icons/
+  nucleo/
+    background.js
+    content.js
+    features.js
+    offscreen-download.html
+    offscreen-download.js
+    page-bridge.js
+  setores/
+    fiscal/
+      fiscal-value-settings.js
+      purchase-value-sync.js
+      report-adjustments.js
+    notas/
+      note-assistant.js
+    produtos/
+      stock-price-simulation.js
+  ui/
+    logs.css
+    logs.html
+    logs.js
+    popup.html
+    popup.js
+    visual-settings.html
+    visual-settings.js
 
 tools/playwright/
   README.md
@@ -80,5 +165,6 @@ tools/playwright/
 
 ## Observações
 
-- Artefatos locais de Playwright e screenshots de QA ficam fora do git por `.gitignore`.
+- Artefatos locais de Playwright, screenshots e credenciais auxiliares ficam fora do Git por `.gitignore`.
 - O nome visível da extensão no navegador continua `Assistente Zweb`.
+- O runtime principal da extensão está em `extension/`.

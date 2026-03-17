@@ -46,6 +46,59 @@
       .replace(/[\u0300-\u036f]/g, '');
   }
 
+  function parseRgbColor(value) {
+    const match = String(value || '').match(/rgba?\(([^)]+)\)/i);
+    if (!match) return null;
+
+    const parts = match[1].split(',').map((part) => Number(String(part).trim()));
+    if (parts.length < 3 || parts.slice(0, 3).some((part) => !Number.isFinite(part))) {
+      return null;
+    }
+
+    return {
+      r: parts[0],
+      g: parts[1],
+      b: parts[2],
+      a: Number.isFinite(parts[3]) ? parts[3] : 1
+    };
+  }
+
+  function getSurfaceColor(element) {
+    let current = element;
+    while (current && current !== document.documentElement) {
+      const color = parseRgbColor(window.getComputedStyle(current).backgroundColor);
+      if (color && color.a > 0) return color;
+      current = current.parentElement;
+    }
+
+    const rootColor = parseRgbColor(window.getComputedStyle(document.body || document.documentElement).backgroundColor);
+    return rootColor || { r: 255, g: 255, b: 255, a: 1 };
+  }
+
+  function isDarkSurface(element) {
+    const color = getSurfaceColor(element);
+    const luminance = (color.r * 0.299) + (color.g * 0.587) + (color.b * 0.114);
+    return luminance < 160;
+  }
+
+  function applyBannerTheme(banner, scope) {
+    if (!banner) return;
+
+    const darkSurface = isDarkSurface(scope || banner.parentElement || document.body);
+    if (darkSurface) {
+      banner.style.borderColor = 'rgba(125, 185, 255, 0.26)';
+      banner.style.background = 'rgba(26, 54, 93, 0.88)';
+      banner.style.color = '#edf5ff';
+      banner.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.24)';
+      return;
+    }
+
+    banner.style.borderColor = 'rgba(54, 153, 255, 0.28)';
+    banner.style.background = 'rgba(54, 153, 255, 0.1)';
+    banner.style.color = '#1b4979';
+    banner.style.boxShadow = 'none';
+  }
+
   function parseLocaleNumber(value) {
     const raw = String(value == null ? '' : value).trim();
     if (!raw) return 0;
@@ -588,6 +641,7 @@
       }
     }
 
+    applyBannerTheme(banner, scope);
     banner.innerHTML =
       '<strong>Simulacao de preco do produto</strong>' +
       'Codigo: ' + escapeHtml(pending.code || '-') +

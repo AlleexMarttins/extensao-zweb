@@ -69,6 +69,57 @@
       .replace(/'/g, '&#39;');
   }
 
+  function parseRgbColor(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+
+    const rgbaMatch = raw.match(/^rgba?\(([^)]+)\)$/i);
+    if (rgbaMatch) {
+      const parts = rgbaMatch[1].split(',').map((item) => parseFloat(item.trim()));
+      if (parts.length >= 3 && parts.every((part, index) => index > 2 || Number.isFinite(part))) {
+        return {
+          r: parts[0],
+          g: parts[1],
+          b: parts[2],
+          a: Number.isFinite(parts[3]) ? parts[3] : 1
+        };
+      }
+    }
+
+    const hexMatch = raw.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (hexMatch) {
+      const hex = hexMatch[1].length === 3
+        ? hexMatch[1].split('').map((char) => char + char).join('')
+        : hexMatch[1];
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+        a: 1
+      };
+    }
+
+    return null;
+  }
+
+  function getSurfaceColor(element) {
+    let current = element;
+    while (current && current !== document.documentElement) {
+      const color = parseRgbColor(window.getComputedStyle(current).backgroundColor);
+      if (color && color.a > 0) return color;
+      current = current.parentElement;
+    }
+
+    const fallback = parseRgbColor(window.getComputedStyle(document.body || document.documentElement).backgroundColor);
+    return fallback || { r: 255, g: 255, b: 255, a: 1 };
+  }
+
+  function isDarkSurface(element) {
+    const color = getSurfaceColor(element);
+    const luminance = (color.r * 0.299) + (color.g * 0.587) + (color.b * 0.114);
+    return luminance < 160;
+  }
+
   function parseLocaleNumber(value) {
     const raw = String(value == null ? '' : value).trim();
     if (!raw) return 0;
@@ -165,8 +216,43 @@
     style.id = STYLE_ID;
     style.textContent = `
       #${ROOT_ID} {
+        --zfv-panel-bg: #ffffff;
+        --zfv-panel-border: rgba(24, 28, 50, 0.06);
+        --zfv-card-bg: #ffffff;
+        --zfv-card-border: rgba(24, 28, 50, 0.18);
+        --zfv-preview-bg: #f8f9fb;
+        --zfv-preview-border: rgba(24, 28, 50, 0.08);
+        --zfv-note-bg: rgba(255, 248, 220, 0.65);
+        --zfv-note-border: rgba(255, 193, 7, 0.35);
+        --zfv-empty-bg: rgba(248, 249, 251, 0.8);
+        --zfv-empty-border: rgba(24, 28, 50, 0.18);
+        --zfv-title: #181c32;
+        --zfv-copy: #5e6278;
+        --zfv-muted: #7e8299;
+        --zfv-input-bg: #ffffff;
+        --zfv-input-border: #cdd9e6;
+        --zfv-input-color: #181c32;
         display: block;
         margin: 10px 0;
+      }
+
+      #${ROOT_ID}.is-dark {
+        --zfv-panel-bg: #18222e;
+        --zfv-panel-border: rgba(130, 149, 171, 0.18);
+        --zfv-card-bg: #121b25;
+        --zfv-card-border: rgba(130, 149, 171, 0.24);
+        --zfv-preview-bg: #101a25;
+        --zfv-preview-border: rgba(130, 149, 171, 0.18);
+        --zfv-note-bg: rgba(82, 69, 26, 0.34);
+        --zfv-note-border: rgba(255, 214, 102, 0.24);
+        --zfv-empty-bg: rgba(12, 21, 31, 0.72);
+        --zfv-empty-border: rgba(130, 149, 171, 0.24);
+        --zfv-title: #eef5ff;
+        --zfv-copy: #b6c4d6;
+        --zfv-muted: #9caec4;
+        --zfv-input-bg: #0f1823;
+        --zfv-input-border: rgba(130, 149, 171, 0.3);
+        --zfv-input-color: #f2f7ff;
       }
 
       #${ROOT_ID} .accordion-item {
@@ -189,7 +275,7 @@
       }
 
       #${ROOT_ID} .zweb-fiscal-value-title {
-        color: #181c32;
+        color: var(--zfv-title);
         font-size: inherit;
         font-weight: inherit;
         line-height: inherit;
@@ -222,8 +308,8 @@
       }
 
       #${ROOT_ID} .zweb-fiscal-value-panel-body {
-        background: #ffffff;
-        border-top: 1px solid rgba(24, 28, 50, 0.06);
+        background: var(--zfv-panel-bg);
+        border-top: 1px solid var(--zfv-panel-border);
         border-radius: 0 0 0.75rem 0.75rem;
         opacity: 0;
         padding: 18px 22px 20px;
@@ -255,10 +341,38 @@
         font-size: 0.95rem;
       }
 
+      #${ROOT_ID} .text-muted,
+      #${ROOT_ID} .text-gray-700 {
+        color: var(--zfv-copy) !important;
+      }
+
+      #${ROOT_ID} .text-gray-900,
+      #${ROOT_ID} .form-label,
+      #${ROOT_ID} .fw-semibold,
+      #${ROOT_ID} strong {
+        color: var(--zfv-title);
+      }
+
+      #${ROOT_ID} .form-control {
+        background: var(--zfv-input-bg);
+        border-color: var(--zfv-input-border);
+        color: var(--zfv-input-color);
+      }
+
+      #${ROOT_ID} .form-control::placeholder {
+        color: var(--zfv-muted);
+      }
+
+      #${ROOT_ID} .form-control:focus {
+        background: var(--zfv-input-bg);
+        color: var(--zfv-input-color);
+      }
+
       #${ROOT_ID} .zweb-fiscal-value-note {
-        border: 1px solid rgba(255, 193, 7, 0.35);
-        background: rgba(255, 248, 220, 0.65);
+        border: 1px solid var(--zfv-note-border);
+        background: var(--zfv-note-bg);
         border-radius: 0.85rem;
+        color: var(--zfv-copy);
         padding: 10px 14px;
       }
 
@@ -268,9 +382,9 @@
       }
 
       #${ROOT_ID} .zweb-fiscal-value-card {
-        border: 1px dashed rgba(24, 28, 50, 0.18);
+        border: 1px dashed var(--zfv-card-border);
         border-radius: 1rem;
-        background: #ffffff;
+        background: var(--zfv-card-bg);
       }
 
       #${ROOT_ID} .zweb-fiscal-value-card-head {
@@ -310,27 +424,27 @@
         flex-direction: column;
         justify-content: center;
         gap: 4px;
-        border: 1px solid rgba(24, 28, 50, 0.08);
+        border: 1px solid var(--zfv-preview-border);
         border-radius: 0.75rem;
-        background: #f8f9fb;
+        background: var(--zfv-preview-bg);
         padding: 10px 12px;
       }
 
       #${ROOT_ID} .zweb-fiscal-value-preview-main {
-        color: #181c32;
+        color: var(--zfv-title);
         font-size: 0.95rem;
         font-weight: 600;
       }
 
       #${ROOT_ID} .zweb-fiscal-value-preview-sub {
-        color: #7e8299;
+        color: var(--zfv-muted);
         font-size: 0.82rem;
       }
 
       #${ROOT_ID} .zweb-fiscal-value-empty {
-        border: 1px dashed rgba(24, 28, 50, 0.18);
+        border: 1px dashed var(--zfv-empty-border);
         border-radius: 1rem;
-        background: rgba(248, 249, 251, 0.8);
+        background: var(--zfv-empty-bg);
         padding: 24px;
         text-align: center;
       }
@@ -338,7 +452,7 @@
       #${ROOT_ID} .zweb-fiscal-value-empty strong {
         display: block;
         margin-bottom: 6px;
-        color: #181c32;
+        color: var(--zfv-title);
       }
 
       @media (max-width: 991px) {
@@ -637,6 +751,16 @@
     root.dataset.bound = 'true';
   }
 
+  function syncThemeMode(root) {
+    const scope = root || document.getElementById(ROOT_ID);
+    if (!scope) return;
+
+    const form = getConfigForm();
+    const dark = isDarkSurface(form || scope.parentElement || document.body);
+    scope.classList.toggle('is-dark', dark);
+    scope.classList.toggle('is-light', !dark);
+  }
+
   function ensureUi() {
     if (!isTargetRoute() || !isFeatureEnabled(FEATURE_KEY)) {
       removeUi();
@@ -663,12 +787,14 @@
       root.className = 'accordion';
       bindRoot(root);
       insertRoot(form, root);
+      syncThemeMode(root);
       renderSection(root);
       return root;
     }
 
     bindRoot(root);
     ensureRootPlacement(form, root);
+    syncThemeMode(root);
     if (!root.firstElementChild) renderSection(root);
     updateStatusUi(root);
     syncExpandedState(root);

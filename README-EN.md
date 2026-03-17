@@ -1,18 +1,26 @@
 # Admin Zweb
 
-Repository for the `Assistente Zweb` browser extension, focused on administrative and fiscal workflows inside Zweb.
+Repository for the `Assistente Zweb` browser extension, focused on administrative, fiscal, product, and document workflows inside Zweb.
 
 ## What the extension does
 
-- blocks sensitive Zweb actions through the `Protecao` feature
+- blocks sensitive Zweb actions through the `Proteção` feature
+- applies global visual customization across Zweb
 - filters the `Filtrar` modal based on active columns
+- supports compound terms in the native product filter
+- adds a dedicated product code range filter
+- adds preferred supplier replication in bulk product updates
+- highlights low stock products
 - adds DAV workflow automations
+- extends `#` item search to DAV and NF-e item forms
 - downloads NF-e XML files automatically
-- customizes the NF-e `Acoes` menu
+- adds batch XML/PDF download actions in NF-e
+- customizes the NF-e `Ações` menu
 - adds the `Assistente de Nota` flow for FSIST and the official NF-e portal
-- adds the `Calculo de Valores` section under `Fiscal > Configuracoes > Notas fiscais`
+- adds the `Cálculo de Valores` section under `Fiscal > Configurações > Notas fiscais`
 - calculates suggested values inside the purchase import popup
 - simulates product price updates from the inline pencil in the purchase popup
+- adjusts commission reports based on NF-e returns
 
 ## Extension menu
 
@@ -20,24 +28,27 @@ The popup groups automations and lets the user enable or disable each feature in
 
 Current groups:
 
-- `Geral`: Protecao
-- `Produtos`: Filtro, Botao Novo
-- `DAV`: Busca com #, Lote
-- `Fiscal`: Baixar XML, Calculo de Valores, Calculo em Compras, Simular Preco, Assistente de Nota, Personalizar Acoes
+- `Geral`: Proteção, Personalização Visual
+- `Produtos`: Filtro, Filtro Composto, Filtro de Códigos, Fornecedor Preferencial, Estoque Mínimo
+- `DAV`: Lote
+- `Fiscal`: Busca com #, Baixar XML, Downloads em Lote, Cálculo de Valores, Cálculo em Compras, Simular Preço, Assistente de Nota, Personalizar Ações
+- `Documentos`: Ajustar Comissões
 
 ## Installation
 
 1. Open `chrome://extensions/` or `edge://extensions/`.
 2. Enable `Developer mode`.
 3. Click `Load unpacked`.
-4. Select the [extension](/c:/Users/vendas/Desktop/zweb_html/extension) folder.
+4. Select the `extension/` folder.
 
 ## Extension scope
 
 Current host permissions:
 
 - `https://zweb.com.br/*`
+- `https://api.zweb.com.br/*`
 - `https://compufour.s3.amazonaws.com/production/uploads/nfe/*`
+- `https://compufour.s3.amazonaws.com/production/uploads/reports/report/*`
 - `https://www.fsist.com.br/*`
 - `https://fsist.com.br/*`
 - `https://www.nfe.fazenda.gov.br/*`
@@ -60,16 +71,32 @@ npm run playwright:session:stop
 
 ```text
 extension/
-  background.js
-  content.js
-  features.js
-  fiscal-value-settings.js
-  note-assistant.js
-  page-bridge.js
-  popup.html
-  popup.js
-  purchase-value-sync.js
-  stock-price-simulation.js
+  manifest.json
+  icons/
+  nucleo/
+    background.js
+    content.js
+    features.js
+    offscreen-download.html
+    offscreen-download.js
+    page-bridge.js
+  setores/
+    fiscal/
+      fiscal-value-settings.js
+      purchase-value-sync.js
+      report-adjustments.js
+    notas/
+      note-assistant.js
+    produtos/
+      stock-price-simulation.js
+  ui/
+    logs.css
+    logs.html
+    logs.js
+    popup.html
+    popup.js
+    visual-settings.html
+    visual-settings.js
 
 tools/playwright/
   README.md
