@@ -45,6 +45,7 @@
   const PRODUCT_CODE_RANGE_FORM_ID = 'zweb-product-code-range-form';
   const PRODUCT_CODE_RANGE_GRID_ATTR = 'data-zweb-product-code-range-grid';
   const PRODUCT_NATIVE_GRID_HIDDEN_ATTR = 'data-zweb-product-native-grid-hidden-display';
+  const PRODUCT_NATIVE_GRID_HOST_HIDDEN_ATTR = 'data-zweb-product-native-grid-host-hidden';
   const PRODUCT_CODE_RANGE_STATUS_ID = 'zweb-product-code-range-status';
   const PRODUCT_CODE_RANGE_MODAL_STYLE_ID = 'zweb-product-code-range-modal-style';
   const PRODUCT_CODE_RANGE_SNACKBAR_ID = 'zweb-product-code-range-snackbar';
@@ -2810,10 +2811,24 @@
     return wrappers.find((wrapper) => isVisible(wrapper)) || wrappers[0] || null;
   }
 
+  function ensureProductCodeRangeNativeGridHideStyle() {
+    const styleId = 'zweb-product-code-range-native-grid-hide-style';
+    if (document.getElementById(styleId)) return;
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = [
+      '[' + PRODUCT_NATIVE_GRID_HOST_HIDDEN_ATTR + '="true"] > :not(#' + PRODUCT_CODE_RANGE_PANEL_ID + '):not(thead) {',
+      '  display: none !important;',
+      '}'
+    ].join('\n');
+    (document.head || document.documentElement || document.body).appendChild(style);
+  }
+
   function setNativeProductTableVisible(isVisibleNext) {
     const wrapper = getProductTableWrapper();
     if (!wrapper) return;
     const host = wrapper.parentElement;
+    ensureProductCodeRangeNativeGridHideStyle();
     const targets = host
       ? Array.from(host.children || []).filter((element) => {
           if (!element || element.id === PRODUCT_CODE_RANGE_PANEL_ID) return false;
@@ -2825,6 +2840,7 @@
     targets.forEach((element) => {
       if (!element || !element.style) return;
       if (isVisibleNext) {
+        if (host) host.removeAttribute(PRODUCT_NATIVE_GRID_HOST_HIDDEN_ATTR);
         if (element.hasAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR)) {
           const previousDisplay = element.getAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR) || '';
           element.style.display = previousDisplay;
@@ -2835,6 +2851,7 @@
         return;
       }
 
+      if (host) host.setAttribute(PRODUCT_NATIVE_GRID_HOST_HIDDEN_ATTR, 'true');
       if (!element.hasAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR)) {
         element.setAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR, element.style.display || '');
       }
