@@ -39,6 +39,7 @@
   const BATCH_PROGRESS_TEXT_ID = 'zweb-batch-progress-text';
   const PRODUCT_PREVIEW_BUTTON_ID = 'zweb-product-preview-button';
   const PRODUCT_PREVIEW_TOOLTIP_ID = 'zweb-product-preview-tooltip';
+  const PRODUCT_CLONE_BLOCK_ATTR = 'data-zweb-product-clone-blocked';
   const PRODUCT_CODE_RANGE_MODAL_ID = 'zweb-product-code-range-modal';
   const PRODUCT_CODE_RANGE_BACKDROP_ID = 'zweb-product-code-range-backdrop';
   const PRODUCT_CODE_RANGE_PANEL_ID = 'zweb-product-code-range-panel';
@@ -141,6 +142,7 @@
         filterEnabled: true,
         productPreviewEnabled: true,
         productPreferredSupplierBulkEnabled: true,
+        productCloneProtectionEnabled: true,
         lowStockHighlightEnabled: true,
         itemSearchHashEnabled: true,
         batchEnabled: true,
@@ -288,6 +290,11 @@
   function isTargetProductRoute() {
     const href = (location.href || '').toLowerCase();
     return href.indexOf(TARGET_PRODUCT_ROUTE) !== -1 && href.indexOf(TARGET_PRODUCT_NEW_ROUTE) === -1;
+  }
+
+  function isTargetProductEditRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(PRODUCT_EDIT_ROUTE.toLowerCase()) !== -1;
   }
 
   function isSignInRoute() {
@@ -7512,6 +7519,73 @@
     applyBatchModalTheme(document.getElementById(BATCH_MODAL_ID));
   }
 
+  function getProductCloneButtons() {
+    if (!isTargetProductEditRoute()) return [];
+    return Array.from(document.querySelectorAll('button'))
+      .filter((button) => normalizeText(button.innerText || button.textContent || '') === 'clonar');
+  }
+
+  function isProductCloneButtonElement(target) {
+    if (!isTargetProductEditRoute() || !target || !target.closest) return false;
+    const button = target.closest('button');
+    if (!button) return false;
+    return normalizeText(button.innerText || button.textContent || '') === 'clonar';
+  }
+
+  function restoreProductCloneButtons() {
+    Array.from(document.querySelectorAll('button[' + PRODUCT_CLONE_BLOCK_ATTR + '="true"]')).forEach((button) => {
+      const wasDisabled = button.getAttribute('data-zweb-product-clone-original-disabled') === 'true';
+      const originalTitle = button.getAttribute('data-zweb-product-clone-original-title');
+      const originalPointerEvents = button.getAttribute('data-zweb-product-clone-original-pointer-events');
+      const originalOpacity = button.getAttribute('data-zweb-product-clone-original-opacity');
+
+      if (wasDisabled) {
+        button.setAttribute('disabled', 'true');
+      } else {
+        button.removeAttribute('disabled');
+      }
+
+      if (originalTitle) {
+        button.setAttribute('title', originalTitle);
+      } else {
+        button.removeAttribute('title');
+      }
+
+      button.style.pointerEvents = originalPointerEvents || '';
+      button.style.opacity = originalOpacity || '';
+      button.removeAttribute(PRODUCT_CLONE_BLOCK_ATTR);
+      button.removeAttribute('data-zweb-product-clone-original-disabled');
+      button.removeAttribute('data-zweb-product-clone-original-title');
+      button.removeAttribute('data-zweb-product-clone-original-pointer-events');
+      button.removeAttribute('data-zweb-product-clone-original-opacity');
+    });
+  }
+
+  function syncProductCloneProtection() {
+    if (!isTargetProductEditRoute()) {
+      restoreProductCloneButtons();
+      return;
+    }
+
+    if (!isFeatureEnabled('productCloneProtectionEnabled')) {
+      restoreProductCloneButtons();
+      return;
+    }
+
+    getProductCloneButtons().forEach((button) => {
+      if (button.getAttribute(PRODUCT_CLONE_BLOCK_ATTR) === 'true') return;
+      button.setAttribute(PRODUCT_CLONE_BLOCK_ATTR, 'true');
+      button.setAttribute('data-zweb-product-clone-original-disabled', button.hasAttribute('disabled') ? 'true' : 'false');
+      button.setAttribute('data-zweb-product-clone-original-title', button.getAttribute('title') || '');
+      button.setAttribute('data-zweb-product-clone-original-pointer-events', button.style.pointerEvents || '');
+      button.setAttribute('data-zweb-product-clone-original-opacity', button.style.opacity || '');
+      button.setAttribute('disabled', 'true');
+      button.style.pointerEvents = 'none';
+      button.style.opacity = '0.6';
+      button.title = 'Botao bloqueado pelo usuario';
+    });
+  }
+
   function hideElement(el) {
     if (!el || el.__blockedByExt) return;
     el.__blockedByExt = true;
@@ -7765,6 +7839,12 @@
 
   function blockInteractions(e) {
     try {
+      if (isFeatureEnabled('productCloneProtectionEnabled') && isProductCloneButtonElement(e && e.target)) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        return false;
+      }
+
       if (!isFeatureEnabled('enabled')) return;
       if (isTargetNfeRoute() && e && e.type === 'contextmenu') return;
 
@@ -7822,6 +7902,7 @@
       scan();
     }
 
+    syncProductCloneProtection();
     ensureLowStockHighlightStyle();
     positionNfeContextMenuPopup();
     syncNfeActionMenuItems();

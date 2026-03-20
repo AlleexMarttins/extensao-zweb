@@ -53,6 +53,14 @@
       defaultValue: true,
     },
     {
+      key: 'productCloneProtectionEnabled',
+      group: 'Produtos',
+      title: 'Bloquear Clonar',
+      description: 'Bloqueia separadamente o bot\u00e3o Clonar dentro do cadastro de produto.',
+      reloadPrompt: false,
+      defaultValue: true,
+    },
+    {
       key: 'lowStockHighlightEnabled',
       group: 'Produtos',
       title: 'Estoque M\u00ednimo',
