@@ -255,25 +255,18 @@
     lastSentKey = digits;
 
     try {
-      chrome.storage.local.set({
-        [STORAGE_KEYS.lastKey]: digits,
-        [STORAGE_KEYS.lastKeyAt]: Date.now(),
-        [STORAGE_KEYS.pendingFsistFill]: {
-          chave: digits,
-          at: Date.now(),
-        },
+      chrome.runtime.sendMessage({ type: 'note-assistant-open-fsist', digits }, (response) => {
+        const runtimeError = chrome.runtime && chrome.runtime.lastError;
+        if (runtimeError || !response || response.ok !== true) {
+          lastSentKey = null;
+          logInfo('Falha ao abrir o FSIST em segundo plano.');
+          return;
+        }
+
+        logInfo('FSIST aberto em segundo plano.');
       });
     } catch (error) {
       lastSentKey = null;
-      return;
-    }
-
-    try {
-      const popup = window.open(FSIST_URL, '_blank', 'noopener,noreferrer');
-      if (popup) {
-        logInfo('FSIST aberto em nova aba.');
-      }
-    } catch (error) {
     }
   }
 

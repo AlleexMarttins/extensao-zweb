@@ -44,6 +44,7 @@ let offscreenDownloadDocumentPromise = null;
 let lastFsistTabId = null;
 let lastNfePortalTabId = null;
 let lastZwebTabId = null;
+let lastZwebWindowId = null;
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -139,6 +140,45 @@ function appendLog(message, level) {
       });
     });
   } catch (error) {}
+}
+
+function keepNoteAssistantSourceActive() {
+  if (isNumber(lastZwebTabId)) {
+    try {
+      chrome.tabs.update(lastZwebTabId, { active: true }, () => {});
+    } catch (error) {}
+  }
+
+  if (isNumber(lastZwebWindowId)) {
+    try {
+      chrome.windows.update(lastZwebWindowId, { focused: true }, () => {});
+    } catch (error) {}
+  }
+}
+
+function reinforceNoteAssistantSourceActive() {
+  keepNoteAssistantSourceActive();
+  [80, 220, 480, 900].forEach((delayMs) => {
+    setTimeout(() => keepNoteAssistantSourceActive(), delayMs);
+  });
+}
+
+function keepNoteAssistantTabInBackground(tabId) {
+  if (!isNumber(tabId)) return;
+  try {
+    chrome.tabs.update(tabId, { active: false }, () => {});
+  } catch (error) {}
+  reinforceNoteAssistantSourceActive();
+}
+
+function scheduleNoteAssistantTabClose(tabId, delayMs) {
+  if (!isNumber(tabId)) return;
+  setTimeout(() => {
+    reinforceNoteAssistantSourceActive();
+    try {
+      chrome.tabs.remove(tabId, () => {});
+    } catch (error) {}
+  }, delayMs || 1200);
 }
 
 function refreshContextMenus() {
@@ -891,6 +931,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (sender && sender.tab && isNumber(sender.tab.id)) {
       lastZwebTabId = sender.tab.id;
+      if (isNumber(sender.tab.windowId)) {
+        lastZwebWindowId = sender.tab.windowId;
+      }
     }
     sendResponse({ ok: true });
     return;
@@ -910,6 +953,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     if (sender && sender.tab && isNumber(sender.tab.id)) {
       lastZwebTabId = sender.tab.id;
+      if (isNumber(sender.tab.windowId)) {
+        lastZwebWindowId = sender.tab.windowId;
+      }
     }
 
     const payload = {
@@ -923,7 +969,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     chrome.storage.local.set(payload, () => {
       appendLog('Chave detectada na Zweb. Abrindo FSIST em segundo plano.', 'info');
-      chrome.tabs.create({ url: NOTE_ASSISTANT_FSIST_URL, active: false }, (tab) => {
+      const tabOptions = { url: NOTE_ASSISTANT_FSIST_URL, active: false };
+      if (sender && sender.tab && isNumber(sender.tab.windowId)) {
+        tabOptions.windowId = sender.tab.windowId;
+      }
+
+      chrome.tabs.create(tabOptions, (tab) => {
         const error = chrome.runtime.lastError;
         if (error) {
           appendLog('Falha ao abrir FSIST: ' + error.message, 'error');
@@ -933,6 +984,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         if (tab && isNumber(tab.id)) {
           lastFsistTabId = tab.id;
+          keepNoteAssistantTabInBackground(tab.id);
         }
         sendResponse({ ok: true, tabId: tab && tab.id });
       });
@@ -1151,6 +1203,14 @@ chrome.tabs.onCreated.addListener((tab) => {
   }
 });
 
+chrome.tabs.onCreated.addListener((tab) => {
+  if (!NOTE_ASSISTANT_ENABLED) return;
+  if (!tab || !isNumber(tab.id)) return;
+  if (!isNumber(tab.openerTabId) || !isNumber(lastFsistTabId)) return;
+  if (tab.openerTabId !== lastFsistTabId) return;
+  keepNoteAssistantTabInBackground(tab.id);
+});
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!XML_DOWNLOAD_ENABLED) return;
   const url = changeInfo.url || (tab && tab.url) || '';
@@ -1195,11 +1255,34 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (!NOTE_ASSISTANT_ENABLED) return;
   const url = changeInfo.url || (tab && tab.url) || '';
-  if (!url || tabId !== lastFsistTabId) return;
+  if (!url) return;
 
-  if (NOTE_ASSISTANT_NFE_URL_PATTERN.test(url)) {
-    lastNfePortalTabId = tabId;
-    appendLog('FSIST redirecionou para o Portal NF-e.', 'info');
+  const openedFromFsist = (
+    tab
+    && isNumber(tab.openerTabId)
+    && isNumber(lastFsistTabId)
+    && tab.openerTabId === lastFsistTabId
+  );
+
+  if (tabId === lastFsistTabId) {
+    keepNoteAssistantTabInBackground(tabId);
+    if (NOTE_ASSISTANT_NFE_URL_PATTERN.test(url)) {
+      lastNfePortalTabId = tabId;
+      appendLog('FSIST redirecionou para o Portal NF-e em segundo plano.', 'info');
+    }
+    return;
+  }
+
+  if (!openedFromFsist) return;
+
+  keepNoteAssistantTabInBackground(tabId);
+  if (!NOTE_ASSISTANT_NFE_URL_PATTERN.test(url)) return;
+
+  lastNfePortalTabId = tabId;
+  appendLog('FSIST abriu o Portal NF-e em segundo plano.', 'info');
+  if (isNumber(lastFsistTabId) && lastFsistTabId !== tabId) {
+    scheduleNoteAssistantTabClose(lastFsistTabId, 900);
+    lastFsistTabId = tabId;
   }
 });
 
@@ -1324,6 +1407,7 @@ try {
     if (!NOTE_ASSISTANT_ENABLED) {
       lastFsistTabId = null;
       lastNfePortalTabId = null;
+      lastZwebWindowId = null;
     }
   });
 } catch (error) {}
