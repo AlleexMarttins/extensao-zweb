@@ -18,6 +18,7 @@
   let selectedProfileId = '';
   let panelCollapsed = false;
   let rowOverrides = Object.create(null);
+  let rowIpiPercents = Object.create(null);
   let freightValue = 0;
   let freightTouched = false;
   let freightSyncPending = false;
@@ -155,6 +156,15 @@
     return (negative ? '-' : '') + (parts[0] || '0') + ',' + (parts[1] || '00');
   }
 
+  function formatEditablePercent(value) {
+    const numeric = Number(value || 0);
+    if (!Number.isFinite(numeric) || Math.abs(numeric) < 0.0005) return '0';
+    return numeric
+      .toFixed(4)
+      .replace(/\.?0+$/, '')
+      .replace('.', ',');
+  }
+
   function normalizeSuggestedPrice(value) {
     const numeric = Number(value || 0);
     if (!Number.isFinite(numeric)) return null;
@@ -230,6 +240,7 @@
   function loadSessionState() {
     panelCollapsed = false;
     rowOverrides = Object.create(null);
+    rowIpiPercents = Object.create(null);
     freightValue = 0;
     freightTouched = false;
     freightSyncPending = false;
@@ -247,6 +258,12 @@
         const value = String(parsed.overrides[key] || '');
         if (value) rowOverrides[key] = value;
       });
+      if (parsed && parsed.ipiPercents && typeof parsed.ipiPercents === 'object') {
+        Object.keys(parsed.ipiPercents).forEach((key) => {
+          const value = String(parsed.ipiPercents[key] == null ? '' : parsed.ipiPercents[key]).trim();
+          if (value && value !== '0' && value !== '0,0' && value !== '0,00') rowIpiPercents[key] = value;
+        });
+      }
     } catch (error) {}
   }
 
@@ -255,6 +272,7 @@
       window.sessionStorage.setItem(getSessionKey(), JSON.stringify({
         collapsed: panelCollapsed,
         overrides: rowOverrides,
+        ipiPercents: rowIpiPercents,
         freightValue,
         freightTouched,
         freightSyncPending
@@ -440,6 +458,10 @@
       #${ROOT_ID} .item-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
       #${ROOT_ID} .item-name{color:var(--zpv-title);font-size:.88rem;font-weight:700;line-height:1.4}
       #${ROOT_ID} .item-meta,#${ROOT_ID} .row-note{display:block;margin-top:4px;color:var(--zpv-muted);font-size:.78rem;line-height:1.4}
+      #${ROOT_ID} .row-ipi-control{display:grid;grid-template-columns:auto minmax(72px,96px);align-items:center;gap:8px;margin-top:8px}
+      #${ROOT_ID} .row-ipi-label{margin:0;color:var(--zpv-copy);font-size:.75rem;font-weight:700}
+      #${ROOT_ID} .row-ipi-input{width:100%;min-height:32px;padding:.35rem .55rem;border:1px solid var(--zpv-input-border);border-radius:.65rem;background:var(--zpv-input-bg);color:var(--zpv-input-color);text-align:right}
+      #${ROOT_ID} .row-ipi-input:focus{border-color:rgba(54,153,255,.55);box-shadow:0 0 0 .2rem rgba(54,153,255,.12);outline:0}
       #${ROOT_ID} .money,#${ROOT_ID} .qty{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
       #${ROOT_ID} .delta{color:var(--zpv-success);font-weight:700}
       #${ROOT_ID} .stock-sim-btn{flex:0 0 auto;min-height:28px;padding:0 10px;border:1px solid var(--zpv-button-border);border-radius:.65rem;background:var(--zpv-button-bg);color:var(--zpv-button-color);font-size:.74rem;font-weight:700;white-space:nowrap;cursor:pointer}
@@ -597,6 +619,12 @@
         changed = true;
       }
     });
+    Object.keys(rowIpiPercents).forEach((key) => {
+      if (!valid.has(key)) {
+        delete rowIpiPercents[key];
+        changed = true;
+      }
+    });
     if (changed) persistSessionState();
   }
 
@@ -607,19 +635,30 @@
       const overrideProfile = getProfileById(rowOverrides[row.key]);
       const appliedProfile = overrideProfile || activeProfile;
       const multiplier = getMultiplier(appliedProfile);
-      const suggestedUnitBase = Number.isFinite(multiplier) ? row.unitCost * multiplier : null;
-      const suggestedTotalBase = Number.isFinite(multiplier) ? row.totalCost * multiplier : null;
+      const manualIpiPercent = Math.max(0, parseLocaleNumber(rowIpiPercents[row.key] || '0'));
+      const unitIpi = row.unitCost * (manualIpiPercent / 100);
+      const totalIpi = row.totalCost * (manualIpiPercent / 100);
+      const unitCostWithIpi = row.unitCost + unitIpi;
+      const totalCostWithIpi = row.totalCost + totalIpi;
+      const suggestedUnitBase = Number.isFinite(multiplier) ? unitCostWithIpi * multiplier : null;
+      const suggestedTotalBase = Number.isFinite(multiplier) ? totalCostWithIpi * multiplier : null;
       const suggestedUnit = Number.isFinite(suggestedUnitBase) ? suggestedUnitBase * (1 + freightRate) : null;
       const suggestedTotal = Number.isFinite(suggestedTotalBase) ? suggestedTotalBase * (1 + freightRate) : null;
-      const delta = Number.isFinite(suggestedUnit) ? (suggestedUnit - row.unitCost) : null;
+      const delta = Number.isFinite(suggestedUnit) ? (suggestedUnit - unitCostWithIpi) : null;
       return Object.assign({}, row, {
         overrideProfile,
         appliedProfile,
         multiplier,
         freightRate,
+        manualIpiPercent,
+        manualIpiAmount: totalIpi,
+        manualUnitIpi: unitIpi,
+        unitCostWithIpi,
+        totalCostWithIpi,
         suggestedUnit,
         suggestedTotal,
         delta,
+        hasIpi: Number.isFinite(manualIpiPercent) && manualIpiPercent > 0,
         isException: !!(overrideProfile && (!activeProfile || overrideProfile.id !== activeProfile.id))
       });
     });
@@ -645,6 +684,16 @@
           if (!rowKey) return;
           if (value && getProfileById(value)) rowOverrides[rowKey] = value;
           else delete rowOverrides[rowKey];
+          persistSessionState();
+          scheduleEnsureUi();
+          return;
+        }
+        if (target.matches('[data-zweb-role="row-ipi"]')) {
+          const rowKey = String(target.getAttribute('data-row-key') || '');
+          if (!rowKey) return;
+          const numeric = Math.max(0, parseLocaleNumber(target.value || '0'));
+          if (numeric > 0) rowIpiPercents[rowKey] = formatEditablePercent(numeric);
+          else delete rowIpiPercents[rowKey];
           persistSessionState();
           scheduleEnsureUi();
           return;
@@ -686,13 +735,17 @@
   }
   function buildSummary(appliedRows, activeProfile) {
     const totalCost = appliedRows.reduce((sum, row) => sum + row.totalCost, 0);
+    const totalIpi = appliedRows.reduce((sum, row) => sum + (Number.isFinite(row.manualIpiAmount) ? row.manualIpiAmount : 0), 0);
+    const totalCostWithIpi = appliedRows.reduce((sum, row) => sum + (Number.isFinite(row.totalCostWithIpi) ? row.totalCostWithIpi : row.totalCost), 0);
     const totalSuggested = appliedRows.reduce((sum, row) => sum + (Number.isFinite(row.suggestedTotal) ? row.suggestedTotal : 0), 0);
-    const totalDelta = totalSuggested - totalCost;
+    const totalDelta = totalSuggested - totalCostWithIpi;
     const exceptions = appliedRows.filter((row) => row.isException).length;
     const freightRate = appliedRows.length ? (appliedRows[0].freightRate || 0) : 0;
     const cards = [
       ['Itens importados', String(appliedRows.length)],
-      ['Custo total', formatCurrency(totalCost)],
+      ['Produtos XML', formatCurrency(totalCost)],
+      ['IPI manual', formatCurrency(totalIpi)],
+      ['Base c/ IPI', formatCurrency(totalCostWithIpi)],
       ['Frete', formatCurrency(freightValue) + ' (' + formatNumber(freightRate * 100, 2) + '%)'],
       ['Perfil padr\u00e3o', activeProfile ? getProfileLabel(activeProfile) : 'Sem perfil padr\u00e3o'],
       ['Exce\u00e7\u00f5es', exceptions ? String(exceptions) + ' item(ns)' : 'Nenhuma'],
@@ -762,6 +815,7 @@
   }
 
   function buildTable(appliedRows, activeProfile, contextMode) {
+    const hasAnyIpi = appliedRows.some((row) => row.hasIpi);
     const rowsMarkup = appliedRows.map((row) => {
       const meta = [];
       if (row.itemNumber) meta.push('Linha ' + row.itemNumber);
@@ -770,20 +824,27 @@
       if (row.stockDisplay) meta.push('Cadastro ' + row.stockDisplay);
       else if (row.sourceCode) meta.push('C\u00f3digo ' + row.sourceCode);
       if (row.barCode) meta.push('Barras ' + row.barCode);
-      const note = row.isException
-        ? 'Exce\u00e7\u00e3o aplicada nesta linha. Perfil atual: ' + getProfileLabel(row.appliedProfile)
-        : 'Usando o perfil padr\u00e3o desta leitura.';
+      if (row.hasIpi) meta.push('IPI total ' + formatCurrency(row.manualIpiAmount));
+      const noteParts = [
+        row.isException
+          ? 'Exce\u00e7\u00e3o aplicada nesta linha. Perfil atual: ' + getProfileLabel(row.appliedProfile)
+          : 'Usando o perfil padr\u00e3o desta leitura.'
+      ];
+      noteParts.push(row.hasIpi
+        ? 'IPI manual ' + formatNumber(row.manualIpiPercent, 2) + '% | +' + formatCurrency(row.manualUnitIpi) + '/un.'
+        : 'IPI manual em 0,00%.');
+      const note = noteParts.join(' ');
       return '<tr>'
         + '<td><div class="item-head"><div class="item-name">' + escapeHtml(row.description || 'Item sem descri\u00e7\u00e3o') + '</div></div><span class="item-meta">' + escapeHtml(meta.join(' | ')) + '</span><span class="badge-slot"><span class="badgex' + (row.isException ? '' : ' is-hidden') + '">Exce\u00e7\u00e3o</span></span></td>'
-        + '<td class="profile-col"><select class="row-select" data-zweb-role="row-profile" data-row-key="' + escapeHtml(row.key) + '">' + buildRowOptions(activeProfile, row.overrideProfile ? row.overrideProfile.id : '') + '</select><span class="row-note">' + escapeHtml(note) + '</span></td>'
+        + '<td class="profile-col"><select class="row-select" data-zweb-role="row-profile" data-row-key="' + escapeHtml(row.key) + '">' + buildRowOptions(activeProfile, row.overrideProfile ? row.overrideProfile.id : '') + '</select><div class="row-ipi-control"><label class="row-ipi-label" for="' + escapeHtml(ROOT_ID + '-ipi-' + row.rowIndex) + '">IPI %</label><input id="' + escapeHtml(ROOT_ID + '-ipi-' + row.rowIndex) + '" class="row-ipi-input" data-zweb-role="row-ipi" data-row-key="' + escapeHtml(row.key) + '" type="text" inputmode="decimal" value="' + escapeHtml(formatEditablePercent(row.manualIpiPercent)) + '"></div><span class="row-note">' + escapeHtml(note) + '</span></td>'
         + '<td class="qty">' + escapeHtml(formatNumber(row.quantity, 2)) + '</td>'
-        + '<td class="money">' + escapeHtml(formatCurrency(row.unitCost)) + '</td>'
+        + '<td class="money">' + escapeHtml(formatCurrency(Number.isFinite(row.unitCostWithIpi) ? row.unitCostWithIpi : row.unitCost)) + '</td>'
         + '<td class="money">' + escapeHtml(Number.isFinite(row.suggestedUnit) ? formatCurrency(row.suggestedUnit) : '--') + '</td>'
         + '<td class="money delta">' + escapeHtml(Number.isFinite(row.delta) ? ((row.delta >= 0 ? '+' : '') + formatCurrency(row.delta)) : '--') + '</td>'
         + '<td class="money">' + escapeHtml(Number.isFinite(row.suggestedTotal) ? formatCurrency(row.suggestedTotal) : '--') + '</td>'
         + '</tr>';
     }).join('');
-    return '<div class="wrap"><table><colgroup><col class="col-item"><col class="profile-col"><col class="col-qty"><col class="col-cost"><col class="col-suggested"><col class="col-delta"><col class="col-total"></colgroup><thead><tr><th>Item</th><th class="profile-col">Par\u00e2metro</th><th class="qty">Qtd.</th><th class="money">Custo unit.</th><th class="money">Sugest\u00e3o unit.</th><th class="money">Diferen\u00e7a</th><th class="money">Total sugerido</th></tr></thead><tbody>' + rowsMarkup + '</tbody></table></div>';
+    return '<div class="wrap"><table><colgroup><col class="col-item"><col class="profile-col"><col class="col-qty"><col class="col-cost"><col class="col-suggested"><col class="col-delta"><col class="col-total"></colgroup><thead><tr><th>Item</th><th class="profile-col">Par\u00e2metro</th><th class="qty">Qtd.</th><th class="money">' + escapeHtml(hasAnyIpi ? 'Custo + IPI' : 'Custo unit.') + '</th><th class="money">Sugest\u00e3o unit.</th><th class="money">Diferen\u00e7a</th><th class="money">Total sugerido</th></tr></thead><tbody>' + rowsMarkup + '</tbody></table></div>';
   }
 
   function buildEmpty(message) {
@@ -792,11 +853,12 @@
 
   function getContextCopy(context, appliedRows, activeProfile) {
     const hasExceptions = appliedRows.filter((row) => row.isException).length > 0;
+    const hasIpi = appliedRows.some((row) => row.hasIpi);
     return {
       emptyRowsSubtitle: 'Aguardando os itens do XML dentro do popup de importa\u00e7\u00e3o.',
       noRowsMessage: 'Abra a etapa Produtos do popup de importa\u00e7\u00e3o para listar os itens do XML aqui.',
-      note: 'Leitura auxiliar do XML antes de concluir a importa\u00e7\u00e3o. O frete informado aqui \u00e9 rateado por valor dos produtos e somado ao c\u00e1lculo final. Este painel n\u00e3o salva a compra e n\u00e3o altera o estoque automaticamente. Se algum item usar outra margem, escolha a exce\u00e7\u00e3o diretamente na linha.',
-      rowsSubtitle: 'Perfil padr\u00e3o: ' + (activeProfile ? getProfileLabel(activeProfile) : 'Sem perfil padr\u00e3o') + (hasExceptions ? ' | Exce\u00e7\u00f5es aplicadas em linhas espec\u00edficas.' : ' | Sem exce\u00e7\u00f5es nesta importa\u00e7\u00e3o.')
+      note: 'Leitura auxiliar do XML antes de concluir a importa\u00e7\u00e3o. O frete informado aqui \u00e9 rateado por valor dos produtos e somado ao c\u00e1lculo final. Digite manualmente o IPI de cada item quando ele precisar entrar na base do c\u00e1lculo. Este painel n\u00e3o salva a compra e n\u00e3o altera o estoque automaticamente. Se algum item usar outra margem, escolha a exce\u00e7\u00e3o diretamente na linha.',
+      rowsSubtitle: 'Perfil padr\u00e3o: ' + (activeProfile ? getProfileLabel(activeProfile) : 'Sem perfil padr\u00e3o') + (hasExceptions ? ' | Exce\u00e7\u00f5es aplicadas em linhas espec\u00edficas.' : ' | Sem exce\u00e7\u00f5es nesta importa\u00e7\u00e3o.') + (hasIpi ? ' | IPI manual aplicado em parte dos itens.' : ' | IPI manual padr\u00e3o em 0,00%.')
     };
   }
 
@@ -804,8 +866,9 @@
     const profileSig = storedProfiles.map((profile) => [profile.id, profile.name, profile.basePercent, profile.extraPercent].join(':')).join('|');
     const xmlSig = parsedXmlItems.map((item) => [item.itemNumber, item.code, item.description, item.quantity, item.unitCost].join(':')).join('|');
     const overrideSig = Object.keys(rowOverrides).sort().map((key) => key + ':' + rowOverrides[key]).join('|');
-    const rowSig = appliedRows.map((row) => [row.key, row.sourceCode, row.stockDisplay, row.appliedProfile ? row.appliedProfile.id : '', row.suggestedUnit, row.suggestedTotal].join(':')).join('|');
-    return [context && context.mode, themeMode, isFeatureEnabled(FEATURE_KEY), isFeatureEnabled('stockPriceSimulationEnabled'), selectedProfileId, activeProfile ? activeProfile.id : '', panelCollapsed, freightValue, freightTouched, freightSyncPending, profileSig, xmlSig, overrideSig, rowSig].join('||');
+    const ipiSig = Object.keys(rowIpiPercents).sort().map((key) => key + ':' + rowIpiPercents[key]).join('|');
+    const rowSig = appliedRows.map((row) => [row.key, row.sourceCode, row.stockDisplay, row.appliedProfile ? row.appliedProfile.id : '', row.manualIpiPercent, row.manualIpiAmount, row.manualUnitIpi, row.unitCostWithIpi, row.suggestedUnit, row.suggestedTotal].join(':')).join('|');
+    return [context && context.mode, themeMode, isFeatureEnabled(FEATURE_KEY), isFeatureEnabled('stockPriceSimulationEnabled'), selectedProfileId, activeProfile ? activeProfile.id : '', panelCollapsed, freightValue, freightTouched, freightSyncPending, profileSig, xmlSig, overrideSig, ipiSig, rowSig].join('||');
   }
 
   function renderRoot(root, context) {
