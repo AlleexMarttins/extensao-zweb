@@ -2824,7 +2824,7 @@
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = [
-      '[' + PRODUCT_NATIVE_GRID_HOST_HIDDEN_ATTR + '="true"] > :not(#' + PRODUCT_CODE_RANGE_PANEL_ID + '):not(thead) {',
+      '[' + PRODUCT_NATIVE_GRID_HOST_HIDDEN_ATTR + '="true"] > .table-wrapper.table-wrapper-filter:not([' + PRODUCT_CODE_RANGE_GRID_ATTR + '="true"]) {',
       '  display: none !important;',
       '}'
     ].join('\n');
@@ -2836,13 +2836,7 @@
     if (!wrapper) return;
     const host = wrapper.parentElement;
     ensureProductCodeRangeNativeGridHideStyle();
-    const targets = host
-      ? Array.from(host.children || []).filter((element) => {
-          if (!element || element.id === PRODUCT_CODE_RANGE_PANEL_ID) return false;
-          if (element.tagName === 'THEAD') return false;
-          return true;
-        })
-      : [wrapper];
+    const targets = [wrapper];
     const shouldHide = !isVisibleNext;
     const hostHidden = !!(host && host.getAttribute(PRODUCT_NATIVE_GRID_HOST_HIDDEN_ATTR) === 'true');
     const alreadySynced = targets.every((element) => {
