@@ -1266,8 +1266,8 @@
     }
     if (chip) {
       chip.style.display = 'block';
-      chip.style.marginTop = '3.25px';
-      chip.style.padding = '0 6.5px 0 0';
+      chip.style.marginTop = shouldInlineWithNativeChip ? '0' : '3.25px';
+      chip.style.padding = shouldInlineWithNativeChip ? '0' : '0 6.5px 0 0';
       chip.style.background = 'transparent';
       chip.style.border = '0';
       chip.style.boxShadow = 'none';
@@ -1326,21 +1326,34 @@
 
     if (referenceChip) {
       copyComputedStyles(referenceChip, chip, [
+        'display',
+        'marginTop',
+        'marginRight',
+        'marginBottom',
+        'marginLeft',
         'paddingTop',
         'paddingRight',
         'paddingBottom',
         'paddingLeft',
         'fontFamily',
+        'fontSize',
         'fontWeight',
         'lineHeight',
         'letterSpacing',
         'color'
       ]);
       copyComputedStyles(referenceLabel, label, [
+        'display',
+        'marginTop',
+        'marginRight',
+        'marginBottom',
+        'marginLeft',
         'fontFamily',
+        'fontSize',
         'fontWeight',
         'lineHeight',
         'letterSpacing',
+        'verticalAlign',
         'color',
         'whiteSpace',
         'cursor'
@@ -1359,23 +1372,35 @@
       ]);
       copyComputedStyles(referenceText, text, [
         'display',
+        'marginTop',
+        'marginRight',
+        'marginBottom',
+        'marginLeft',
         'fontFamily',
+        'fontSize',
         'fontWeight',
         'lineHeight',
         'letterSpacing',
+        'verticalAlign',
         'color'
       ]);
       copyComputedStyles(referencePrefix, prefix, [
+        'fontSize',
         'fontWeight',
+        'lineHeight',
         'color'
       ]);
-      chip.style.fontSize = '14px';
-      chip.style.lineHeight = '19.5px';
-      label.style.fontSize = '14px';
-      label.style.lineHeight = '19.5px';
-      if (text) text.style.fontSize = '14px';
-      if (prefix) prefix.style.fontSize = '14px';
-      if (value) value.style.fontSize = '14px';
+      if (value && referenceText) {
+        copyComputedStyles(referenceText, value, [
+          'fontFamily',
+          'fontSize',
+          'fontWeight',
+          'lineHeight',
+          'letterSpacing',
+          'verticalAlign',
+          'color'
+        ]);
+      }
     }
 
     if (input) {
