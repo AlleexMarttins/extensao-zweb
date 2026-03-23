@@ -2843,6 +2843,18 @@
           return true;
         })
       : [wrapper];
+    const shouldHide = !isVisibleNext;
+    const hostHidden = !!(host && host.getAttribute(PRODUCT_NATIVE_GRID_HOST_HIDDEN_ATTR) === 'true');
+    const alreadySynced = targets.every((element) => {
+      if (!element || !element.style) return true;
+      if (shouldHide) {
+        return hostHidden && element.style.display === 'none';
+      }
+      return !hostHidden
+        && !element.hasAttribute(PRODUCT_NATIVE_GRID_HIDDEN_ATTR)
+        && element.style.display !== 'none';
+    });
+    if (alreadySynced) return;
 
     targets.forEach((element) => {
       if (!element || !element.style) return;
@@ -3621,12 +3633,13 @@
   function renderProductCodeRangePanel() {
     const toolbar = findVisibleProductToolbar();
     const tableWrapper = getProductTableWrapper();
-    const shouldShowToolbarStatus = isTargetProductRoute() && isFeatureEnabled('productPreviewEnabled')
+    const canRenderPanel = isTargetProductRoute() && !!tableWrapper;
+    const shouldShowToolbarStatus = !!toolbar && isFeatureEnabled('productPreviewEnabled')
       && (PRODUCT_CODE_RANGE_STATE.active || !!PRODUCT_CODE_RANGE_STATE.error);
-    const shouldShow = shouldShowToolbarStatus
+    const shouldShow = canRenderPanel
       && ((PRODUCT_CODE_RANGE_STATE.active && PRODUCT_CODE_RANGE_STATE.enabled) || !!PRODUCT_CODE_RANGE_STATE.error);
 
-    if (!shouldShowToolbarStatus || !toolbar || !tableWrapper) {
+    if (!canRenderPanel) {
       const panel = document.getElementById(PRODUCT_CODE_RANGE_PANEL_ID);
       if (panel) panel.remove();
       setNativeProductTableVisible(true);
@@ -3657,7 +3670,11 @@
     const lowStockColor = resolveProductLowStockColor(toolbar || tableWrapper);
     const theme = getProductCodeRangeTheme(toolbar || tableWrapper);
     const typography = getProductCodeRangeTypography(tableWrapper);
-    syncProductCodeRangeToolbarStatus(toolbar, theme, typography);
+    if (shouldShowToolbarStatus) {
+      syncProductCodeRangeToolbarStatus(toolbar, theme, typography);
+    } else {
+      removeProductCodeRangeToolbarStatus();
+    }
     const nativeFilterCriteria = getActiveNativeProductFilterCriteria();
     const displayItems = PRODUCT_CODE_RANGE_STATE.items.length
       ? filterProductCodeRangeItemsByNativeCriteria(PRODUCT_CODE_RANGE_STATE.items, tableWrapper)
@@ -3665,6 +3682,16 @@
     const nativeGrid = displayItems.length
       ? buildProductCodeRangeGrid(tableWrapper, displayItems)
       : null;
+    const hasExistingRenderedGrid = !!(panel && panel.querySelector('[' + PRODUCT_CODE_RANGE_GRID_ATTR + '="true"]'));
+    const waitingForStableGrid = !!(
+      shouldShow
+      && PRODUCT_CODE_RANGE_STATE.enabled
+      && !PRODUCT_CODE_RANGE_STATE.loading
+      && !PRODUCT_CODE_RANGE_STATE.error
+      && displayItems.length
+      && !nativeGrid
+    );
+    const shouldKeepNativeVisible = !shouldShow || !PRODUCT_CODE_RANGE_STATE.enabled || (waitingForStableGrid && !hasExistingRenderedGrid);
 
     const signature = JSON.stringify({
       active: PRODUCT_CODE_RANGE_STATE.active,
@@ -3685,10 +3712,16 @@
       bodyFontSize: typography.bodyFontSize,
       headerFontFamily: typography.headerFontFamily,
       headerFontSize: typography.headerFontSize,
-      gridReady: !!nativeGrid
+      gridReady: !!nativeGrid,
+      waitingForStableGrid,
+      keepNativeVisible: shouldKeepNativeVisible
     });
 
-    setNativeProductTableVisible(!PRODUCT_CODE_RANGE_STATE.enabled);
+    setNativeProductTableVisible(shouldKeepNativeVisible);
+    if (waitingForStableGrid) {
+      if (!hasExistingRenderedGrid && panel) panel.remove();
+      return;
+    }
     if (!shouldShow) {
       if (panel) panel.remove();
       if (signature === LAST_PRODUCT_CODE_RANGE_SIGNATURE) return;
