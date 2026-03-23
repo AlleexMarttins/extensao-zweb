@@ -482,25 +482,6 @@ function maybeTriggerXmlDownloadFromOpener(url, tab) {
   });
 }
 
-function maybeTriggerPdfDownloadFromOpener(url, tab) {
-  if (!NFE_BATCH_DOWNLOAD_ENABLED) return;
-  if (!isEligiblePdfUrl(url)) return;
-  if (!tab || !isNumber(tab.openerTabId)) return;
-
-  chrome.tabs.get(tab.openerTabId, (openerTab) => {
-    const error = chrome.runtime.lastError;
-    if (error || !openerTab || !isTargetNfeOpenerUrl(openerTab.url || '')) return;
-
-    const key = String((tab && tab.id) || url || now());
-    if (recentDirectPdfDownloads.has(key)) return;
-    recentDirectPdfDownloads.set(key, now());
-
-    runPdfDownload(url, '', {
-      handled: false,
-      fileNameHint: ''
-    });
-  });
-}
 
 function buildXmlDownloadOptions(url, fileNameHint) {
   return {
@@ -1240,10 +1221,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   const ready = /^data:|^blob:/i.test(url) || changeInfo.status === 'complete' || (tab && tab.status === 'complete');
   if (!ready) return;
 
-  if (!pending) {
-    maybeTriggerPdfDownloadFromOpener(url, tab);
-    return;
-  }
+  if (!pending) return;
 
   if (!isEligiblePdfUrl(url)) return;
   triggerPdfDownload(url, pending, pending.fileNameHint);
