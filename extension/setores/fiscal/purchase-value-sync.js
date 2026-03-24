@@ -265,8 +265,15 @@
   function getImportProductsPanel() {
     if (!isTargetRoute()) return null;
     const modal = document.querySelector('.imported-xml-modal.show');
-    const panel = modal && modal.querySelector('#XMLProduct');
-    return panel && panel.querySelector('table.table, table.table-fix-head') ? panel : null;
+    if (!modal) return null;
+
+    const modernPanel = modal.querySelector('#products-panel #purchase-table-product, #purchase-table-product');
+    if (modernPanel && modernPanel.querySelector('table.table tbody tr, table.table-fix-head tbody tr, table.custom-table-striped tbody tr')) {
+      return modernPanel;
+    }
+
+    const legacyPanel = modal.querySelector('#XMLProduct');
+    return legacyPanel && legacyPanel.querySelector('table.table, table.table-fix-head') ? legacyPanel : null;
   }
 
   function getImportFileInput() {
@@ -358,6 +365,7 @@
         itemNumber: normalizeText(detNode.getAttribute('nItem') || ''),
         code: code,
         description: description,
+        unit: getFirstChildText(prodNode, 'uCom'),
         quantity: quantity,
         unitCost: unitCost,
         ipiPercent: Number.isFinite(ipiPercent) ? Math.max(0, ipiPercent) : 0,
@@ -533,16 +541,22 @@
   function buildXmlItemPools() {
     const exact = new Map();
     const byDescription = new Map();
+    const byCode = new Map();
     parsedXmlItems.forEach((item) => {
       if (!item) return;
       const exactKey = item.key || getXmlItemKey(item.description, item.quantity, item.unitCost);
       const descriptionKey = normalizeLookupText(item.description);
+      const codeKey = normalizeLookupText(item.code);
       if (!exact.has(exactKey)) exact.set(exactKey, []);
       exact.get(exactKey).push(item);
       if (!byDescription.has(descriptionKey)) byDescription.set(descriptionKey, []);
       byDescription.get(descriptionKey).push(item);
+      if (codeKey) {
+        if (!byCode.has(codeKey)) byCode.set(codeKey, []);
+        byCode.get(codeKey).push(item);
+      }
     });
-    return { exact, byDescription };
+    return { exact, byDescription, byCode };
   }
 
   function consumeXmlItem(pool, key) {
@@ -553,6 +567,85 @@
   function readImportPopupRows(context) {
     if (!context || !context.tableBody) return [];
     const xmlPools = buildXmlItemPools();
+    if (context.importUi === 'modern') {
+      return Array.from(context.tableBody.querySelectorAll('tr')).reduce((acc, tr, index) => {
+        const cells = Array.from(tr.querySelectorAll('td'));
+        const headerMap = context.headerMap || Object.create(null);
+        if (!cells.length || !Object.keys(headerMap).length) return acc;
+
+        const getCell = (candidateHeaders) => {
+          const candidates = Array.isArray(candidateHeaders) ? candidateHeaders : [candidateHeaders];
+          for (const candidate of candidates) {
+            const normalizedCandidate = normalizeLookupText(candidate);
+            if (normalizedCandidate && Number.isInteger(headerMap[normalizedCandidate])) {
+              return cells[headerMap[normalizedCandidate]] || null;
+            }
+          }
+          return null;
+        };
+
+        const sourceCode = readCellText(getCell('codigo do fornecedor'));
+        const description = readCellText(getCell('descricao do fornecedor'));
+        const supplierBarCode = readCellText(getCell('codigo de barras fornecedor'));
+        const stockBarCode = readCellText(getCell('codigo de barras estoque'));
+        const stockCode = readCellText(getCell('codigo do estoque'));
+        const stockLabel = readCellText(getCell('cadastro do estoque'));
+        const cfop = readCellText(getCell('cfop'));
+        const quantityBought = parseLocaleNumber(readCellText(getCell('quantidade comprada')));
+        const quantityEntry = parseLocaleNumber(readCellText(getCell('quantidade de entrada')));
+        const quantity = Number.isFinite(quantityEntry) && quantityEntry > 0
+          ? quantityEntry
+          : quantityBought;
+        const unitCost = parseLocaleNumber(readCellText(getCell('preco unitario')));
+        const totalCost = parseLocaleNumber(readCellText(getCell('total')));
+        const sourceLookupKey = normalizeLookupText(sourceCode);
+        const exactMatch = sourceLookupKey
+          ? consumeXmlItem(xmlPools.byCode, sourceLookupKey)
+          : null;
+        const fallbackQuantity = Number.isFinite(quantityBought) ? quantityBought : quantity;
+        const fallbackMatch = exactMatch
+          || consumeXmlItem(xmlPools.exact, getXmlItemKey(description, fallbackQuantity, unitCost))
+          || consumeXmlItem(xmlPools.byDescription, normalizeLookupText(description));
+
+        const resolvedQuantity = Number.isFinite(quantity) ? quantity : (fallbackMatch ? fallbackMatch.quantity : NaN);
+        const resolvedUnitCost = Number.isFinite(unitCost) ? unitCost : (fallbackMatch ? fallbackMatch.unitCost : NaN);
+        const resolvedTotalCost = Number.isFinite(totalCost)
+          ? totalCost
+          : (Number.isFinite(resolvedQuantity) && Number.isFinite(resolvedUnitCost) ? resolvedQuantity * resolvedUnitCost : NaN);
+        const resolvedDescription = description || (fallbackMatch && fallbackMatch.description) || '';
+        const resolvedUnit = (fallbackMatch && fallbackMatch.unit) || '';
+
+        if (!resolvedDescription || !Number.isFinite(resolvedQuantity) || !Number.isFinite(resolvedUnitCost) || !Number.isFinite(resolvedTotalCost)) {
+          return acc;
+        }
+
+        const stockDisplay = normalizeText([stockCode, stockLabel].filter(Boolean).join(' - '));
+        const row = {
+          contextMode: context.mode,
+          rowIndex: index + 1,
+          itemNumber: (fallbackMatch && fallbackMatch.itemNumber) || String(index + 1),
+          code: stockCode,
+          description: resolvedDescription,
+          unit: resolvedUnit,
+          cfop,
+          cst: '',
+          quantity: resolvedQuantity,
+          unitCost: resolvedUnitCost,
+          totalCost: resolvedTotalCost,
+          barCode: supplierBarCode || stockBarCode,
+          stockDisplay,
+          sourceCode: sourceCode || (fallbackMatch && fallbackMatch.code) || '',
+          sourceItemNumber: (fallbackMatch && fallbackMatch.itemNumber) || '',
+          ipiPercent: fallbackMatch && Number.isFinite(fallbackMatch.ipiPercent) ? fallbackMatch.ipiPercent : 0,
+          ipiAmount: fallbackMatch && Number.isFinite(fallbackMatch.ipiAmount) ? fallbackMatch.ipiAmount : 0,
+          unitIpi: fallbackMatch && Number.isFinite(fallbackMatch.unitIpi) ? fallbackMatch.unitIpi : 0
+        };
+        row.key = getRowKey(row);
+        acc.push(row);
+        return acc;
+      }, []);
+    }
+
     return Array.from(context.tableBody.querySelectorAll('tr')).reduce((acc, tr, index) => {
       const cells = Array.from(tr.querySelectorAll('td'));
       if (cells.length < 8) return acc;
@@ -597,12 +690,27 @@
     if (!isTargetRoute()) return null;
     const importPanel = getImportProductsPanel();
     if (importPanel) {
-      const table = importPanel.querySelector('table.table, table.table-fix-head');
+      const table = Array.from(importPanel.querySelectorAll('table.table, table.table-fix-head, table.custom-table-striped'))
+        .find((candidate) => candidate.querySelector('tbody tr')) || null;
+      const panelChildren = Array.from(importPanel.children || []);
+      const isModernImportUi = importPanel.id === 'purchase-table-product';
+      const anchor = isModernImportUi
+        ? (panelChildren.find((child) => child.classList && child.classList.contains('mt-2')) || table)
+        : (importPanel.querySelector('.row.mb-2') || table);
+      const headerMap = Object.create(null);
+      if (isModernImportUi && table) {
+        Array.from(table.querySelectorAll('thead th')).forEach((th, index) => {
+          const key = normalizeLookupText(th.textContent || '');
+          if (key && !Object.prototype.hasOwnProperty.call(headerMap, key)) headerMap[key] = index;
+        });
+      }
       return {
         mode: 'import-popup',
+        importUi: isModernImportUi ? 'modern' : 'legacy',
         host: importPanel,
-        anchor: importPanel.querySelector('.row.mb-2') || table,
-        tableBody: table && table.querySelector('tbody')
+        anchor: anchor,
+        tableBody: table && table.querySelector('tbody'),
+        headerMap
       };
     }
     return null;
