@@ -141,6 +141,14 @@
       defaultValue: true,
     },
     {
+      key: 'nfceCardBrandCleanupEnabled',
+      group: 'Fiscal',
+      title: 'Bandeiras NFC-e',
+      description: 'Oculta na NFC-e as bandeiras duplicadas em caixa alta, como MASTERCARD, ELO e VISA, mantendo apenas as variantes corretas.',
+      reloadPrompt: false,
+      defaultValue: true,
+    },
+    {
       key: 'commissionReturnsEnabled',
       group: 'Documentos',
       title: 'Ajustar Comiss\u00f5es',

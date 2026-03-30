@@ -13,6 +13,7 @@
   const TARGET_FISCAL_ROUTE_FRAGMENT = '/fiscal';
   const TARGET_NFE_ROUTE = '/fiscal/nfe';
   const TARGET_NFE_NEW_ROUTE = '/fiscal/nfe/new';
+  const TARGET_NFCE_ROUTE = '/fiscal/nfce';
   const TARGET_PRODUCT_ROUTE = '/register/stock/product';
   const TARGET_PRODUCT_NEW_ROUTE = '/register/stock/product/new';
   const TARGET_SIGN_IN_ROUTE = '/sign-in';
@@ -109,6 +110,8 @@
   const PRODUCT_PAGINATE_PAGE_SIZE = 200;
   const NFE_RETURN_HISTORY_STORAGE_KEY = 'nfeReturnHistory';
   const NFE_RETURN_HISTORY_MAX_ITEMS = 4000;
+  const NFCE_BLOCKED_CARD_BRANDS = ['MASTERCARD', 'ELO', 'VISA'];
+  const NFCE_BLOCKED_CARD_BRAND_ATTR = 'data-zweb-nfce-card-brand-hidden';
   const XML_BRIDGE_SCRIPT_ID = 'zweb-xml-download-page-bridge';
   const XML_CONTENT_SOURCE = 'zweb-xml-content-script';
   const XML_BRIDGE_SOURCE = 'zweb-xml-page-bridge';
@@ -317,6 +320,11 @@
     return href.indexOf(TARGET_NFE_NEW_ROUTE) !== -1;
   }
 
+  function isTargetNfceRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_NFCE_ROUTE) !== -1 || (href.indexOf('nfce') !== -1 && href.indexOf('pdv') !== -1);
+  }
+
   function shouldPreserveForceHideText(normalizedText) {
     if (!normalizedText) return false;
     if (!isTargetNfeRoute()) return false;
@@ -338,6 +346,62 @@
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .trim();
+  }
+
+  function normalizeRawText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function getBlockedNfceCardBrand(text) {
+    const normalized = normalizeRawText(text);
+    const upper = normalized.toUpperCase();
+    return normalized && normalized === upper && NFCE_BLOCKED_CARD_BRANDS.includes(upper) ? upper : '';
+  }
+
+  function hasAlternateNfceCardBrandVariant(optionTexts, brand) {
+    return optionTexts.some((text) => {
+      const normalized = normalizeRawText(text);
+      return normalized && normalized !== brand && normalized.toUpperCase() === brand;
+    });
+  }
+
+  function hideBlockedNfceBrandMultiselectOptions() {
+    Array.from(document.querySelectorAll('.multiselect__content, ul.multiselect__content, .multiselect__content-wrapper')).forEach((list) => {
+      const optionNodes = Array.from(list.querySelectorAll('.multiselect__option'));
+      if (!optionNodes.length) return;
+
+      const optionTexts = optionNodes.map((option) => normalizeRawText(option.textContent || ''));
+      optionNodes.forEach((option) => {
+        const brand = getBlockedNfceCardBrand(option.textContent || '');
+        const shouldHide = !!brand && hasAlternateNfceCardBrandVariant(optionTexts, brand);
+        const wrapper = option.closest('.multiselect__element') || option;
+        wrapper.style.display = shouldHide ? 'none' : '';
+        option.setAttribute(NFCE_BLOCKED_CARD_BRAND_ATTR, shouldHide ? 'true' : 'false');
+        option.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
+      });
+    });
+  }
+
+  function hideBlockedNfceBrandSelectOptions() {
+    Array.from(document.querySelectorAll('select')).forEach((select) => {
+      const options = Array.from(select.options || []);
+      if (!options.length) return;
+
+      const optionTexts = options.map((option) => normalizeRawText(option.textContent || option.label || ''));
+      options.forEach((option) => {
+        const brand = getBlockedNfceCardBrand(option.textContent || option.label || '');
+        const shouldHide = !!brand && hasAlternateNfceCardBrandVariant(optionTexts, brand);
+        option.hidden = shouldHide;
+        option.disabled = shouldHide;
+        option.setAttribute(NFCE_BLOCKED_CARD_BRAND_ATTR, shouldHide ? 'true' : 'false');
+      });
+    });
+  }
+
+  function syncNfceCardBrandOptions() {
+    if (!isFeatureEnabled('nfceCardBrandCleanupEnabled') || !isTargetNfceRoute()) return;
+    hideBlockedNfceBrandMultiselectOptions();
+    hideBlockedNfceBrandSelectOptions();
   }
 
   function parseRgbColor(value) {
@@ -7954,6 +8018,7 @@
       scan();
     }
 
+    syncNfceCardBrandOptions();
     syncProductCloneProtection();
     ensureLowStockHighlightStyle();
     positionNfeContextMenuPopup();
