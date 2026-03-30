@@ -14,6 +14,7 @@
   const TARGET_NFE_ROUTE = '/fiscal/nfe';
   const TARGET_NFE_NEW_ROUTE = '/fiscal/nfe/new';
   const TARGET_NFCE_ROUTE = '/fiscal/nfce';
+  const TARGET_NFCE_PDV_ROUTE = '/fiscal/pdv';
   const TARGET_PRODUCT_ROUTE = '/register/stock/product';
   const TARGET_PRODUCT_NEW_ROUTE = '/register/stock/product/new';
   const TARGET_SIGN_IN_ROUTE = '/sign-in';
@@ -322,7 +323,19 @@
 
   function isTargetNfceRoute() {
     const href = (location.href || '').toLowerCase();
-    return href.indexOf(TARGET_NFCE_ROUTE) !== -1 || (href.indexOf('nfce') !== -1 && href.indexOf('pdv') !== -1);
+    return href.indexOf(TARGET_NFCE_ROUTE) !== -1 || href.indexOf(TARGET_NFCE_PDV_ROUTE) !== -1;
+  }
+
+  function shouldPreserveBlockedDropdownOption(normalizedText, element) {
+    if (!normalizedText) return false;
+    if (!isTargetNfceRoute()) return false;
+    if (normalizedText !== 'kit') return false;
+
+    const container = element && element.closest
+      ? element.closest('button, a, .btn, .dropdown-item, .menu-item, .multiselect__element, li, div')
+      : null;
+    const containerText = normalizeText(container && container.innerText || '');
+    return containerText.indexOf('importar kit') !== -1;
   }
 
   function shouldPreserveForceHideText(normalizedText) {
@@ -7757,6 +7770,7 @@
 
       const shouldHide = BLOCK_DROPDOWN_OPTIONS.some(opt => txt === opt);
       if (!shouldHide) return;
+      if (shouldPreserveBlockedDropdownOption(txt, el)) return;
 
       const itemContainer = el.closest('li, .dropdown-item, .has-submenu, .menu-item') || el;
       hideElement(itemContainer);
