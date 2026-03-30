@@ -338,6 +338,17 @@
     return containerText.indexOf('importar kit') !== -1;
   }
 
+  function getBlockedDropdownNavigationScope(element) {
+    if (!element || !element.closest) return null;
+    return element.closest(
+      '#z_app_header_menu, ' +
+      '#z_app_sidebar_menu, ' +
+      '#kt_app_sidebar_menu, ' +
+      '.app-sidebar-menu, ' +
+      '.app-header-menu'
+    );
+  }
+
   function shouldPreserveForceHideText(normalizedText) {
     if (!normalizedText) return false;
     if (!isTargetNfeRoute()) return false;
@@ -7767,6 +7778,7 @@
     menuCandidates.forEach(el => {
       const txt = normalizeText(el.innerText || '');
       if (!txt) return;
+      if (!getBlockedDropdownNavigationScope(el)) return;
 
       const shouldHide = BLOCK_DROPDOWN_OPTIONS.some(opt => txt === opt);
       if (!shouldHide) return;
