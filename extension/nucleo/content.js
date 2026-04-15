@@ -87,6 +87,8 @@
   const NFE_BOLETO_WARNING_BACKDROP_ID = 'zweb-nfe-boleto-warning-backdrop';
   const NFE_BOLETO_WARNING_DETAILS_ID = 'zweb-nfe-boleto-warning-details';
   const NFE_BOLETO_WARNING_BOUND_ATTR = 'data-zweb-nfe-boleto-warning-bound';
+  const EXTENSION_MODAL_BRIDGE_SOURCE = 'zweb-extension-modal-bridge';
+  const EXTENSION_MODAL_BRIDGE_VERSION = '20260415-1';
   const NFE_BATCH_DOWNLOAD_XML_ACTION_ID = 'zweb-nfe-batch-download-xml-action';
   const NFE_BATCH_DOWNLOAD_PDF_ACTION_ID = 'zweb-nfe-batch-download-pdf-action';
   const NFE_BATCH_DOWNLOAD_STATUS_WRAP_ID = 'zweb-nfe-batch-download-status-wrap';
@@ -171,8 +173,11 @@
   let LAST_XML_DOWNLOAD_ARM_AT = 0;
   let NFE_CASH_SALE_BOLETO_PENDING_ACTION = null;
   let NFE_CASH_SALE_BOLETO_INTERNAL_CLICK = false;
+  let NFE_CASH_SALE_BOLETO_MODAL_EVENTS_BOUND = false;
   let COMMISSION_REPORT_PENDING_GENERATE_BUTTON = null;
   let COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = false;
+  let COMMISSION_REPORT_CONFIRM_MODAL_EVENTS_BOUND = false;
+  let EXTENSION_MODAL_BRIDGE_MESSAGE_BOUND = false;
   let LAST_NFE_CONTEXT_MENU_ANCHOR = null;
   let NFE_RETURN_HISTORY = {};
   let LAST_NFE_RETURN_SIGNATURE = '';
@@ -2307,6 +2312,75 @@
     event.stopImmediatePropagation();
     event.stopPropagation();
     openNfeCashSaleBoletoWarning(trigger, cashSaleEntries);
+  }
+
+  function ensureExtensionModalBridge() {
+    if (!document.documentElement) return;
+    if (document.documentElement.dataset.zwebExtensionModalBridgeInstalled === EXTENSION_MODAL_BRIDGE_VERSION) return;
+
+    const script = document.createElement('script');
+    script.textContent = '(' + function(bridgeSource, bridgeVersion) {
+      if (document.documentElement.dataset.zwebExtensionModalBridgeInstalled === bridgeVersion) return;
+      document.documentElement.dataset.zwebExtensionModalBridgeInstalled = bridgeVersion;
+
+      window.addEventListener('click', function(event) {
+        const target = event && event.target && event.target.closest
+          ? event.target.closest('[data-nfe-boleto-warning-close], [data-nfe-boleto-warning-cancel], [data-nfe-boleto-warning-continue], [data-commission-confirm-close], [data-commission-confirm-no], [data-commission-confirm-yes]')
+          : null;
+        if (!target) return;
+
+        let type = '';
+        if (target.hasAttribute('data-nfe-boleto-warning-close')) type = 'nfe-warning-close';
+        else if (target.hasAttribute('data-nfe-boleto-warning-cancel')) type = 'nfe-warning-cancel';
+        else if (target.hasAttribute('data-nfe-boleto-warning-continue')) type = 'nfe-warning-continue';
+        else if (target.hasAttribute('data-commission-confirm-close')) type = 'commission-confirm-close';
+        else if (target.hasAttribute('data-commission-confirm-no')) type = 'commission-confirm-no';
+        else if (target.hasAttribute('data-commission-confirm-yes')) type = 'commission-confirm-yes';
+        if (!type) return;
+
+        window.postMessage({
+          source: bridgeSource,
+          type: type
+        }, '*');
+      }, true);
+    } + ')(' + JSON.stringify(EXTENSION_MODAL_BRIDGE_SOURCE) + ',' + JSON.stringify(EXTENSION_MODAL_BRIDGE_VERSION) + ');';
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  }
+
+  function ensureExtensionModalBridgeListener() {
+    if (EXTENSION_MODAL_BRIDGE_MESSAGE_BOUND) return;
+    window.addEventListener('message', function(event) {
+      if (event.source !== window || !event.data || event.data.source !== EXTENSION_MODAL_BRIDGE_SOURCE) return;
+      const type = event.data.type;
+      if (type === 'nfe-warning-close' || type === 'nfe-warning-cancel') {
+        clearNfeCashSaleBoletoWarningState();
+      } else if (type === 'nfe-warning-continue') {
+        continueNfeCashSaleBoletoWarningAction();
+      } else if (type === 'commission-confirm-close') {
+        clearCommissionReportConfirmState();
+      } else if (type === 'commission-confirm-no') {
+        clearCommissionReportConfirmState();
+        window.location.hash = '#/fiscal/nfe';
+      } else if (type === 'commission-confirm-yes') {
+        const pendingButton = COMMISSION_REPORT_PENDING_GENERATE_BUTTON;
+        clearCommissionReportConfirmState();
+        if (!pendingButton || !pendingButton.isConnected) return;
+        COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = true;
+        try {
+          if (typeof pendingButton.click === 'function') {
+            pendingButton.click();
+          } else {
+            clickLikeUser(pendingButton);
+          }
+        } finally {
+          setTimeout(() => {
+            COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = false;
+          }, 80);
+        }
+      }
+    });
+    EXTENSION_MODAL_BRIDGE_MESSAGE_BOUND = true;
   }
 
   function delay(ms) {
@@ -6174,6 +6248,8 @@
   }
 
   function handleNfeCashSaleBoletoWarningModalAction(event) {
+    const modal = document.getElementById(NFE_BOLETO_WARNING_MODAL_ID);
+    if (!modal || getComputedStyle(modal).display === 'none') return;
     const target = event.target && event.target.closest
       ? event.target.closest('[data-nfe-boleto-warning-close], [data-nfe-boleto-warning-cancel], [data-nfe-boleto-warning-continue]')
       : null;
@@ -6237,6 +6313,13 @@
 
   function ensureNfeCashSaleBoletoWarningModal() {
     if (!document.body) return;
+    ensureExtensionModalBridge();
+    ensureExtensionModalBridgeListener();
+
+    if (!NFE_CASH_SALE_BOLETO_MODAL_EVENTS_BOUND) {
+      window.addEventListener('click', handleNfeCashSaleBoletoWarningModalAction, true);
+      NFE_CASH_SALE_BOLETO_MODAL_EVENTS_BOUND = true;
+    }
 
     if (!document.getElementById(NFE_BOLETO_WARNING_BACKDROP_ID)) {
       const backdrop = document.createElement('div');
@@ -6281,7 +6364,6 @@
         '</div>'
       ].join('');
 
-      modal.addEventListener('click', handleNfeCashSaleBoletoWarningModalAction, true);
       document.body.appendChild(modal);
     }
 
@@ -6597,6 +6679,8 @@
   }
 
   function handleCommissionReportConfirmModalAction(event) {
+    const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
+    if (!modal || getComputedStyle(modal).display === 'none') return;
     const target = event.target && event.target.closest
       ? event.target.closest('[data-commission-confirm-close], [data-commission-confirm-no], [data-commission-confirm-yes]')
       : null;
@@ -6651,6 +6735,13 @@
 
   function ensureCommissionReportConfirmModal() {
     if (!document.body) return;
+    ensureExtensionModalBridge();
+    ensureExtensionModalBridgeListener();
+
+    if (!COMMISSION_REPORT_CONFIRM_MODAL_EVENTS_BOUND) {
+      window.addEventListener('click', handleCommissionReportConfirmModalAction, true);
+      COMMISSION_REPORT_CONFIRM_MODAL_EVENTS_BOUND = true;
+    }
 
     if (!document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID)) {
       const backdrop = document.createElement('div');
@@ -6694,7 +6785,6 @@
         '</div>'
       ].join('');
 
-      modal.addEventListener('click', handleCommissionReportConfirmModalAction, true);
       document.body.appendChild(modal);
     }
 
