@@ -97,6 +97,7 @@
   const COMMISSION_REPORT_CONFIRM_MODAL_ID = 'zweb-commission-report-confirm-modal';
   const COMMISSION_REPORT_CONFIRM_BACKDROP_ID = 'zweb-commission-report-confirm-backdrop';
   const COMMISSION_REPORT_GENERATE_BOUND_ATTR = 'data-zweb-commission-generate-bound';
+  const EXTENSION_DIALOG_TRANSITION_MS = 220;
   const NFE_CONTEXT_MENU_ID = 'menuId';
   const NFE_CONTEXT_MENU_STYLE_ID = 'zweb-nfe-context-menu-style';
   const NFE_CONTEXT_MENU_MAX_HEIGHT_VH = 48;
@@ -529,7 +530,7 @@
     return darkSurface
       ? {
         isDark: true,
-        modalBackground: 'linear-gradient(180deg, rgba(19, 29, 41, 0.98) 0%, rgba(14, 21, 31, 0.98) 100%)',
+        modalBackground: '#16181c',
         modalBorder: '1px solid rgba(125, 185, 255, 0.22)',
         modalBoxShadow: '0 22px 48px rgba(0, 0, 0, 0.42)',
         titleColor: '#edf5ff',
@@ -549,7 +550,8 @@
         progressBorder: '1px solid rgba(125, 185, 255, 0.18)',
         progressTextColor: '#d8e4f0',
         progressTrackBackground: 'rgba(10, 17, 26, 0.92)',
-        progressFillColor: '#6eb7ff'
+        progressFillColor: '#6eb7ff',
+        backdropBackground: 'rgba(3, 8, 16, 0.52)'
       }
       : {
         isDark: false,
@@ -573,7 +575,8 @@
         progressBorder: '1px solid #d9dee5',
         progressTextColor: '#3b4652',
         progressTrackBackground: '#edf1f5',
-        progressFillColor: '#2b84d6'
+        progressFillColor: '#2b84d6',
+        backdropBackground: 'rgba(15, 23, 42, 0.16)'
       };
   }
 
@@ -6162,8 +6165,26 @@
   function closeNfeCashSaleBoletoWarningModal() {
     const modal = document.getElementById(NFE_BOLETO_WARNING_MODAL_ID);
     const backdrop = document.getElementById(NFE_BOLETO_WARNING_BACKDROP_ID);
-    if (modal) modal.style.display = 'none';
-    if (backdrop) backdrop.style.display = 'none';
+    if (!modal && !backdrop) return;
+    if (modal) {
+      modal.style.opacity = '0';
+      modal.style.transform = 'translate(-50%, calc(-50% + 10px)) scale(0.985)';
+      modal.style.pointerEvents = 'none';
+    }
+    if (backdrop) {
+      backdrop.style.opacity = '0';
+      backdrop.style.pointerEvents = 'none';
+    }
+    window.setTimeout(() => {
+      if (modal) {
+        modal.style.display = 'none';
+        modal.style.pointerEvents = '';
+      }
+      if (backdrop) {
+        backdrop.style.display = 'none';
+        backdrop.style.pointerEvents = '';
+      }
+    }, EXTENSION_DIALOG_TRANSITION_MS + 30);
   }
 
   function clearNfeCashSaleBoletoWarningState() {
@@ -6202,6 +6223,7 @@
       details.style.background = theme.cardBackground;
       details.style.border = theme.cardBorder;
       details.style.color = theme.cardTextColor;
+      details.style.boxShadow = theme.isDark ? 'inset 0 1px 0 rgba(255,255,255,0.02)' : 'none';
     }
 
     Array.from(modal.querySelectorAll('[data-nfe-boleto-warning-secondary]')).forEach((button) => {
@@ -6243,8 +6265,9 @@
         'display:none',
         'position:fixed',
         'inset:0',
-        'background:rgba(12, 23, 34, 0.38)',
-        'z-index:999998'
+        'opacity:0',
+        'z-index:999998',
+        'transition:opacity ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease'
       ].join(';');
       backdrop.addEventListener('click', clearNfeCashSaleBoletoWarningState);
       document.body.appendChild(backdrop);
@@ -6259,10 +6282,12 @@
         'top:50%',
         'left:50%',
         'transform:translate(-50%, -50%)',
+        'opacity:0',
         'border-radius:16px',
         'z-index:999999',
         'max-height:calc(100vh - 24px)',
-        'overflow:auto'
+        'overflow:auto',
+        'transition:opacity ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease, transform ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease'
       ].join(';');
       modal.innerHTML = [
         '<div data-nfe-boleto-warning-header style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">',
@@ -6322,8 +6347,19 @@
     }
 
     applyNfeCashSaleBoletoWarningTheme(modal);
-    backdrop.style.display = 'block';
+    backdrop.style.background = getExtensionOverlayTheme(document.body).backdropBackground;
     modal.style.display = 'block';
+    backdrop.style.display = 'block';
+    modal.style.opacity = '0';
+    modal.style.transform = 'translate(-50%, calc(-50% + 10px)) scale(0.985)';
+    backdrop.style.opacity = '0';
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        backdrop.style.opacity = '1';
+        modal.style.opacity = '1';
+        modal.style.transform = 'translate(-50%, -50%) scale(1)';
+      });
+    });
   }
 
   function closeNfeActionCustomizeModal() {
@@ -6566,8 +6602,26 @@
   function closeCommissionReportConfirmModal() {
     const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
     const backdrop = document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID);
-    if (modal) modal.style.display = 'none';
-    if (backdrop) backdrop.style.display = 'none';
+    if (!modal && !backdrop) return;
+    if (modal) {
+      modal.style.opacity = '0';
+      modal.style.transform = 'translate(-50%, calc(-50% + 10px)) scale(0.985)';
+      modal.style.pointerEvents = 'none';
+    }
+    if (backdrop) {
+      backdrop.style.opacity = '0';
+      backdrop.style.pointerEvents = 'none';
+    }
+    window.setTimeout(() => {
+      if (modal) {
+        modal.style.display = 'none';
+        modal.style.pointerEvents = '';
+      }
+      if (backdrop) {
+        backdrop.style.display = 'none';
+        backdrop.style.pointerEvents = '';
+      }
+    }, EXTENSION_DIALOG_TRANSITION_MS + 30);
   }
 
   function clearCommissionReportConfirmState() {
@@ -6620,8 +6674,9 @@
         'display:none',
         'position:fixed',
         'inset:0',
-        'background:rgba(12, 23, 34, 0.38)',
-        'z-index:999998'
+        'opacity:0',
+        'z-index:999998',
+        'transition:opacity ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease'
       ].join(';');
       backdrop.addEventListener('click', clearCommissionReportConfirmState);
       document.body.appendChild(backdrop);
@@ -6636,10 +6691,12 @@
         'top:50%',
         'left:50%',
         'transform:translate(-50%, -50%)',
+        'opacity:0',
         'border-radius:16px',
         'z-index:999999',
         'max-height:calc(100vh - 24px)',
-        'overflow:auto'
+        'overflow:auto',
+        'transition:opacity ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease, transform ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease'
       ].join(';');
       modal.innerHTML = [
         '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">',
@@ -6691,8 +6748,19 @@
     const backdrop = document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID);
     if (!modal || !backdrop) return;
     applyCommissionReportConfirmTheme(modal);
-    backdrop.style.display = 'block';
+    backdrop.style.background = getExtensionOverlayTheme(document.body).backdropBackground;
     modal.style.display = 'block';
+    backdrop.style.display = 'block';
+    modal.style.opacity = '0';
+    modal.style.transform = 'translate(-50%, calc(-50% + 10px)) scale(0.985)';
+    backdrop.style.opacity = '0';
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        backdrop.style.opacity = '1';
+        modal.style.opacity = '1';
+        modal.style.transform = 'translate(-50%, -50%) scale(1)';
+      });
+    });
   }
 
   function bindCommissionReportGenerateButton(modal) {

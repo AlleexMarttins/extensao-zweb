@@ -17,6 +17,7 @@ O projeto concentra ajustes de fluxo e interface que a Zweb não entrega nativam
 
 - `Proteção`: bloqueia botões, campos e ações sensíveis da Zweb.
 - `Personalização Visual`: aplica fonte, tamanho e cores personalizadas em toda a Zweb, exceto no login.
+- popups de aviso da extensão acompanham o tema claro/escuro da Zweb e usam abertura/fechamento mais suaves
 
 ### Produtos
 
