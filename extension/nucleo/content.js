@@ -97,7 +97,7 @@
   const COMMISSION_REPORT_CONFIRM_MODAL_ID = 'zweb-commission-report-confirm-modal';
   const COMMISSION_REPORT_CONFIRM_BACKDROP_ID = 'zweb-commission-report-confirm-backdrop';
   const COMMISSION_REPORT_GENERATE_BOUND_ATTR = 'data-zweb-commission-generate-bound';
-  const EXTENSION_DIALOG_TRANSITION_MS = 220;
+  const EXTENSION_DIALOG_TRANSITION_MS = 320;
   const NFE_CONTEXT_MENU_ID = 'menuId';
   const NFE_CONTEXT_MENU_STYLE_ID = 'zweb-nfe-context-menu-style';
   const NFE_CONTEXT_MENU_MAX_HEIGHT_VH = 48;
@@ -6165,26 +6165,7 @@
   function closeNfeCashSaleBoletoWarningModal() {
     const modal = document.getElementById(NFE_BOLETO_WARNING_MODAL_ID);
     const backdrop = document.getElementById(NFE_BOLETO_WARNING_BACKDROP_ID);
-    if (!modal && !backdrop) return;
-    if (modal) {
-      modal.style.opacity = '0';
-      modal.style.transform = 'translate(-50%, calc(-50% + 10px)) scale(0.985)';
-      modal.style.pointerEvents = 'none';
-    }
-    if (backdrop) {
-      backdrop.style.opacity = '0';
-      backdrop.style.pointerEvents = 'none';
-    }
-    window.setTimeout(() => {
-      if (modal) {
-        modal.style.display = 'none';
-        modal.style.pointerEvents = '';
-      }
-      if (backdrop) {
-        backdrop.style.display = 'none';
-        backdrop.style.pointerEvents = '';
-      }
-    }, EXTENSION_DIALOG_TRANSITION_MS + 30);
+    hideExtensionNativeModal(modal, backdrop);
   }
 
   function clearNfeCashSaleBoletoWarningState() {
@@ -6205,18 +6186,11 @@
 
     const theme = getExtensionOverlayTheme(modal.parentElement || document.body);
     const compact = window.innerWidth < 560;
-    modal.style.background = theme.modalBackground;
-    modal.style.border = theme.modalBorder;
-    modal.style.boxShadow = theme.modalBoxShadow;
-    modal.style.width = compact ? 'calc(100vw - 16px)' : '440px';
-    modal.style.maxWidth = compact ? 'calc(100vw - 16px)' : 'calc(100vw - 24px)';
-    modal.style.padding = compact ? '14px' : '16px';
-
-    const title = modal.querySelector('[data-nfe-boleto-warning-title]');
-    if (title) title.style.color = theme.titleColor;
-
-    const message = modal.querySelector('[data-nfe-boleto-warning-message]');
-    if (message) message.style.color = theme.bodyColor;
+    const dialog = modal.querySelector('[data-nfe-boleto-warning-dialog]');
+    if (dialog) {
+      dialog.style.maxWidth = compact ? 'calc(100vw - 16px)' : '450px';
+      dialog.style.margin = compact ? '8px auto' : '';
+    }
 
     const details = modal.querySelector('#' + NFE_BOLETO_WARNING_DETAILS_ID);
     if (details) {
@@ -6225,15 +6199,6 @@
       details.style.color = theme.cardTextColor;
       details.style.boxShadow = theme.isDark ? 'inset 0 1px 0 rgba(255,255,255,0.02)' : 'none';
     }
-
-    Array.from(modal.querySelectorAll('[data-nfe-boleto-warning-secondary]')).forEach((button) => {
-      button.style.background = theme.secondaryButtonBackground;
-      button.style.border = theme.secondaryButtonBorder;
-      button.style.color = theme.secondaryButtonColor;
-    });
-    Array.from(modal.querySelectorAll('[data-nfe-boleto-warning-subtle]')).forEach((button) => {
-      button.style.color = theme.subtleButtonColor;
-    });
   }
 
   function continueNfeCashSaleBoletoWarningAction() {
@@ -6261,13 +6226,10 @@
     if (!document.getElementById(NFE_BOLETO_WARNING_BACKDROP_ID)) {
       const backdrop = document.createElement('div');
       backdrop.id = NFE_BOLETO_WARNING_BACKDROP_ID;
+      backdrop.className = 'modal-backdrop fade';
       backdrop.style.cssText = [
         'display:none',
-        'position:fixed',
-        'inset:0',
-        'opacity:0',
-        'z-index:999998',
-        'transition:opacity ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease'
+        'z-index:1061'
       ].join(';');
       backdrop.addEventListener('click', clearNfeCashSaleBoletoWarningState);
       document.body.appendChild(backdrop);
@@ -6276,31 +6238,31 @@
     if (!document.getElementById(NFE_BOLETO_WARNING_MODAL_ID)) {
       const modal = document.createElement('div');
       modal.id = NFE_BOLETO_WARNING_MODAL_ID;
+      modal.className = 'modal fade';
+      modal.tabIndex = -1;
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-hidden', 'true');
       modal.style.cssText = [
         'display:none',
-        'position:fixed',
-        'top:50%',
-        'left:50%',
-        'transform:translate(-50%, -50%)',
-        'opacity:0',
-        'border-radius:16px',
-        'z-index:999999',
-        'max-height:calc(100vh - 24px)',
-        'overflow:auto',
-        'transition:opacity ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease, transform ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease'
+        'z-index:1065'
       ].join(';');
       modal.innerHTML = [
-        '<div data-nfe-boleto-warning-header style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">',
-        '  <div>',
-        '    <strong data-nfe-boleto-warning-title style="display:block;font-size:16px;">NF-e de Venda à Vista</strong>',
-        '    <span data-nfe-boleto-warning-message style="display:block;margin-top:6px;font-size:13px;line-height:1.5;">Esta NF fiscal está marcada como Venda à Vista. Gerar boleto nesse caso pode ser indevido. Deseja continuar mesmo assim?</span>',
+        '<div class="modal-dialog modal-dialog-centered mw-450px" data-nfe-boleto-warning-dialog>',
+        '  <div class="modal-content">',
+        '    <div class="modal-header">',
+        '      <h2 data-nfe-boleto-warning-title class="fw-semibold fs-6 fw-light text-primary">NF-e de Venda à Vista</h2>',
+        '      <button type="button" data-nfe-boleto-warning-close class="btn-close" aria-label="Close"></button>',
+        '    </div>',
+        '    <div class="modal-body pb-5">',
+        '      <div data-nfe-boleto-warning-message style="line-height:1.5;">Esta NF fiscal está marcada como Venda à Vista. Gerar boleto nesse caso pode ser indevido. Deseja continuar mesmo assim?</div>',
+        '      <div id="' + NFE_BOLETO_WARNING_DETAILS_ID + '" class="rounded mt-4 p-4" style="display:grid;gap:6px;font-size:12px;line-height:1.45;"></div>',
+        '    </div>',
+        '    <div class="modal-footer pt-0">',
+        '      <button type="button" data-nfe-boleto-warning-cancel class="btn btn-light btn-sm" style="font-size:13px;">Cancelar</button>',
+        '      <button type="button" data-nfe-boleto-warning-continue class="btn btn-primary btn-sm" style="font-size:13px;">Continuar</button>',
+        '    </div>',
         '  </div>',
-        '  <button type="button" data-nfe-boleto-warning-close data-nfe-boleto-warning-secondary class="btn btn-sm btn-light">x</button>',
-        '</div>',
-        '<div id="' + NFE_BOLETO_WARNING_DETAILS_ID + '" style="display:grid;gap:6px;margin-top:14px;padding:12px;border-radius:12px;font-size:12px;line-height:1.45;"></div>',
-        '<div data-nfe-boleto-warning-footer style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">',
-        '  <button type="button" data-nfe-boleto-warning-cancel data-nfe-boleto-warning-subtle class="btn btn-sm btn-transparent">Cancelar</button>',
-        '  <button type="button" data-nfe-boleto-warning-continue class="btn btn-sm btn-primary">Continuar</button>',
         '</div>'
       ].join('');
 
@@ -6347,19 +6309,7 @@
     }
 
     applyNfeCashSaleBoletoWarningTheme(modal);
-    backdrop.style.background = getExtensionOverlayTheme(document.body).backdropBackground;
-    modal.style.display = 'block';
-    backdrop.style.display = 'block';
-    modal.style.opacity = '0';
-    modal.style.transform = 'translate(-50%, calc(-50% + 10px)) scale(0.985)';
-    backdrop.style.opacity = '0';
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        backdrop.style.opacity = '1';
-        modal.style.opacity = '1';
-        modal.style.transform = 'translate(-50%, -50%) scale(1)';
-      });
-    });
+    showExtensionNativeModal(modal, backdrop);
   }
 
   function closeNfeActionCustomizeModal() {
@@ -6599,29 +6549,33 @@
       .find((modal) => isCommissionReportModal(modal)) || null;
   }
 
+  function showExtensionNativeModal(modal, backdrop) {
+    if (!modal || !backdrop) return;
+    modal.style.display = 'block';
+    backdrop.style.display = 'block';
+    modal.setAttribute('aria-hidden', 'false');
+    void modal.offsetWidth;
+    modal.classList.add('show');
+    backdrop.classList.add('show');
+  }
+
+  function hideExtensionNativeModal(modal, backdrop) {
+    if (!modal && !backdrop) return;
+    if (modal) {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    if (backdrop) backdrop.classList.remove('show');
+    window.setTimeout(() => {
+      if (modal) modal.style.display = 'none';
+      if (backdrop) backdrop.style.display = 'none';
+    }, EXTENSION_DIALOG_TRANSITION_MS);
+  }
+
   function closeCommissionReportConfirmModal() {
     const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
     const backdrop = document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID);
-    if (!modal && !backdrop) return;
-    if (modal) {
-      modal.style.opacity = '0';
-      modal.style.transform = 'translate(-50%, calc(-50% + 10px)) scale(0.985)';
-      modal.style.pointerEvents = 'none';
-    }
-    if (backdrop) {
-      backdrop.style.opacity = '0';
-      backdrop.style.pointerEvents = 'none';
-    }
-    window.setTimeout(() => {
-      if (modal) {
-        modal.style.display = 'none';
-        modal.style.pointerEvents = '';
-      }
-      if (backdrop) {
-        backdrop.style.display = 'none';
-        backdrop.style.pointerEvents = '';
-      }
-    }, EXTENSION_DIALOG_TRANSITION_MS + 30);
+    hideExtensionNativeModal(modal, backdrop);
   }
 
   function clearCommissionReportConfirmState() {
@@ -6640,28 +6594,12 @@
   function applyCommissionReportConfirmTheme(modal) {
     if (!modal) return;
 
-    const theme = getExtensionOverlayTheme(modal.parentElement || document.body);
     const compact = window.innerWidth < 560;
-    modal.style.background = theme.modalBackground;
-    modal.style.border = theme.modalBorder;
-    modal.style.boxShadow = theme.modalBoxShadow;
-    modal.style.width = compact ? 'calc(100vw - 16px)' : '420px';
-    modal.style.maxWidth = compact ? 'calc(100vw - 16px)' : 'calc(100vw - 24px)';
-    modal.style.padding = compact ? '14px' : '16px';
-
-    const title = modal.querySelector('[data-commission-confirm-title]');
-    const message = modal.querySelector('[data-commission-confirm-message]');
-    if (title) title.style.color = theme.titleColor;
-    if (message) message.style.color = theme.bodyColor;
-
-    Array.from(modal.querySelectorAll('[data-commission-confirm-secondary]')).forEach((button) => {
-      button.style.background = theme.secondaryButtonBackground;
-      button.style.border = theme.secondaryButtonBorder;
-      button.style.color = theme.secondaryButtonColor;
-    });
-    Array.from(modal.querySelectorAll('[data-commission-confirm-subtle]')).forEach((button) => {
-      button.style.color = theme.subtleButtonColor;
-    });
+    const dialog = modal.querySelector('[data-commission-confirm-dialog]');
+    if (dialog) {
+      dialog.style.maxWidth = compact ? 'calc(100vw - 16px)' : '450px';
+      dialog.style.margin = compact ? '8px auto' : '';
+    }
   }
 
   function ensureCommissionReportConfirmModal() {
@@ -6670,13 +6608,10 @@
     if (!document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID)) {
       const backdrop = document.createElement('div');
       backdrop.id = COMMISSION_REPORT_CONFIRM_BACKDROP_ID;
+      backdrop.className = 'modal-backdrop fade';
       backdrop.style.cssText = [
         'display:none',
-        'position:fixed',
-        'inset:0',
-        'opacity:0',
-        'z-index:999998',
-        'transition:opacity ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease'
+        'z-index:1061'
       ].join(';');
       backdrop.addEventListener('click', clearCommissionReportConfirmState);
       document.body.appendChild(backdrop);
@@ -6685,30 +6620,30 @@
     if (!document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID)) {
       const modal = document.createElement('div');
       modal.id = COMMISSION_REPORT_CONFIRM_MODAL_ID;
+      modal.className = 'modal fade';
+      modal.tabIndex = -1;
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-hidden', 'true');
       modal.style.cssText = [
         'display:none',
-        'position:fixed',
-        'top:50%',
-        'left:50%',
-        'transform:translate(-50%, -50%)',
-        'opacity:0',
-        'border-radius:16px',
-        'z-index:999999',
-        'max-height:calc(100vh - 24px)',
-        'overflow:auto',
-        'transition:opacity ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease, transform ' + EXTENSION_DIALOG_TRANSITION_MS + 'ms ease'
+        'z-index:1065'
       ].join(';');
       modal.innerHTML = [
-        '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">',
-        '  <div>',
-        '    <strong data-commission-confirm-title style="display:block;font-size:16px;">Conferência de Devoluções</strong>',
-        '    <span data-commission-confirm-message style="display:block;margin-top:6px;font-size:13px;line-height:1.5;">Já checou as devoluções antes?</span>',
+        '<div class="modal-dialog modal-dialog-centered mw-450px" data-commission-confirm-dialog>',
+        '  <div class="modal-content">',
+        '    <div class="modal-header">',
+        '      <h2 data-commission-confirm-title class="fw-semibold fs-6 fw-light text-primary">Conferência de Devoluções</h2>',
+        '      <button type="button" data-commission-confirm-close class="btn-close" aria-label="Close"></button>',
+        '    </div>',
+        '    <div class="modal-body pb-5">',
+        '      <div data-commission-confirm-message style="line-height:1.5;">Já checou as devoluções antes?</div>',
+        '    </div>',
+        '    <div class="modal-footer pt-0">',
+        '      <button type="button" data-commission-confirm-no class="btn btn-light btn-sm" style="font-size:13px;">Não</button>',
+        '      <button type="button" data-commission-confirm-yes class="btn btn-primary btn-sm" style="font-size:13px;">Sim</button>',
+        '    </div>',
         '  </div>',
-        '  <button type="button" data-commission-confirm-close data-commission-confirm-secondary class="btn btn-sm btn-light">x</button>',
-        '</div>',
-        '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">',
-        '  <button type="button" data-commission-confirm-no data-commission-confirm-subtle class="btn btn-sm btn-transparent">Não</button>',
-        '  <button type="button" data-commission-confirm-yes class="btn btn-sm btn-primary">Sim</button>',
         '</div>'
       ].join('');
 
@@ -6748,19 +6683,7 @@
     const backdrop = document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID);
     if (!modal || !backdrop) return;
     applyCommissionReportConfirmTheme(modal);
-    backdrop.style.background = getExtensionOverlayTheme(document.body).backdropBackground;
-    modal.style.display = 'block';
-    backdrop.style.display = 'block';
-    modal.style.opacity = '0';
-    modal.style.transform = 'translate(-50%, calc(-50% + 10px)) scale(0.985)';
-    backdrop.style.opacity = '0';
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        backdrop.style.opacity = '1';
-        modal.style.opacity = '1';
-        modal.style.transform = 'translate(-50%, -50%) scale(1)';
-      });
-    });
+    showExtensionNativeModal(modal, backdrop);
   }
 
   function bindCommissionReportGenerateButton(modal) {
