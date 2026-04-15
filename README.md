@@ -39,6 +39,7 @@ O projeto concentra ajustes de fluxo e interface que a Zweb não entrega nativam
 - `Baixar XML`: baixa automaticamente o XML gerado na NF-e.
 - `Downloads em Lote`: adiciona ações para baixar XML e DANFE em lote na tela de NF-e.
 - `Personalizar Ações`: filtra opções do menu `Ações` da NF-e.
+- `Boleto Venda à Vista`: ao tentar gerar boleto em NF-e com natureza `Venda à Vista`, mostra um aviso e exige confirmação antes de continuar.
 - `Cálculo de Valores`: cria a área de parâmetros em `Fiscal > Configurações > Notas fiscais`.
 - `Cálculo em Compras`: aplica os parâmetros no popup de importação de XML em compras.
 - `Simular Preço`: usa o lápis do produto no popup de importação para preencher o preço sem salvar.
@@ -66,7 +67,7 @@ O projeto concentra ajustes de fluxo e interface que a Zweb não entrega nativam
 ### Fluxos principais
 
 - `Produtos > Códigos`: filtra por faixa de códigos sem depender do filtro nativo.
-- `Fiscal > NF-e`: usa `Baixar XML`, `Baixar DANFE` e `Personalizar Ações`.
+- `Fiscal > NF-e`: usa `Baixar XML`, `Baixar DANFE`, `Personalizar Ações` e o aviso de `Boleto Venda à Vista`.
 - `Fiscal > Configurações > Notas fiscais`: gerencia os parâmetros de `Cálculo de Valores`.
 - `Fiscal > Compras`: usa o cálculo no popup de importação do XML.
 - `Documentos > Relatórios > Comissões`: gere em HTML para aplicar o ajuste de devoluções e, depois, exporte o PDF ajustado.

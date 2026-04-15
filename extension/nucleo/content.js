@@ -83,6 +83,10 @@
   const NFE_ACTION_MODAL_ID = 'zweb-nfe-action-modal';
   const NFE_ACTION_BACKDROP_ID = 'zweb-nfe-action-backdrop';
   const NFE_ACTION_LIST_ID = 'zweb-nfe-action-list';
+  const NFE_BOLETO_WARNING_MODAL_ID = 'zweb-nfe-boleto-warning-modal';
+  const NFE_BOLETO_WARNING_BACKDROP_ID = 'zweb-nfe-boleto-warning-backdrop';
+  const NFE_BOLETO_WARNING_DETAILS_ID = 'zweb-nfe-boleto-warning-details';
+  const NFE_BOLETO_WARNING_BOUND_ATTR = 'data-zweb-nfe-boleto-warning-bound';
   const NFE_BATCH_DOWNLOAD_XML_ACTION_ID = 'zweb-nfe-batch-download-xml-action';
   const NFE_BATCH_DOWNLOAD_PDF_ACTION_ID = 'zweb-nfe-batch-download-pdf-action';
   const NFE_BATCH_DOWNLOAD_STATUS_WRAP_ID = 'zweb-nfe-batch-download-status-wrap';
@@ -151,7 +155,8 @@
         itemSearchHashEnabled: true,
         batchEnabled: true,
         xmlDownloadEnabled: true,
-        actionMenuCustomizeEnabled: true
+        actionMenuCustomizeEnabled: true,
+        nfeCashSaleBoletoGuardEnabled: true
       };
 
   const FEATURE_STATE = Object.assign({}, FEATURE_DEFAULTS);
@@ -159,6 +164,8 @@
   let BATCH_RUNNING = false;
   let DAV_QTY_AUTO_CLEAR_TIMER = 0;
   let LAST_XML_DOWNLOAD_ARM_AT = 0;
+  let NFE_CASH_SALE_BOLETO_PENDING_ACTION = null;
+  let NFE_CASH_SALE_BOLETO_INTERNAL_CLICK = false;
   let LAST_NFE_CONTEXT_MENU_ANCHOR = null;
   let NFE_RETURN_HISTORY = {};
   let LAST_NFE_RETURN_SIGNATURE = '';
@@ -2148,6 +2155,17 @@
     return null;
   }
 
+  function findNfeBoletoActionTrigger(target) {
+    let el = target;
+    for (let i = 0; i < 6 && el; i += 1, el = el.parentElement) {
+      if (!el) break;
+      const text = normalizeText(extractActionMenuItemLabel(el) || el.innerText || el.textContent || '');
+      if (text !== 'gerar boleto') continue;
+      return el.matches && el.matches('a, button') ? el : (el.querySelector && el.querySelector('a, button')) || el;
+    }
+    return null;
+  }
+
   function createXmlDownloadRequestId() {
     return ['xml', Date.now(), Math.random().toString(36).slice(2, 8)].join('-');
   }
@@ -2254,6 +2272,32 @@
         requestId: requestId
       }, '*');
     } catch (err) {}
+  }
+
+  function handleNfeCashSaleBoletoGuard(event) {
+    if (!isTargetNfeRoute()) return;
+    if (!isFeatureEnabled('nfeCashSaleBoletoGuardEnabled')) return;
+    if (NFE_BATCH_DOWNLOAD_INTERNAL_CLICK || NFE_CASH_SALE_BOLETO_INTERNAL_CLICK) return;
+    if (event && event.type === 'pointerdown' && event.button !== 0) return;
+
+    const warningModal = document.getElementById(NFE_BOLETO_WARNING_MODAL_ID);
+    if (warningModal && warningModal.style.display !== 'none') {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.stopPropagation();
+      return;
+    }
+
+    const trigger = findNfeBoletoActionTrigger(event && event.target);
+    if (!trigger) return;
+
+    const cashSaleEntries = getNfeRowsForBoletoGuard().filter((entry) => entry && entry.isCashSale);
+    if (!cashSaleEntries.length) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    event.stopPropagation();
+    openNfeCashSaleBoletoWarning(trigger, cashSaleEntries);
   }
 
   function delay(ms) {
@@ -5516,15 +5560,24 @@
   }
 
   function getNfeHeaderMap() {
-    const headerRow = document.querySelector('.table-wrapper.table-wrapper-filter .table-row.header');
+    const headerRow = Array.from(document.querySelectorAll('.table-row.header')).find((row) => {
+      if (!isVisible(row)) return false;
+      return normalizeText(row.innerText || row.textContent || '').indexOf('natureza de operacao') !== -1;
+    }) || Array.from(document.querySelectorAll('.table-row.header')).find((row) => isVisible(row)) || null;
     const map = new Map();
     if (!headerRow) return map;
 
+    let inferredIndex = 0;
     Array.from(headerRow.querySelectorAll('.cell')).forEach((cell) => {
-      const colIndex = Number(cell.getAttribute('data-col'));
-      if (!Number.isFinite(colIndex)) return;
       const label = ((cell.querySelector('.header-text') && cell.querySelector('.header-text').textContent) || cell.textContent || '').trim();
       if (!label) return;
+      const rawColIndex = Number(cell.getAttribute('data-col'));
+      const colIndex = Number.isFinite(rawColIndex) ? rawColIndex : inferredIndex;
+      if (!Number.isFinite(rawColIndex)) {
+        inferredIndex += 1;
+      } else if (rawColIndex >= inferredIndex) {
+        inferredIndex = rawColIndex + 1;
+      }
       map.set(colIndex, label);
     });
 
@@ -5549,26 +5602,54 @@
     return ((preferred && preferred.textContent) || cell.textContent || '').trim();
   }
 
+  function isCashSaleNfeNature(natureText) {
+    const normalized = normalizeText(natureText);
+    return normalized.indexOf('5102') !== -1 && normalized.indexOf('vista') !== -1;
+  }
+
+  function buildNfeRowSelectionEntry(row, headerMap) {
+    if (!row || row.classList.contains('header')) return null;
+
+    const resolvedHeaderMap = headerMap || getNfeHeaderMap();
+    const documentCol = findNfeColumnIndex(resolvedHeaderMap, ['documento', 'numero', 'número']) ?? 1;
+    const customerCol = findNfeColumnIndex(resolvedHeaderMap, ['cliente', 'destinatario', 'emitente']) ?? 0;
+    const natureCol = findNfeColumnIndex(resolvedHeaderMap, ['natureza de operacao']) ?? 2;
+    const checkbox = row.querySelector('input[type="checkbox"]');
+    const documentNumber = getNfeRowCellText(row, documentCol);
+
+    if (!documentNumber) return null;
+
+    const customerName = getNfeRowCellText(row, customerCol);
+    const natureText = getNfeRowCellText(row, natureCol);
+
+    return {
+      row,
+      checkbox,
+      documentNumber,
+      customerName,
+      natureText,
+      isCashSale: isCashSaleNfeNature(natureText)
+    };
+  }
+
   function getSelectedNfeRows() {
     const headerMap = getNfeHeaderMap();
-    const documentCol = findNfeColumnIndex(headerMap, ['documento', 'numero', 'número']) ?? 1;
-    const customerCol = findNfeColumnIndex(headerMap, ['cliente', 'destinatario', 'emitente']);
 
     return Array.from(document.querySelectorAll('.table-row input[type="checkbox"]:checked'))
-      .map((checkbox) => {
-        const row = checkbox.closest('.table-row');
-        if (!row || row.classList.contains('header')) return null;
-        const documentNumber = getNfeRowCellText(row, documentCol);
-        const customerName = Number.isFinite(customerCol) ? getNfeRowCellText(row, customerCol) : '';
-        return {
-          row,
-          checkbox,
-          documentNumber,
-          customerName
-        };
-      })
+      .map((checkbox) => buildNfeRowSelectionEntry(checkbox.closest('.table-row'), headerMap))
       .filter(Boolean)
       .filter((item) => item.documentNumber);
+  }
+
+  function getNfeRowsForBoletoGuard() {
+    const selected = getSelectedNfeRows();
+    if (selected.length) return selected;
+
+    const activeRow = findActiveNfeActionRow();
+    if (!activeRow) return [];
+
+    const entry = buildNfeRowSelectionEntry(activeRow, getNfeHeaderMap());
+    return entry ? [entry] : [];
   }
 
   function setCheckboxState(checkbox, checked) {
@@ -6025,6 +6106,21 @@
     });
   }
 
+  function ensureNfeCashSaleBoletoGuardBindings() {
+    if (!isTargetNfeRoute() || !isFeatureEnabled('nfeCashSaleBoletoGuardEnabled')) return;
+
+    Array.from(document.querySelectorAll(
+      '.grid-toolbar.no-print .z-dropdown-menu a.dropdown-item, #menuId .dropdown-menu a.dropdown-item, #menuId a.dropdown-item, .popup .dropdown-menu a.dropdown-item'
+    ))
+      .filter((item) => normalizeText(extractActionMenuItemLabel(item)) === 'gerar boleto')
+      .forEach((item) => {
+        if (item.getAttribute(NFE_BOLETO_WARNING_BOUND_ATTR) === 'true') return;
+        item.setAttribute(NFE_BOLETO_WARNING_BOUND_ATTR, 'true');
+        item.addEventListener('pointerdown', handleNfeCashSaleBoletoGuard, true);
+        item.addEventListener('click', handleNfeCashSaleBoletoGuard, true);
+      });
+  }
+
   function findVisibleNfeToolbar() {
     const toolbars = Array.from(document.querySelectorAll('.grid-toolbar.no-print'));
     return toolbars.find((toolbar) => {
@@ -6055,6 +6151,173 @@
     clearTimeout(NFE_BATCH_DOWNLOAD_STATUS_TIMER);
     NFE_BATCH_DOWNLOAD_STATUS_TIMER = 0;
     NFE_BATCH_DOWNLOAD_RUNNING = false;
+  }
+
+  function closeNfeCashSaleBoletoWarningModal() {
+    const modal = document.getElementById(NFE_BOLETO_WARNING_MODAL_ID);
+    const backdrop = document.getElementById(NFE_BOLETO_WARNING_BACKDROP_ID);
+    if (modal) modal.style.display = 'none';
+    if (backdrop) backdrop.style.display = 'none';
+  }
+
+  function clearNfeCashSaleBoletoWarningState() {
+    NFE_CASH_SALE_BOLETO_PENDING_ACTION = null;
+    closeNfeCashSaleBoletoWarningModal();
+  }
+
+  function removeNfeCashSaleBoletoWarningUi() {
+    NFE_CASH_SALE_BOLETO_PENDING_ACTION = null;
+    const modal = document.getElementById(NFE_BOLETO_WARNING_MODAL_ID);
+    const backdrop = document.getElementById(NFE_BOLETO_WARNING_BACKDROP_ID);
+    if (modal) modal.remove();
+    if (backdrop) backdrop.remove();
+  }
+
+  function applyNfeCashSaleBoletoWarningTheme(modal) {
+    if (!modal) return;
+
+    const theme = getExtensionOverlayTheme(modal.parentElement || document.body);
+    const compact = window.innerWidth < 560;
+    modal.style.background = theme.modalBackground;
+    modal.style.border = theme.modalBorder;
+    modal.style.boxShadow = theme.modalBoxShadow;
+    modal.style.width = compact ? 'calc(100vw - 16px)' : '440px';
+    modal.style.maxWidth = compact ? 'calc(100vw - 16px)' : 'calc(100vw - 24px)';
+    modal.style.padding = compact ? '14px' : '16px';
+
+    const title = modal.querySelector('[data-nfe-boleto-warning-title]');
+    if (title) title.style.color = theme.titleColor;
+
+    const message = modal.querySelector('[data-nfe-boleto-warning-message]');
+    if (message) message.style.color = theme.bodyColor;
+
+    const details = modal.querySelector('#' + NFE_BOLETO_WARNING_DETAILS_ID);
+    if (details) {
+      details.style.background = theme.cardBackground;
+      details.style.border = theme.cardBorder;
+      details.style.color = theme.cardTextColor;
+    }
+
+    Array.from(modal.querySelectorAll('[data-nfe-boleto-warning-secondary]')).forEach((button) => {
+      button.style.background = theme.secondaryButtonBackground;
+      button.style.border = theme.secondaryButtonBorder;
+      button.style.color = theme.secondaryButtonColor;
+    });
+    Array.from(modal.querySelectorAll('[data-nfe-boleto-warning-subtle]')).forEach((button) => {
+      button.style.color = theme.subtleButtonColor;
+    });
+  }
+
+  function continueNfeCashSaleBoletoWarningAction() {
+    const pending = NFE_CASH_SALE_BOLETO_PENDING_ACTION;
+    clearNfeCashSaleBoletoWarningState();
+    if (!pending || !pending.trigger || !pending.trigger.isConnected) return;
+
+    NFE_CASH_SALE_BOLETO_INTERNAL_CLICK = true;
+    try {
+      if (typeof pending.trigger.click === 'function') {
+        pending.trigger.click();
+      } else {
+        clickLikeUser(pending.trigger);
+      }
+    } finally {
+      setTimeout(() => {
+        NFE_CASH_SALE_BOLETO_INTERNAL_CLICK = false;
+      }, 80);
+    }
+  }
+
+  function ensureNfeCashSaleBoletoWarningModal() {
+    if (!document.body) return;
+
+    if (!document.getElementById(NFE_BOLETO_WARNING_BACKDROP_ID)) {
+      const backdrop = document.createElement('div');
+      backdrop.id = NFE_BOLETO_WARNING_BACKDROP_ID;
+      backdrop.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'inset:0',
+        'background:rgba(12, 23, 34, 0.38)',
+        'z-index:999998'
+      ].join(';');
+      backdrop.addEventListener('click', clearNfeCashSaleBoletoWarningState);
+      document.body.appendChild(backdrop);
+    }
+
+    if (!document.getElementById(NFE_BOLETO_WARNING_MODAL_ID)) {
+      const modal = document.createElement('div');
+      modal.id = NFE_BOLETO_WARNING_MODAL_ID;
+      modal.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'top:50%',
+        'left:50%',
+        'transform:translate(-50%, -50%)',
+        'border-radius:16px',
+        'z-index:999999',
+        'max-height:calc(100vh - 24px)',
+        'overflow:auto'
+      ].join(';');
+      modal.innerHTML = [
+        '<div data-nfe-boleto-warning-header style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">',
+        '  <div>',
+        '    <strong data-nfe-boleto-warning-title style="display:block;font-size:16px;">NF-e de Venda à Vista</strong>',
+        '    <span data-nfe-boleto-warning-message style="display:block;margin-top:6px;font-size:13px;line-height:1.5;">Esta NF fiscal está marcada como Venda à Vista. Gerar boleto nesse caso pode ser indevido. Deseja continuar mesmo assim?</span>',
+        '  </div>',
+        '  <button type="button" data-nfe-boleto-warning-close data-nfe-boleto-warning-secondary class="btn btn-sm btn-light">x</button>',
+        '</div>',
+        '<div id="' + NFE_BOLETO_WARNING_DETAILS_ID + '" style="display:grid;gap:6px;margin-top:14px;padding:12px;border-radius:12px;font-size:12px;line-height:1.45;"></div>',
+        '<div data-nfe-boleto-warning-footer style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">',
+        '  <button type="button" data-nfe-boleto-warning-cancel data-nfe-boleto-warning-subtle class="btn btn-sm btn-transparent">Cancelar</button>',
+        '  <button type="button" data-nfe-boleto-warning-continue class="btn btn-sm btn-primary">Continuar</button>',
+        '</div>'
+      ].join('');
+
+      modal.querySelector('[data-nfe-boleto-warning-close]').addEventListener('click', clearNfeCashSaleBoletoWarningState);
+      modal.querySelector('[data-nfe-boleto-warning-cancel]').addEventListener('click', clearNfeCashSaleBoletoWarningState);
+      modal.querySelector('[data-nfe-boleto-warning-continue]').addEventListener('click', continueNfeCashSaleBoletoWarningAction);
+      document.body.appendChild(modal);
+    }
+
+    applyNfeCashSaleBoletoWarningTheme(document.getElementById(NFE_BOLETO_WARNING_MODAL_ID));
+  }
+
+  function openNfeCashSaleBoletoWarning(trigger, entries) {
+    if (!trigger || !entries || !entries.length) return;
+
+    ensureNfeCashSaleBoletoWarningModal();
+    const modal = document.getElementById(NFE_BOLETO_WARNING_MODAL_ID);
+    const backdrop = document.getElementById(NFE_BOLETO_WARNING_BACKDROP_ID);
+    const details = document.getElementById(NFE_BOLETO_WARNING_DETAILS_ID);
+    const message = modal && modal.querySelector('[data-nfe-boleto-warning-message]');
+    if (!modal || !backdrop || !details || !message) return;
+
+    NFE_CASH_SALE_BOLETO_PENDING_ACTION = {
+      trigger,
+      entries: entries.slice()
+    };
+
+    message.textContent = entries.length === 1
+      ? 'Esta NF fiscal está marcada como Venda à Vista. Gerar boleto nesse caso pode ser indevido. Deseja continuar mesmo assim?'
+      : 'As NF-es selecionadas incluem notas marcadas como Venda à Vista. Gerar boleto nesse caso pode ser indevido. Deseja continuar mesmo assim?';
+
+    details.innerHTML = entries.slice(0, 6).map((entry) => {
+      const parts = [
+        '<div><strong>NF-e:</strong> ' + escapeHtml(entry.documentNumber || '-'),
+        entry.customerName ? ' <span style="opacity:0.78;">| ' + escapeHtml(entry.customerName) + '</span>' : '',
+        '</div>',
+        '<div style="opacity:0.84;"><strong>Natureza:</strong> ' + escapeHtml(entry.natureText || '-') + '</div>'
+      ];
+      return '<div style="display:grid;gap:4px;">' + parts.join('') + '</div>';
+    }).join('');
+
+    if (entries.length > 6) {
+      details.insertAdjacentHTML('beforeend', '<div style="opacity:0.78;">+' + escapeHtml(String(entries.length - 6)) + ' NF-e(s) adicionais.</div>');
+    }
+
+    applyNfeCashSaleBoletoWarningTheme(modal);
+    backdrop.style.display = 'block';
+    modal.style.display = 'block';
   }
 
   function closeNfeActionCustomizeModal() {
@@ -8003,7 +8266,9 @@
   document.addEventListener('contextmenu', rememberNfeContextMenuAnchor, true);
   document.addEventListener('contextmenu', blockInteractions, true);
   document.addEventListener('pointerdown', armXmlDownloadFlow, true);
+  document.addEventListener('pointerdown', handleNfeCashSaleBoletoGuard, true);
   document.addEventListener('click', armXmlDownloadFlow, true);
+  document.addEventListener('click', handleNfeCashSaleBoletoGuard, true);
   document.addEventListener('click', handleProductNativeFilterClearSync, true);
   document.addEventListener('click', handleCommonMultiTermFilterApply, true);
   document.addEventListener('click', handleCommonMultiTermFilterClear, true);
@@ -8055,7 +8320,9 @@
     if (isTargetNfeRoute()) {
       ensureNfeActionCustomizeButton();
       ensureNfeBatchDownloadActionItems();
+      ensureNfeCashSaleBoletoGuardBindings();
     } else {
+      removeNfeCashSaleBoletoWarningUi();
       removeNfeActionCustomizeUi();
       removeNfeBatchDownloadUi();
       restoreNfeActionMenuItems();

@@ -141,6 +141,14 @@
       defaultValue: true,
     },
     {
+      key: 'nfeCashSaleBoletoGuardEnabled',
+      group: 'Fiscal',
+      title: 'Boleto Venda \u00e0 Vista',
+      description: 'Ao tentar gerar boleto em NF-e com natureza Venda \u00e0 Vista, mostra um aviso e pede confirma\u00e7\u00e3o antes de continuar.',
+      reloadPrompt: false,
+      defaultValue: true,
+    },
+    {
       key: 'nfceCardBrandCleanupEnabled',
       group: 'Fiscal',
       title: 'Bandeiras NFC-e',
