@@ -94,6 +94,9 @@
   const NFE_BATCH_DOWNLOAD_HIDDEN_NATIVE_ATTR = 'data-zweb-batch-hidden-native';
   const COMMISSION_REPORT_HINT_ID = 'zweb-commission-report-hint';
   const COMMISSION_REPORT_HINT_TEXT = 'Para ajustar devolu\u00e7\u00f5es automaticamente no relat\u00f3rio de comiss\u00f5es, a extens\u00e3o usa o formato HTML. Depois voc\u00ea pode imprimir ou salvar em PDF pelo navegador.';
+  const COMMISSION_REPORT_CONFIRM_MODAL_ID = 'zweb-commission-report-confirm-modal';
+  const COMMISSION_REPORT_CONFIRM_BACKDROP_ID = 'zweb-commission-report-confirm-backdrop';
+  const COMMISSION_REPORT_GENERATE_BOUND_ATTR = 'data-zweb-commission-generate-bound';
   const NFE_CONTEXT_MENU_ID = 'menuId';
   const NFE_CONTEXT_MENU_STYLE_ID = 'zweb-nfe-context-menu-style';
   const NFE_CONTEXT_MENU_MAX_HEIGHT_VH = 48;
@@ -156,7 +159,8 @@
         batchEnabled: true,
         xmlDownloadEnabled: true,
         actionMenuCustomizeEnabled: true,
-        nfeCashSaleBoletoGuardEnabled: true
+        nfeCashSaleBoletoGuardEnabled: true,
+        commissionReturnCheckPromptEnabled: true
       };
 
   const FEATURE_STATE = Object.assign({}, FEATURE_DEFAULTS);
@@ -166,6 +170,8 @@
   let LAST_XML_DOWNLOAD_ARM_AT = 0;
   let NFE_CASH_SALE_BOLETO_PENDING_ACTION = null;
   let NFE_CASH_SALE_BOLETO_INTERNAL_CLICK = false;
+  let COMMISSION_REPORT_PENDING_GENERATE_BUTTON = null;
+  let COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = false;
   let LAST_NFE_CONTEXT_MENU_ANCHOR = null;
   let NFE_RETURN_HISTORY = {};
   let LAST_NFE_RETURN_SIGNATURE = '';
@@ -6557,22 +6563,178 @@
       .find((modal) => isCommissionReportModal(modal)) || null;
   }
 
+  function closeCommissionReportConfirmModal() {
+    const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
+    const backdrop = document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID);
+    if (modal) modal.style.display = 'none';
+    if (backdrop) backdrop.style.display = 'none';
+  }
+
+  function clearCommissionReportConfirmState() {
+    COMMISSION_REPORT_PENDING_GENERATE_BUTTON = null;
+    closeCommissionReportConfirmModal();
+  }
+
+  function removeCommissionReportConfirmUi() {
+    COMMISSION_REPORT_PENDING_GENERATE_BUTTON = null;
+    const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
+    const backdrop = document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID);
+    if (modal) modal.remove();
+    if (backdrop) backdrop.remove();
+  }
+
+  function applyCommissionReportConfirmTheme(modal) {
+    if (!modal) return;
+
+    const theme = getExtensionOverlayTheme(modal.parentElement || document.body);
+    const compact = window.innerWidth < 560;
+    modal.style.background = theme.modalBackground;
+    modal.style.border = theme.modalBorder;
+    modal.style.boxShadow = theme.modalBoxShadow;
+    modal.style.width = compact ? 'calc(100vw - 16px)' : '420px';
+    modal.style.maxWidth = compact ? 'calc(100vw - 16px)' : 'calc(100vw - 24px)';
+    modal.style.padding = compact ? '14px' : '16px';
+
+    const title = modal.querySelector('[data-commission-confirm-title]');
+    const message = modal.querySelector('[data-commission-confirm-message]');
+    if (title) title.style.color = theme.titleColor;
+    if (message) message.style.color = theme.bodyColor;
+
+    Array.from(modal.querySelectorAll('[data-commission-confirm-secondary]')).forEach((button) => {
+      button.style.background = theme.secondaryButtonBackground;
+      button.style.border = theme.secondaryButtonBorder;
+      button.style.color = theme.secondaryButtonColor;
+    });
+    Array.from(modal.querySelectorAll('[data-commission-confirm-subtle]')).forEach((button) => {
+      button.style.color = theme.subtleButtonColor;
+    });
+  }
+
+  function ensureCommissionReportConfirmModal() {
+    if (!document.body) return;
+
+    if (!document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID)) {
+      const backdrop = document.createElement('div');
+      backdrop.id = COMMISSION_REPORT_CONFIRM_BACKDROP_ID;
+      backdrop.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'inset:0',
+        'background:rgba(12, 23, 34, 0.38)',
+        'z-index:999998'
+      ].join(';');
+      backdrop.addEventListener('click', clearCommissionReportConfirmState);
+      document.body.appendChild(backdrop);
+    }
+
+    if (!document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID)) {
+      const modal = document.createElement('div');
+      modal.id = COMMISSION_REPORT_CONFIRM_MODAL_ID;
+      modal.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'top:50%',
+        'left:50%',
+        'transform:translate(-50%, -50%)',
+        'border-radius:16px',
+        'z-index:999999',
+        'max-height:calc(100vh - 24px)',
+        'overflow:auto'
+      ].join(';');
+      modal.innerHTML = [
+        '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">',
+        '  <div>',
+        '    <strong data-commission-confirm-title style="display:block;font-size:16px;">Conferência de Devoluções</strong>',
+        '    <span data-commission-confirm-message style="display:block;margin-top:6px;font-size:13px;line-height:1.5;">Já checou as devoluções antes?</span>',
+        '  </div>',
+        '  <button type="button" data-commission-confirm-close data-commission-confirm-secondary class="btn btn-sm btn-light">x</button>',
+        '</div>',
+        '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">',
+        '  <button type="button" data-commission-confirm-no data-commission-confirm-subtle class="btn btn-sm btn-transparent">Não</button>',
+        '  <button type="button" data-commission-confirm-yes class="btn btn-sm btn-primary">Sim</button>',
+        '</div>'
+      ].join('');
+
+      modal.querySelector('[data-commission-confirm-close]').addEventListener('click', clearCommissionReportConfirmState);
+      modal.querySelector('[data-commission-confirm-no]').addEventListener('click', () => {
+        clearCommissionReportConfirmState();
+        window.location.hash = '#/fiscal/nfe';
+      });
+      modal.querySelector('[data-commission-confirm-yes]').addEventListener('click', () => {
+        const pendingButton = COMMISSION_REPORT_PENDING_GENERATE_BUTTON;
+        clearCommissionReportConfirmState();
+        if (!pendingButton || !pendingButton.isConnected) return;
+        COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = true;
+        try {
+          if (typeof pendingButton.click === 'function') {
+            pendingButton.click();
+          } else {
+            clickLikeUser(pendingButton);
+          }
+        } finally {
+          setTimeout(() => {
+            COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = false;
+          }, 80);
+        }
+      });
+      document.body.appendChild(modal);
+    }
+
+    applyCommissionReportConfirmTheme(document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID));
+  }
+
+  function openCommissionReportConfirmModal(generateButton) {
+    if (!generateButton) return;
+    ensureCommissionReportConfirmModal();
+    COMMISSION_REPORT_PENDING_GENERATE_BUTTON = generateButton;
+    const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
+    const backdrop = document.getElementById(COMMISSION_REPORT_CONFIRM_BACKDROP_ID);
+    if (!modal || !backdrop) return;
+    applyCommissionReportConfirmTheme(modal);
+    backdrop.style.display = 'block';
+    modal.style.display = 'block';
+  }
+
+  function bindCommissionReportGenerateButton(modal) {
+    if (!modal || !isFeatureEnabled('commissionReturnCheckPromptEnabled')) return;
+    const generateButton = Array.from(modal.querySelectorAll('button'))
+      .find((button) => normalizeText(button.innerText || button.textContent || '').indexOf('gerar relatorio') !== -1);
+    if (!generateButton) return;
+    if (generateButton.getAttribute(COMMISSION_REPORT_GENERATE_BOUND_ATTR) === 'true') return;
+
+    generateButton.setAttribute(COMMISSION_REPORT_GENERATE_BOUND_ATTR, 'true');
+    const guard = (event) => {
+      if (!isFeatureEnabled('commissionReturnCheckPromptEnabled')) return;
+      if (COMMISSION_REPORT_INTERNAL_GENERATE_CLICK) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      event.stopPropagation();
+      openCommissionReportConfirmModal(generateButton);
+    };
+    generateButton.addEventListener('pointerdown', guard, true);
+    generateButton.addEventListener('click', guard, true);
+  }
+
   function syncCommissionReportModal() {
     const modal = findVisibleCommissionReportModal();
     const existingHint = document.getElementById(COMMISSION_REPORT_HINT_ID);
+    const hintEnabled = isFeatureEnabled('commissionReturnsEnabled');
+    const promptEnabled = isFeatureEnabled('commissionReturnCheckPromptEnabled');
 
-    if (!isFeatureEnabled('commissionReturnsEnabled')) {
+    if (!hintEnabled && !promptEnabled) {
       if (existingHint) existingHint.remove();
+      removeCommissionReportConfirmUi();
       return;
     }
 
     if (!modal) {
       if (existingHint) existingHint.remove();
+      removeCommissionReportConfirmUi();
       return;
     }
 
     const htmlInput = modal.querySelector('input[type="radio"][value="HTML"]');
-    if (htmlInput && !modal.hasAttribute('data-zweb-commission-format-initialized')) {
+    if (hintEnabled && htmlInput && !modal.hasAttribute('data-zweb-commission-format-initialized')) {
       modal.setAttribute('data-zweb-commission-format-initialized', 'true');
       if (!htmlInput.checked) {
         htmlInput.click();
@@ -6581,29 +6743,39 @@
 
     const actionsContainer = modal.querySelector('.modal-footer, .d-flex.justify-content-end, .text-end') || modal;
     let hint = document.getElementById(COMMISSION_REPORT_HINT_ID);
-    if (!hint) {
-      hint = document.createElement('div');
-      hint.id = COMMISSION_REPORT_HINT_ID;
-      hint.style.cssText = [
-        'margin-top:12px',
-        'padding:10px 12px',
-        'border:1px solid rgba(22,100,192,0.18)',
-        'border-radius:12px',
-        'background:rgba(22,100,192,0.08)',
-        'color:#18456f',
-        'font-size:12px',
-        'line-height:1.5'
-      ].join(';');
-      hint.textContent = 'Para ajustar devoluções automaticamente no relatório de comissões, a extensão usa o formato HTML. Depois você pode imprimir ou salvar em PDF pelo navegador.';
-      actionsContainer.insertAdjacentElement('beforebegin', hint);
+    if (hintEnabled) {
+      if (!hint) {
+        hint = document.createElement('div');
+        hint.id = COMMISSION_REPORT_HINT_ID;
+        hint.style.cssText = [
+          'margin-top:12px',
+          'padding:10px 12px',
+          'border:1px solid rgba(22,100,192,0.18)',
+          'border-radius:12px',
+          'background:rgba(22,100,192,0.08)',
+          'color:#18456f',
+          'font-size:12px',
+          'line-height:1.5'
+        ].join(';');
+        hint.textContent = 'Para ajustar devoluções automaticamente no relatório de comissões, a extensão usa o formato HTML. Depois você pode imprimir ou salvar em PDF pelo navegador.';
+        actionsContainer.insertAdjacentElement('beforebegin', hint);
+      }
+
+      hint.style.fontWeight = '600';
+      hint.style.transition = 'background .18s ease, color .18s ease, border-color .18s ease';
+      if (hint.textContent !== COMMISSION_REPORT_HINT_TEXT) {
+        hint.textContent = COMMISSION_REPORT_HINT_TEXT;
+      }
+      applyCommissionReportHintTheme(hint, modal);
+    } else if (hint) {
+      hint.remove();
     }
 
-    hint.style.fontWeight = '600';
-    hint.style.transition = 'background .18s ease, color .18s ease, border-color .18s ease';
-    if (hint.textContent !== COMMISSION_REPORT_HINT_TEXT) {
-      hint.textContent = COMMISSION_REPORT_HINT_TEXT;
+    if (promptEnabled) {
+      bindCommissionReportGenerateButton(modal);
+    } else {
+      removeCommissionReportConfirmUi();
     }
-    applyCommissionReportHintTheme(hint, modal);
   }
 
   function getActiveProductColumnsFromStorage() {

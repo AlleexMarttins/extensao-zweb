@@ -163,6 +163,14 @@
       description: 'Usa o hist\u00f3rico de devolu\u00e7\u00f5es da NF-e para inverter valores no relat\u00f3rio HTML de comiss\u00f5es.',
       reloadPrompt: false,
       defaultValue: true,
+    },
+    {
+      key: 'commissionReturnCheckPromptEnabled',
+      group: 'Documentos',
+      title: 'Conferir Devolu\u00e7\u00f5es',
+      description: 'Antes de gerar o relat\u00f3rio de comiss\u00f5es, pergunta se as devolu\u00e7\u00f5es j\u00e1 foram conferidas.',
+      reloadPrompt: false,
+      defaultValue: true,
     }
   ];
 
