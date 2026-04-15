@@ -6173,6 +6173,21 @@
     closeNfeCashSaleBoletoWarningModal();
   }
 
+  function handleNfeCashSaleBoletoWarningModalAction(event) {
+    const target = event.target && event.target.closest
+      ? event.target.closest('[data-nfe-boleto-warning-close], [data-nfe-boleto-warning-cancel], [data-nfe-boleto-warning-continue]')
+      : null;
+    if (!target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    if (target.hasAttribute('data-nfe-boleto-warning-continue')) {
+      continueNfeCashSaleBoletoWarningAction();
+      return;
+    }
+    clearNfeCashSaleBoletoWarningState();
+  }
+
   function removeNfeCashSaleBoletoWarningUi() {
     NFE_CASH_SALE_BOLETO_PENDING_ACTION = null;
     const modal = document.getElementById(NFE_BOLETO_WARNING_MODAL_ID);
@@ -6254,9 +6269,9 @@
         '      <h2 data-nfe-boleto-warning-title class="fw-semibold fs-6 fw-light text-primary">NF-e de Venda à Vista</h2>',
         '      <button type="button" data-nfe-boleto-warning-close class="btn-close" aria-label="Close"></button>',
         '    </div>',
-        '    <div class="modal-body pb-5">',
+        '    <div class="modal-body pb-5" style="padding-top:8px;">',
         '      <div data-nfe-boleto-warning-message style="line-height:1.5;">Esta NF fiscal está marcada como Venda à Vista. Gerar boleto nesse caso pode ser indevido. Deseja continuar mesmo assim?</div>',
-        '      <div id="' + NFE_BOLETO_WARNING_DETAILS_ID + '" class="rounded mt-4 p-4" style="display:grid;gap:6px;font-size:12px;line-height:1.45;"></div>',
+        '      <div id="' + NFE_BOLETO_WARNING_DETAILS_ID + '" class="rounded mt-3 p-4" style="display:grid;gap:6px;font-size:12px;line-height:1.45;"></div>',
         '    </div>',
         '    <div class="modal-footer pt-0">',
         '      <button type="button" data-nfe-boleto-warning-cancel class="btn btn-light btn-sm" style="font-size:13px;">Cancelar</button>',
@@ -6266,9 +6281,7 @@
         '</div>'
       ].join('');
 
-      modal.querySelector('[data-nfe-boleto-warning-close]').addEventListener('click', clearNfeCashSaleBoletoWarningState);
-      modal.querySelector('[data-nfe-boleto-warning-cancel]').addEventListener('click', clearNfeCashSaleBoletoWarningState);
-      modal.querySelector('[data-nfe-boleto-warning-continue]').addEventListener('click', continueNfeCashSaleBoletoWarningAction);
+      modal.addEventListener('click', handleNfeCashSaleBoletoWarningModalAction, true);
       document.body.appendChild(modal);
     }
 
@@ -6583,6 +6596,40 @@
     closeCommissionReportConfirmModal();
   }
 
+  function handleCommissionReportConfirmModalAction(event) {
+    const target = event.target && event.target.closest
+      ? event.target.closest('[data-commission-confirm-close], [data-commission-confirm-no], [data-commission-confirm-yes]')
+      : null;
+    if (!target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    if (target.hasAttribute('data-commission-confirm-yes')) {
+      const pendingButton = COMMISSION_REPORT_PENDING_GENERATE_BUTTON;
+      clearCommissionReportConfirmState();
+      if (!pendingButton || !pendingButton.isConnected) return;
+      COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = true;
+      try {
+        if (typeof pendingButton.click === 'function') {
+          pendingButton.click();
+        } else {
+          clickLikeUser(pendingButton);
+        }
+      } finally {
+        setTimeout(() => {
+          COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = false;
+        }, 80);
+      }
+      return;
+    }
+    if (target.hasAttribute('data-commission-confirm-no')) {
+      clearCommissionReportConfirmState();
+      window.location.hash = '#/fiscal/nfe';
+      return;
+    }
+    clearCommissionReportConfirmState();
+  }
+
   function removeCommissionReportConfirmUi() {
     COMMISSION_REPORT_PENDING_GENERATE_BUTTON = null;
     const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
@@ -6636,7 +6683,7 @@
         '      <h2 data-commission-confirm-title class="fw-semibold fs-6 fw-light text-primary">Conferência de Devoluções</h2>',
         '      <button type="button" data-commission-confirm-close class="btn-close" aria-label="Close"></button>',
         '    </div>',
-        '    <div class="modal-body pb-5">',
+        '    <div class="modal-body pb-5" style="padding-top:8px;">',
         '      <div data-commission-confirm-message style="line-height:1.5;">Já checou as devoluções antes?</div>',
         '    </div>',
         '    <div class="modal-footer pt-0">',
@@ -6647,28 +6694,7 @@
         '</div>'
       ].join('');
 
-      modal.querySelector('[data-commission-confirm-close]').addEventListener('click', clearCommissionReportConfirmState);
-      modal.querySelector('[data-commission-confirm-no]').addEventListener('click', () => {
-        clearCommissionReportConfirmState();
-        window.location.hash = '#/fiscal/nfe';
-      });
-      modal.querySelector('[data-commission-confirm-yes]').addEventListener('click', () => {
-        const pendingButton = COMMISSION_REPORT_PENDING_GENERATE_BUTTON;
-        clearCommissionReportConfirmState();
-        if (!pendingButton || !pendingButton.isConnected) return;
-        COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = true;
-        try {
-          if (typeof pendingButton.click === 'function') {
-            pendingButton.click();
-          } else {
-            clickLikeUser(pendingButton);
-          }
-        } finally {
-          setTimeout(() => {
-            COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = false;
-          }, 80);
-        }
-      });
+      modal.addEventListener('click', handleCommissionReportConfirmModalAction, true);
       document.body.appendChild(modal);
     }
 
