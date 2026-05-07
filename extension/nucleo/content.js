@@ -4,6 +4,16 @@
   const IDS = ['botaoCadastrar', 'grid.primaryButton', 'grid.primaryButton'];
   const BLOCK_INPUT_IDS = ['itemForm.price'];
   const BLOCK_INPUT_SELECTORS = ['input#itemForm\\.price'];
+  const PRODUCT_ADMIN_GUARDED_INPUT_IDS = ['product.cost', 'product.quantity'];
+  const PRODUCT_ADMIN_PASSWORD = 'REDACTED_PRODUCT_ADMIN_PASSWORD';
+  const PRODUCT_ADMIN_GUARD_LOCK_ATTR = 'data-zweb-admin-guard-locked';
+  const PRODUCT_ADMIN_GUARD_UNLOCK_ATTR = 'data-zweb-admin-guard-unlocked';
+  const PRODUCT_ADMIN_GUARD_SESSION_STORAGE_KEY = 'productAdminGuardSessionUnlocked';
+  const DAV_ITEM_CODE_CACHE_STORAGE_KEY = 'zwebDavItemCodeCache';
+  const DAV_ITEM_CODE_HEADER_ATTR = 'data-zweb-dav-code-header';
+  const DAV_ITEM_CODE_CELL_ATTR = 'data-zweb-dav-code-cell';
+  const DAV_ITEM_PICKER_LIST_ATTR = 'data-zweb-dav-item-picker-list';
+  const DAV_ITEM_PICKER_STYLE_ID = 'zweb-dav-item-picker-style';
   const TARGET_DAVS_ROUTES = [
     '/document/davs/sale/new',
     '/document/davs/estimate/new',
@@ -17,6 +27,7 @@
   const TARGET_NFCE_PDV_ROUTE = '/fiscal/pdv';
   const TARGET_PRODUCT_ROUTE = '/register/stock/product';
   const TARGET_PRODUCT_NEW_ROUTE = '/register/stock/product/new';
+  const TARGET_CLIENT_EDIT_ROUTE = '/register/client/edit/';
   const TARGET_SIGN_IN_ROUTE = '/sign-in';
   const TEXTS = ['Cadastrar produto', 'Cadastrar Produto', 'Cadastrar'];
   const FORCE_HIDE_TEXTS = ['Acoes', 'Ações'];
@@ -168,6 +179,10 @@
 
   const FEATURE_STATE = Object.assign({}, FEATURE_DEFAULTS);
   let ACTION_MENU_PREFS = {};
+  let PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE = false;
+  let PRODUCT_ADMIN_GUARD_SESSION_UNLOCKED = false;
+  let DAV_ITEM_CODE_CACHE = Object.create(null);
+  let DAV_PENDING_SELECTED_ITEM_META = null;
   let BATCH_RUNNING = false;
   let DAV_QTY_AUTO_CLEAR_TIMER = 0;
   let LAST_XML_DOWNLOAD_ARM_AT = 0;
@@ -345,6 +360,11 @@
     return href.indexOf(TARGET_NFCE_ROUTE) !== -1 || href.indexOf(TARGET_NFCE_PDV_ROUTE) !== -1;
   }
 
+  function isTargetClientEditRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_CLIENT_EDIT_ROUTE) !== -1;
+  }
+
   function shouldPreserveBlockedDropdownOption(normalizedText, element) {
     if (!normalizedText) return false;
     if (!isTargetNfceRoute()) return false;
@@ -381,6 +401,120 @@
     const byId = input.id && BLOCK_INPUT_IDS.includes(input.id);
     const bySelector = BLOCK_INPUT_SELECTORS.some(selector => input.matches && input.matches(selector));
     return byId || bySelector;
+  }
+
+  function isProductEditRoute() {
+    return String(location.href || '').toLowerCase().indexOf(PRODUCT_EDIT_ROUTE) !== -1;
+  }
+
+  function isProductAdminGuardInput(input) {
+    if (!input || !isProductEditRoute()) return false;
+    return !!(input.id && PRODUCT_ADMIN_GUARDED_INPUT_IDS.includes(input.id));
+  }
+
+  function resetProductAdminGuardState() {
+    PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE = false;
+  }
+
+  function unlockProductAdminGuardInputs() {
+    PRODUCT_ADMIN_GUARD_SESSION_UNLOCKED = true;
+    try {
+      if (chrome.storage && chrome.storage.session) {
+        chrome.storage.session.set({ [PRODUCT_ADMIN_GUARD_SESSION_STORAGE_KEY]: true });
+      }
+    } catch (error) {}
+    PRODUCT_ADMIN_GUARDED_INPUT_IDS.forEach((id) => {
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.removeAttribute('readonly');
+      input.removeAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR);
+      input.setAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR, 'true');
+      input.title = 'Campo liberado com senha de administrador';
+      input.style.cursor = '';
+    });
+  }
+
+  function syncProductAdminGuardInputs() {
+    PRODUCT_ADMIN_GUARDED_INPUT_IDS.forEach((id) => {
+      const input = document.getElementById(id);
+      if (!input) return;
+
+      if (!isProductAdminGuardInput(input)) {
+        if (
+          input.getAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR) === 'true'
+          || input.getAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR) === 'true'
+        ) {
+          input.removeAttribute('readonly');
+          input.removeAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR);
+          input.removeAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR);
+          input.style.cursor = '';
+          input.title = '';
+        }
+        return;
+      }
+
+      if (PRODUCT_ADMIN_GUARD_SESSION_UNLOCKED || input.getAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR) === 'true') {
+        input.removeAttribute('readonly');
+        input.removeAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR);
+        input.setAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR, 'true');
+        input.title = 'Campo liberado com senha de administrador';
+        input.style.cursor = '';
+        return;
+      }
+
+      input.setAttribute('readonly', 'true');
+      input.setAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR, 'true');
+      input.removeAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR);
+      input.title = 'Digite a senha de administrador para alterar este campo';
+      input.style.cursor = 'not-allowed';
+    });
+  }
+
+  function requestProductAdminGuardUnlock(input) {
+    if (!isProductAdminGuardInput(input) || PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE) return false;
+
+    PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE = true;
+    try {
+      const password = window.prompt('Digite a senha de administrador para alterar Custo e Quantidade atual.', '');
+      if (password === PRODUCT_ADMIN_PASSWORD) {
+        unlockProductAdminGuardInputs();
+        window.setTimeout(() => {
+          if (!input || !document.contains(input)) return;
+          try {
+            input.focus({ preventScroll: true });
+            input.select && input.select();
+          } catch (error) {}
+        }, 0);
+        return true;
+      }
+
+      if (password != null) {
+        window.alert('Senha de administrador inválida.');
+      }
+      if (input && document.contains(input)) input.blur();
+      return false;
+    } finally {
+      PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE = false;
+      syncProductAdminGuardInputs();
+    }
+  }
+
+  function handleProductAdminGuardActivation(event) {
+    if (!event || !event.target || !event.isTrusted) return;
+
+    const input = event.target.closest ? event.target.closest('input') : null;
+    if (!isProductAdminGuardInput(input)) return;
+    if (input.getAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR) === 'true') return;
+
+    if (event.type === 'keydown') {
+      const key = String(event.key || '');
+      const navigationKeys = ['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'Escape', 'Enter'];
+      if (!key || navigationKeys.includes(key)) return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    requestProductAdminGuardUnlock(input);
   }
 
   function normalizeText(value) {
@@ -2314,6 +2448,19 @@
     openNfeCashSaleBoletoWarning(trigger, cashSaleEntries);
   }
 
+  function handleClientIdentificationSaveSync(event) {
+    if (!event || !event.target || !isTargetClientEditRoute()) return;
+    const control = event.target.closest
+      ? event.target.closest('button, a, [role="button"], input[type="button"], input[type="submit"]')
+      : null;
+    if (!control) return;
+
+    const label = normalizeText(control.innerText || control.textContent || control.value || '');
+    if (label !== 'salvar') return;
+
+    syncClientIdentificationValueForPersist();
+  }
+
   function ensureExtensionModalBridge() {
     if (!document.documentElement) return;
     if (document.documentElement.dataset.zwebExtensionModalBridgeInstalled === EXTENSION_MODAL_BRIDGE_VERSION) return;
@@ -2505,6 +2652,266 @@
     const parsed = Number(integerPart);
     if (!Number.isFinite(parsed) || parsed <= 0) return '';
     return String(parsed);
+  }
+
+  function normalizeDavItemDescriptionKey(value) {
+    return normalizeRawText(value || '').toLowerCase();
+  }
+
+  function readDavItemCodeCache() {
+    try {
+      const raw = window.sessionStorage && window.sessionStorage.getItem(DAV_ITEM_CODE_CACHE_STORAGE_KEY);
+      if (!raw) return Object.create(null);
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : Object.create(null);
+    } catch (error) {
+      return Object.create(null);
+    }
+  }
+
+  function writeDavItemCodeCache() {
+    try {
+      if (!window.sessionStorage) return;
+      window.sessionStorage.setItem(DAV_ITEM_CODE_CACHE_STORAGE_KEY, JSON.stringify(DAV_ITEM_CODE_CACHE));
+    } catch (error) {}
+  }
+
+  function rememberDavItemCode(code, description) {
+    const normalizedCode = String(code || '').trim().replace(/^#/, '');
+    const key = normalizeDavItemDescriptionKey(description);
+    if (!normalizedCode || !key) return;
+    DAV_ITEM_CODE_CACHE[key] = normalizedCode;
+    writeDavItemCodeCache();
+  }
+
+  function parseDavItemOptionText(rawText) {
+    const text = normalizeRawText(rawText);
+    if (!text) return null;
+
+    const match = text.match(/^#?(\d+)\s+#\s+(.+?)(?:\s+R\$\s|\s+\|\s+Qtde\.:|$)/i);
+    if (!match) return null;
+
+    const code = String(match[1] || '').trim();
+    const description = normalizeRawText(match[2] || '');
+    if (!code || !description) return null;
+
+    return { code, description };
+  }
+
+  function isDavItemPickerInput(input) {
+    if (!input || !input.matches || !input.matches(ITEM_SEARCH_SELECTOR)) return false;
+    if (!isTargetDavRoute() || !isVisible(input)) return false;
+    if ((input.id || '') === 'client' || (input.id || '') === 'checkout') return false;
+    if ((input.id || '').indexOf('z-select-') !== 0) return false;
+
+    let current = input;
+    for (let i = 0; i < 8 && current; i += 1, current = current.parentElement) {
+      const text = normalizeText(current && (current.innerText || current.textContent || ''));
+      if (!text) continue;
+      if (
+        text.indexOf('descricao') !== -1
+        && text.indexOf('quantidade') !== -1
+        && (
+          text.indexOf('valor unitario') !== -1
+          || text.indexOf('valor unitario r$') !== -1
+        )
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function rememberDavItemMeta(meta) {
+    if (!meta || !meta.code || !meta.description) return;
+    DAV_PENDING_SELECTED_ITEM_META = {
+      code: String(meta.code).trim().replace(/^#/, ''),
+      description: normalizeRawText(meta.description)
+    };
+    rememberDavItemCode(DAV_PENDING_SELECTED_ITEM_META.code, DAV_PENDING_SELECTED_ITEM_META.description);
+  }
+
+  function captureDavItemMetaFromInput(input) {
+    if (!isDavItemPickerInput(input)) return null;
+
+    const listId = input.getAttribute('aria-controls') || '';
+    const list = listId ? document.getElementById(listId) : null;
+    const highlighted = list && list.querySelector('.multiselect__option--highlight, [role="option"][aria-selected="true"]');
+    const highlightedMeta = parseDavItemOptionText(highlighted && (highlighted.innerText || highlighted.textContent || ''));
+    if (highlightedMeta) return highlightedMeta;
+
+    const wrapper = input.closest('.multiselect');
+    const single = wrapper && wrapper.querySelector('.multiselect__single');
+    const description = normalizeRawText(single && (single.innerText || single.textContent || ''));
+    if (!description) return null;
+
+    const cachedCode = DAV_ITEM_CODE_CACHE[normalizeDavItemDescriptionKey(description)];
+    return cachedCode ? { code: cachedCode, description } : null;
+  }
+
+  function rememberDavVisibleItemOptions(input) {
+    if (!isDavItemPickerInput(input)) return;
+    const listId = input.getAttribute('aria-controls') || '';
+    const list = listId ? document.getElementById(listId) : null;
+    if (!list) return;
+
+    ensureDavItemPickerStyle();
+    list.setAttribute(DAV_ITEM_PICKER_LIST_ATTR, 'true');
+
+    Array.from(list.querySelectorAll('[role="option"], .multiselect__option, .multiselect__element'))
+      .filter((option) => isVisible(option))
+      .forEach((option) => {
+        const meta = parseDavItemOptionText(option.innerText || option.textContent || '');
+        if (meta) rememberDavItemMeta(meta);
+      });
+  }
+
+  function ensureDavItemPickerStyle() {
+    if (document.getElementById(DAV_ITEM_PICKER_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = DAV_ITEM_PICKER_STYLE_ID;
+    style.textContent = ''
+      + '[' + DAV_ITEM_PICKER_LIST_ATTR + '="true"] [role="option"],'
+      + '[' + DAV_ITEM_PICKER_LIST_ATTR + '="true"] .multiselect__option,'
+      + '[' + DAV_ITEM_PICKER_LIST_ATTR + '="true"] .multiselect__element,'
+      + '[' + DAV_ITEM_PICKER_LIST_ATTR + '="true"] span,'
+      + '[' + DAV_ITEM_PICKER_LIST_ATTR + '="true"] div'
+      + '{font-weight:700 !important;}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function handleDavItemSelectionCapture(event) {
+    if (!isTargetDavRoute() || !event || !event.target) return;
+
+    if (event.type === 'input' || event.type === 'change') {
+      const input = event.target;
+      if (!isDavItemPickerInput(input)) return;
+      window.setTimeout(() => {
+        if (!document.contains(input)) return;
+        rememberDavVisibleItemOptions(input);
+      }, 120);
+      return;
+    }
+
+    if (event.type === 'keydown') {
+      const input = event.target;
+      if (event.key !== 'Enter' || !isDavItemPickerInput(input)) return;
+      const meta = captureDavItemMetaFromInput(input);
+      if (meta) rememberDavItemMeta(meta);
+      return;
+    }
+
+    const option = event.target.closest
+      ? event.target.closest('[role="option"], .multiselect__option, .multiselect__element')
+      : null;
+    if (!option) return;
+
+    const list = option.closest('[role="listbox"], .multiselect__content');
+    const input = list && list.id
+      ? document.querySelector('input.multiselect__input[aria-controls="' + CSS.escape(list.id) + '"]')
+      : null;
+    if (!isDavItemPickerInput(input)) return;
+
+    rememberDavVisibleItemOptions(input);
+    const meta = parseDavItemOptionText(option.innerText || option.textContent || '');
+    if (meta) rememberDavItemMeta(meta);
+  }
+
+  function findDavItemsTable() {
+    if (!isTargetDavRoute()) return null;
+
+    const tables = Array.from(document.querySelectorAll('table.table.table-fix-head.custom-table-striped'));
+    return tables.find((table) => {
+      if (!isVisible(table)) return false;
+      const headers = Array.from(table.querySelectorAll('thead th'))
+        .map((th) => normalizeText(th.textContent || ''))
+        .filter(Boolean);
+      return headers.includes('descricao')
+        && headers.includes('unidade')
+        && headers.includes('quantidade')
+        && headers.some((text) => text.indexOf('valor unitario') !== -1);
+    }) || null;
+  }
+
+  function ensureDavItemCodeHeader(table) {
+    if (!table) return null;
+    const existing = table.querySelector('thead th[' + DAV_ITEM_CODE_HEADER_ATTR + '="true"]');
+    const headerRow = table.querySelector('thead tr');
+    const descriptionHeader = headerRow && Array.from(headerRow.children).find((cell) => normalizeText(cell.textContent || '') === 'descricao');
+    if (!headerRow || !descriptionHeader) return null;
+
+    if (existing) {
+      if (existing !== descriptionHeader.previousElementSibling) {
+        descriptionHeader.insertAdjacentElement('beforebegin', existing);
+      }
+      return existing;
+    }
+
+
+    const header = document.createElement('th');
+    header.setAttribute(DAV_ITEM_CODE_HEADER_ATTR, 'true');
+    header.className = 'text-center';
+    header.textContent = 'Código';
+    header.style.width = '8%';
+    header.style.minWidth = '92px';
+    header.style.whiteSpace = 'nowrap';
+
+    descriptionHeader.style.width = '22%';
+    descriptionHeader.insertAdjacentElement('beforebegin', header);
+    return header;
+  }
+
+  function ensureDavItemCodeCell(row, code) {
+    if (!row) return;
+
+    const descriptionCell = Array.from(row.children).find((cell) => cell.getAttribute(DAV_ITEM_CODE_CELL_ATTR) !== 'true');
+    if (!descriptionCell) return;
+
+    let cell = row.querySelector('td[' + DAV_ITEM_CODE_CELL_ATTR + '="true"]');
+    if (cell && cell !== descriptionCell.previousElementSibling) {
+      descriptionCell.insertAdjacentElement('beforebegin', cell);
+    }
+    if (!cell) {
+      cell = document.createElement('td');
+      cell.setAttribute(DAV_ITEM_CODE_CELL_ATTR, 'true');
+      cell.className = 'text-center';
+      cell.style.whiteSpace = 'nowrap';
+      cell.style.fontVariantNumeric = 'tabular-nums';
+      descriptionCell.insertAdjacentElement('beforebegin', cell);
+    }
+
+    cell.textContent = String(code || '').trim();
+  }
+
+  function findDavDescriptionCell(row) {
+    if (!row) return null;
+    return Array.from(row.children).find((cell) => cell.getAttribute(DAV_ITEM_CODE_CELL_ATTR) !== 'true') || null;
+  }
+
+  function syncDavItemCodeColumn() {
+    const table = findDavItemsTable();
+    if (!table) return;
+
+    ensureDavItemCodeHeader(table);
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    rows.forEach((row) => {
+      const descriptionCell = findDavDescriptionCell(row);
+      if (!descriptionCell) return;
+
+      const description = normalizeRawText(descriptionCell.textContent || '');
+      if (!description) return;
+
+      let code = DAV_ITEM_CODE_CACHE[normalizeDavItemDescriptionKey(description)] || '';
+      if (!code && DAV_PENDING_SELECTED_ITEM_META && DAV_PENDING_SELECTED_ITEM_META.description === description) {
+        code = DAV_PENDING_SELECTED_ITEM_META.code || '';
+        if (code) rememberDavItemCode(code, description);
+      }
+      if (!code) return;
+
+      ensureDavItemCodeCell(row, code);
+    });
   }
 
   function parseDavIntegerQuantity(rawValue) {
@@ -6972,6 +7379,8 @@
   }
 
   function cleanupUiForCurrentPage() {
+    resetProductAdminGuardState();
+    syncProductAdminGuardInputs();
     if (!isFeatureEnabled('batchEnabled')) removeBatchUi();
     if (!isFeatureEnabled('productPreviewEnabled')) removeProductPreviewButton();
     if (!isFeatureEnabled('filterEnabled')) restoreProductFilterColumnOptions();
@@ -8370,6 +8779,43 @@
     input.style.opacity = '0.6';
     input.title = 'Campo bloqueado pelo usuario';
   }
+
+  function syncClientIdentificationUnlock() {
+    if (!isTargetClientEditRoute()) return;
+
+    const input = document.getElementById('content.identification');
+    if (!input) return;
+
+    input.disabled = false;
+    input.readOnly = false;
+    input.removeAttribute('disabled');
+    input.removeAttribute('readonly');
+    input.style.pointerEvents = '';
+    input.style.opacity = '';
+    input.style.cursor = '';
+    if (input.title === 'Campo bloqueado pelo usuario') {
+      input.title = '';
+    }
+  }
+
+  function syncClientIdentificationValueForPersist() {
+    if (!isTargetClientEditRoute()) return;
+
+    const input = document.getElementById('content.identification');
+    if (!input) return;
+
+    const currentValue = String(input.value || '');
+    const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+    if (descriptor && descriptor.set) {
+      descriptor.set.call(input, currentValue);
+    } else {
+      input.value = currentValue;
+    }
+
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    input.dispatchEvent(new Event('blur', { bubbles: true }));
+  }
   function scan() {
     if (!isFeatureEnabled('enabled')) return;
 
@@ -8546,16 +8992,26 @@
   document.addEventListener('contextmenu', blockInteractions, true);
   document.addEventListener('pointerdown', armXmlDownloadFlow, true);
   document.addEventListener('pointerdown', handleNfeCashSaleBoletoGuard, true);
+  document.addEventListener('pointerdown', handleClientIdentificationSaveSync, true);
   document.addEventListener('click', armXmlDownloadFlow, true);
   document.addEventListener('click', handleNfeCashSaleBoletoGuard, true);
+  document.addEventListener('click', handleClientIdentificationSaveSync, true);
   document.addEventListener('click', handleProductNativeFilterClearSync, true);
   document.addEventListener('click', handleCommonMultiTermFilterApply, true);
   document.addEventListener('click', handleCommonMultiTermFilterClear, true);
   document.addEventListener('submit', handleCommonMultiTermFilterSubmit, true);
   document.addEventListener('keydown', handleCommonMultiTermFilterKeydown, true);
   document.addEventListener('input', normalizeItemSearchValue, true);
+  document.addEventListener('input', handleDavItemSelectionCapture, true);
   document.addEventListener('change', normalizeItemSearchValue, true);
+  document.addEventListener('change', handleDavItemSelectionCapture, true);
   document.addEventListener('keydown', handleNfeItemSearchHashKeydown, true);
+  document.addEventListener('click', handleDavItemSelectionCapture, true);
+  document.addEventListener('keydown', handleDavItemSelectionCapture, true);
+  document.addEventListener('pointerdown', handleProductAdminGuardActivation, true);
+  document.addEventListener('keydown', handleProductAdminGuardActivation, true);
+  document.addEventListener('paste', handleProductAdminGuardActivation, true);
+  document.addEventListener('beforeinput', handleProductAdminGuardActivation, true);
   setInterval(syncFocusedHashItemSearchInput, 120);
   document.addEventListener('change', handleDavQuantityAutoClearTrigger, true);
   document.addEventListener('keydown', handleDavQuantityAutoClearTrigger, true);
@@ -8564,6 +9020,7 @@
   document.addEventListener('keydown', handleBatchToggleActivation, true);
   window.addEventListener('message', handleXmlBridgeMessage);
   window.addEventListener('hashchange', function() {
+    resetProductAdminGuardState();
     if (shouldUsePageBridge()) ensurePageBridge();
     scheduleFeatureUiRefresh(40);
   });
@@ -8588,6 +9045,9 @@
       scan();
     }
 
+    syncClientIdentificationUnlock();
+    syncProductAdminGuardInputs();
+
     syncNfceCardBrandOptions();
     syncProductCloneProtection();
     ensureLowStockHighlightStyle();
@@ -8609,6 +9069,7 @@
 
     if (isTargetDavRoute()) {
       ensureBatchUi();
+      syncDavItemCodeColumn();
     } else {
       removeBatchUi();
     }
@@ -8634,6 +9095,16 @@
 
   function init() {
     if (shouldUsePageBridge()) ensurePageBridge();
+    resetProductAdminGuardState();
+    DAV_ITEM_CODE_CACHE = readDavItemCodeCache();
+    try {
+      if (chrome.storage && chrome.storage.session) {
+        chrome.storage.session.get({ [PRODUCT_ADMIN_GUARD_SESSION_STORAGE_KEY]: false }, (res) => {
+          PRODUCT_ADMIN_GUARD_SESSION_UNLOCKED = !!(res && res[PRODUCT_ADMIN_GUARD_SESSION_STORAGE_KEY]);
+          scheduleFeatureUiRefresh(0);
+        });
+      }
+    } catch (e) {}
 
     try {
       chrome.storage.local.get(FEATURE_DEFAULTS, (res) => {
@@ -8678,6 +9149,14 @@
 
   try {
     chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'session') {
+        if (changes[PRODUCT_ADMIN_GUARD_SESSION_STORAGE_KEY]) {
+          PRODUCT_ADMIN_GUARD_SESSION_UNLOCKED = changes[PRODUCT_ADMIN_GUARD_SESSION_STORAGE_KEY].newValue === true;
+          scheduleFeatureUiRefresh(0);
+        }
+        return;
+      }
+
       if (area !== 'local') return;
 
       if (changes[ACTION_MENU_PREFS_STORAGE_KEY]) {
