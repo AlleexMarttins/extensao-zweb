@@ -6,12 +6,21 @@
   const ARM_TTL_MS = 15000;
   const POLL_INTERVAL_MS = 300;
   const PRODUCT_PAGINATE_URL_FRAGMENT = 'inventory.get-product-paginate';
+  const PURCHASE_DETAILED_URL_FRAGMENT = 'consumers.find-detailed-purchase';
+  const NFCE_SELLER_OBSERVATION_URL_FRAGMENTS = [
+    'fiscal.post-nfce',
+    'fiscal.put-nfce',
+    'fiscal.transmit-nfce',
+    'fiscal.get-complementary-information-by-document'
+  ];
+  const NFCE_COMPLEMENTARY_INFO_URL_FRAGMENT = 'fiscal.get-complementary-information-by-document';
+  const NFCE_SELLER_OBSERVATION_PREFIX = 'Vendedor:';
   const NFE_NEW_ROUTE_FRAGMENT = '/fiscal/nfe/new';
   const NFE_ITEM_SEARCH_URL_FRAGMENTS = [
     'inventory.search-products-for-documents',
     'inventory.get-composition-kit-to-import'
   ];
-  const BRIDGE_VERSION = '20260313-1';
+  const BRIDGE_VERSION = '20260514-3';
 
   if (window.__zwebXmlPageBridgeInstalled === BRIDGE_VERSION) return;
   window.__zwebXmlPageBridgeInstalled = BRIDGE_VERSION;
@@ -172,6 +181,19 @@
     return NFE_ITEM_SEARCH_URL_FRAGMENTS.some((fragment) => value.indexOf(fragment) !== -1);
   }
 
+  function isPurchaseDetailedRequest(url) {
+    return String(url || '').indexOf(PURCHASE_DETAILED_URL_FRAGMENT) !== -1;
+  }
+
+  function isNfceSellerObservationRequest(url) {
+    const value = String(url || '');
+    return NFCE_SELLER_OBSERVATION_URL_FRAGMENTS.some((fragment) => value.indexOf(fragment) !== -1);
+  }
+
+  function isNfceComplementaryInformationRequest(url) {
+    return String(url || '').indexOf(NFCE_COMPLEMENTARY_INFO_URL_FRAGMENT) !== -1;
+  }
+
   function normalizeItemSearchTerm(value) {
     const current = String(value || '').trim();
     if (!current) return current;
@@ -200,6 +222,270 @@
 
     payload.search = normalizedSearch;
     return JSON.stringify(payload);
+  }
+
+  function normalizeDisplayName(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function getPersonDisplayName(value) {
+    if (!value) return '';
+    if (typeof value === 'string') return normalizeDisplayName(value);
+    if (typeof value !== 'object' || Array.isArray(value)) return '';
+
+    const keys = ['name', 'displayName', 'fullName', 'sellerName', 'login', 'email'];
+    for (const key of keys) {
+      const name = normalizeDisplayName(value[key]);
+      if (name) return name;
+    }
+
+    return '';
+  }
+
+  function getNfceSellerName(dados) {
+    if (!dados || typeof dados !== 'object') return '';
+
+    return getPersonDisplayName(dados.seller)
+      || getPersonDisplayName(dados.responsibleForImportedDocument);
+  }
+
+  function getNfceDadosPayload(payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+
+    if (payload.document && typeof payload.document === 'object' && !Array.isArray(payload.document)) {
+      if (payload.document.dados && typeof payload.document.dados === 'object' && !Array.isArray(payload.document.dados)) {
+        return payload.document.dados;
+      }
+      return payload.document;
+    }
+
+    if (payload.dados && typeof payload.dados === 'object' && !Array.isArray(payload.dados)) {
+      return payload.dados;
+    }
+
+    return payload;
+  }
+
+  function upsertNfceSellerObservationLine(currentValue, sellerName) {
+    const current = String(currentValue || '').replace(/\r\n/g, '\n').trim();
+    const nextLine = NFCE_SELLER_OBSERVATION_PREFIX + ' ' + sellerName;
+    const lines = current
+      ? current.split('\n').filter((line) => !/^\s*vendedor\s*:/i.test(line))
+      : [];
+
+    lines.push(nextLine);
+    return lines.join('\n');
+  }
+
+  function ensureNfceSellerObservationPayload(payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
+
+    const dados = getNfceDadosPayload(payload);
+    if (!dados || typeof dados !== 'object' || Array.isArray(dados)) return false;
+
+    const sellerName = getNfceSellerName(dados);
+    if (!sellerName) return false;
+
+    if (!dados.observations || typeof dados.observations !== 'object' || Array.isArray(dados.observations)) {
+      dados.observations = {};
+    }
+
+    const current = dados.observations.editables;
+    const next = upsertNfceSellerObservationLine(current, sellerName);
+    if (next === String(current || '')) return false;
+
+    dados.observations.editables = next;
+    return true;
+  }
+
+  function normalizeNfceSellerObservationPayload(url, body) {
+    if (!isNfceSellerObservationRequest(url)) return body;
+    if (typeof body !== 'string' || !body) return body;
+
+    const payload = safeParseJson(body);
+    if (!ensureNfceSellerObservationPayload(payload)) return body;
+
+    try {
+      return JSON.stringify(payload);
+    } catch (error) {
+      return body;
+    }
+  }
+
+  function normalizeOutgoingRequestPayload(url, body) {
+    let nextBody = normalizeNfeItemSearchPayload(url, body);
+    nextBody = normalizeNfceSellerObservationPayload(url, nextBody);
+    return nextBody;
+  }
+
+  function getNfceSellerNameFromRequestBody(body) {
+    if (typeof body !== 'string' || !body) return '';
+
+    const payload = safeParseJson(body);
+    const dados = getNfceDadosPayload(payload);
+    return getNfceSellerName(dados);
+  }
+
+  function normalizeNfceComplementaryResponseText(requestBody, responseText) {
+    if (typeof responseText !== 'string' || !responseText) return responseText;
+
+    const sellerName = getNfceSellerNameFromRequestBody(requestBody);
+    if (!sellerName) return responseText;
+
+    const payload = safeParseJson(responseText);
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return responseText;
+
+    const current = payload.editables;
+    const next = upsertNfceSellerObservationLine(current, sellerName);
+    if (next === String(current || '')) return responseText;
+
+    payload.editables = next;
+    try {
+      return JSON.stringify(payload);
+    } catch (error) {
+      return responseText;
+    }
+  }
+
+  function normalizeDetailedPurchasePayload(payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
+    if (!payload.transport || typeof payload.transport !== 'object' || Array.isArray(payload.transport)) return false;
+    if (payload.transport.freight !== null) return false;
+
+    delete payload.transport.freight;
+    return true;
+  }
+
+  function normalizeDetailedPurchaseResponseText(text) {
+    if (typeof text !== 'string' || !text) return text;
+
+    const payload = safeParseJson(text);
+    if (!normalizeDetailedPurchasePayload(payload)) return text;
+
+    try {
+      return JSON.stringify(payload);
+    } catch (error) {
+      return text;
+    }
+  }
+
+  function getRawXhrResponseText(xhr) {
+    let text = '';
+
+    try {
+      if (typeof xhr.responseText === 'string') {
+        text = xhr.responseText;
+      }
+    } catch (error) {}
+
+    if (!text) {
+      try {
+        if (typeof xhr.response === 'string') {
+          text = xhr.response;
+        }
+      } catch (error) {}
+    }
+
+    return text;
+  }
+
+  function getPatchedXhrResponseText(xhr) {
+    let text = getRawXhrResponseText(xhr);
+    if (!text) return text;
+
+    if (isPurchaseDetailedRequest(xhr.__zwebBridgeUrl)) {
+      text = normalizeDetailedPurchaseResponseText(text);
+    }
+
+    if (isNfceComplementaryInformationRequest(xhr.__zwebBridgeUrl)) {
+      text = normalizeNfceComplementaryResponseText(xhr.__zwebBridgeRequestBody, text);
+    }
+
+    return text;
+  }
+
+  function patchBridgeXhrResponse(xhr) {
+    if (!xhr || xhr.__zwebBridgeResponsePatched) return;
+    if (xhr.readyState !== 4) return;
+
+    const patchedText = getPatchedXhrResponseText(xhr);
+    if (!patchedText) return;
+
+    const currentText = getRawXhrResponseText(xhr);
+
+    if (!currentText || patchedText === currentText) return;
+
+    xhr.__zwebBridgeResponsePatched = true;
+    const originalResponse = (() => {
+      try {
+        return xhr.response;
+      } catch (error) {
+        return undefined;
+      }
+    })();
+    let parsedJson;
+
+    try {
+      Object.defineProperty(xhr, 'responseText', {
+        configurable: true,
+        get: function() {
+          return patchedText;
+        }
+      });
+    } catch (error) {}
+
+    try {
+      Object.defineProperty(xhr, 'response', {
+        configurable: true,
+        get: function() {
+          if (xhr.responseType === 'json') {
+            if (typeof parsedJson === 'undefined') parsedJson = safeParseJson(patchedText);
+            return parsedJson;
+          }
+          if (!xhr.responseType || xhr.responseType === 'text') return patchedText;
+          return originalResponse;
+        }
+      });
+    } catch (error) {}
+  }
+
+  function installBridgeXhrResponsePatch(xhr, url) {
+    if (!xhr || xhr.__zwebBridgeResponsePatchInstalled) return;
+    if (!isPurchaseDetailedRequest(url) && !isNfceComplementaryInformationRequest(url)) return;
+
+    xhr.__zwebBridgeResponsePatchInstalled = true;
+    xhr.addEventListener('readystatechange', () => patchBridgeXhrResponse(xhr), true);
+  }
+
+  async function patchBridgeFetchResponse(url, requestBody, response) {
+    if (!response || !response.ok) return response;
+
+    let text = '';
+    try {
+      text = await response.clone().text();
+    } catch (error) {
+      return response;
+    }
+
+    let patchedText = text;
+    if (isPurchaseDetailedRequest(url)) {
+      patchedText = normalizeDetailedPurchaseResponseText(patchedText);
+    }
+    if (isNfceComplementaryInformationRequest(url)) {
+      patchedText = normalizeNfceComplementaryResponseText(requestBody, patchedText);
+    }
+
+    if (!patchedText || patchedText === text) return response;
+
+    const headers = new Headers(response.headers);
+    headers.delete('content-length');
+    headers.delete('content-encoding');
+
+    return new Response(patchedText, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: headers
+    });
   }
 
   function serializeXmlDocument(doc) {
@@ -275,11 +561,13 @@
   XMLHttpRequest.prototype.open = function(method, url) {
     this.__zwebBridgeMethod = method;
     this.__zwebBridgeUrl = typeof url === 'string' ? url : '';
+    installBridgeXhrResponsePatch(this, this.__zwebBridgeUrl);
     return nativeXhrOpen.apply(this, arguments);
   };
 
   XMLHttpRequest.prototype.send = function(body) {
-    body = normalizeNfeItemSearchPayload(this.__zwebBridgeUrl, body);
+    body = normalizeOutgoingRequestPayload(this.__zwebBridgeUrl, body);
+    this.__zwebBridgeRequestBody = body;
 
     if (this.__zwebBridgeUrl && this.__zwebBridgeUrl.indexOf(PRODUCT_PAGINATE_URL_FRAGMENT) !== -1) {
       const parsedBody = safeParseJson(typeof body === 'string' ? body : '');
@@ -305,30 +593,45 @@
       }
 
       const nextInit = init ? Object.assign({}, init) : {};
-      const normalizedBody = normalizeNfeItemSearchPayload(url, nextInit.body);
+      const normalizedBody = normalizeOutgoingRequestPayload(url, nextInit.body);
       if (normalizedBody !== nextInit.body) {
         nextInit.body = normalizedBody;
-        return nativeFetch(input, nextInit);
+        const response = await nativeFetch(input, nextInit);
+        return isPurchaseDetailedRequest(url) || isNfceComplementaryInformationRequest(url)
+          ? patchBridgeFetchResponse(url, normalizedBody, response)
+          : response;
       }
 
       if (
         input instanceof Request
         && (!nextInit || typeof nextInit.body === 'undefined')
-        && isTargetNfeNewRoute()
-        && isHashFeatureEnabled()
-        && isNfeItemSearchRequest(url)
+        && (
+          (isTargetNfeNewRoute() && isHashFeatureEnabled() && isNfeItemSearchRequest(url))
+          || isNfceSellerObservationRequest(url)
+        )
       ) {
         try {
           const bodyText = await input.clone().text();
-          const rewrittenBody = normalizeNfeItemSearchPayload(url, bodyText);
+          const rewrittenBody = normalizeOutgoingRequestPayload(url, bodyText);
           if (rewrittenBody !== bodyText) {
             const rewrittenRequest = new Request(input, { body: rewrittenBody });
-            return nativeFetch(rewrittenRequest);
+            const response = await nativeFetch(rewrittenRequest);
+            return isPurchaseDetailedRequest(url) || isNfceComplementaryInformationRequest(url)
+              ? patchBridgeFetchResponse(url, rewrittenBody, response)
+              : response;
           }
+
+          const response = await nativeFetch(input, init);
+          return isPurchaseDetailedRequest(url) || isNfceComplementaryInformationRequest(url)
+            ? patchBridgeFetchResponse(url, bodyText, response)
+            : response;
         } catch (error) {}
       }
 
-      return nativeFetch(input, init);
+      const response = await nativeFetch(input, init);
+      return isPurchaseDetailedRequest(url) || isNfceComplementaryInformationRequest(url)
+        ? patchBridgeFetchResponse(url, nextInit.body, response)
+        : response;
     };
   }
 
