@@ -32,7 +32,7 @@
       key: 'multiTermFilterEnabled',
       group: 'Produtos',
       title: 'Filtro Composto',
-      description: 'Permite usar mais de um termo no Filtrar, como LAMP 12V, exigindo todos os termos na mesma coluna.',
+      description: 'Permite filtros persistentes com E/OU no Filtrar, como FT + 12V + 5A ou Codigo 15 OU 150.',
       reloadPrompt: false,
       defaultValue: true,
     },
@@ -120,9 +120,10 @@
       key: 'stockPriceSimulationEnabled',
       group: 'Fiscal',
       title: 'Simular Pre\u00e7o',
-      description: 'No popup da compra, usa o l\u00e1pis do cadastro para preencher o Pre\u00e7o sem salvar; fora dele, usa o estoque.',
+      description: 'Desativado temporariamente. No popup da compra, usava o l\u00e1pis do cadastro para preencher o Pre\u00e7o sem salvar.',
       reloadPrompt: false,
-      defaultValue: true,
+      defaultValue: false,
+      forceDisabled: true,
     },
     {
       key: 'noteAssistantEnabled',
@@ -176,7 +177,7 @@
 
   function getDefaults() {
     return FEATURE_DEFINITIONS.reduce((acc, feature) => {
-      acc[feature.key] = feature.defaultValue !== false;
+      acc[feature.key] = feature.forceDisabled ? false : feature.defaultValue !== false;
       return acc;
     }, {});
   }
@@ -186,7 +187,7 @@
     const nextState = Object.assign({}, defaults, rawState || {});
 
     FEATURE_DEFINITIONS.forEach((feature) => {
-      nextState[feature.key] = nextState[feature.key] !== false;
+      nextState[feature.key] = feature.forceDisabled ? false : nextState[feature.key] !== false;
     });
 
     return nextState;

@@ -3,7 +3,7 @@
   "name": "Assistente Zweb",
   "version": "1.1",
   "description": "Bloqueios e automações para fluxos administrativos, fiscais e de notas na Zweb.",
-  "permissions": ["contextMenus", "debugger", "downloads", "offscreen", "scripting", "storage", "tabs"],
+  "permissions": ["alarms", "contextMenus", "debugger", "downloads", "offscreen", "scripting", "storage", "tabs"],
   "host_permissions": [
     "https://zweb.com.br/*",
     "https://api.zweb.com.br/*",
@@ -36,6 +36,12 @@
   "content_scripts": [
     {
       "matches": ["https://zweb.com.br/*"],
+      "js": ["nucleo/page-bridge.js", "nucleo/clone-dav-log-helper.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["https://zweb.com.br/*"],
       "js": [
         "nucleo/features.js",
         "setores/notas/note-assistant.js",
@@ -66,7 +72,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["nucleo/page-bridge.js"],
+      "resources": ["nucleo/page-bridge.js", "nucleo/clone-dav-log-helper.js"],
       "matches": ["https://zweb.com.br/*"]
     }
   ]

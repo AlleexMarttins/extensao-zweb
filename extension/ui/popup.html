@@ -74,6 +74,87 @@
       display:grid;
       gap:14px;
     }
+    .local-settings{
+      margin:14px 12px 0;
+      padding:14px;
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:0 8px 18px rgba(15,76,146,0.06);
+    }
+    .local-settings-title{
+      margin:0;
+      font-size:14px;
+      font-weight:800;
+      line-height:1.2;
+    }
+    .local-settings-copy{
+      margin:7px 0 12px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .decimal-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .decimal-field{
+      display:grid;
+      gap:6px;
+    }
+    .decimal-field label{
+      color:var(--muted);
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.02em;
+    }
+    .decimal-field input{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#ffffff;
+      color:var(--text);
+      padding:10px 11px;
+      font-size:14px;
+      font-weight:700;
+      outline:none;
+    }
+    .decimal-field input:focus{
+      border-color:rgba(22,100,192,0.42);
+      box-shadow:0 0 0 3px rgba(22,100,192,0.12);
+    }
+    .decimal-actions{
+      display:flex;
+      gap:8px;
+      margin-top:12px;
+    }
+    .mini-btn{
+      appearance:none;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 11px;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      background:var(--panel-alt);
+      color:var(--accent-strong);
+    }
+    .mini-btn.primary{
+      border-color:rgba(22,100,192,0.28);
+      background:rgba(22,100,192,0.1);
+    }
+    .mini-btn:disabled{
+      cursor:not-allowed;
+      opacity:.55;
+    }
+    .decimal-status{
+      min-height:18px;
+      margin:10px 0 0;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.35;
+    }
     .group-title{
       margin:0 0 8px;
       padding:0 6px;
@@ -224,6 +305,25 @@
       <h1>Assistente Zweb</h1>
       <p class="subtitle">Bloqueios e automa&ccedil;&otilde;es podem ser ligados ou desligados separadamente.</p>
     </div>
+    <section class="local-settings" aria-labelledby="decimalSettingsTitle">
+      <h2 class="local-settings-title" id="decimalSettingsTitle">Casas decimais locais</h2>
+      <p class="local-settings-copy">Vale apenas para este login neste navegador. Use na aba aberta da Zweb.</p>
+      <div class="decimal-grid">
+        <div class="decimal-field">
+          <label for="localDecimalQuantity">Quantidade</label>
+          <input id="localDecimalQuantity" type="number" min="2" max="4" step="1" inputmode="numeric">
+        </div>
+        <div class="decimal-field">
+          <label for="localDecimalPrice">Pre&ccedil;o</label>
+          <input id="localDecimalPrice" type="number" min="2" max="10" step="1" inputmode="numeric">
+        </div>
+      </div>
+      <div class="decimal-actions">
+        <button class="mini-btn primary" id="saveDecimalPrefs">Salvar local</button>
+        <button class="mini-btn" id="resetDecimalPrefs">Usar padr&atilde;o global</button>
+      </div>
+      <p class="decimal-status" id="decimalPrefsStatus"></p>
+    </section>
 
     <div class="feature-groups" id="featureGroups"></div>
 

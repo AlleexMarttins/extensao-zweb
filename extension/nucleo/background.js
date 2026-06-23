@@ -18,6 +18,15 @@ const NOTE_ASSISTANT_LOG_LIMIT = 300;
 const NOTE_ASSISTANT_FSIST_URL = 'https://www.fsist.com.br/';
 const NOTE_ASSISTANT_NFE_URL_PATTERN = /^https?:\/\/(www\.)?nfe\.fazenda\.gov\.br\//i;
 const COMMISSION_REPORT_URL_PATTERN = /^https:\/\/compufour\.s3\.amazonaws\.com\/production\/uploads\/reports\/report\/.+\.html(?:[?#].*)?$/i;
+const ZWEB_BFF_DASHBOARD_API_URL = 'https://api.zweb.com.br/rpc/v2/BFF.get-dashboard';
+const ZWEB_APPLICATION_PUT_CONFIGURATION_API_URL = 'https://api.zweb.com.br/rpc/v1/application.put-configuration';
+const ZWEB_DOCUMENT_CONFIGURATION_URL = 'https://zweb.com.br/#/document/document-configuration';
+const DOCUMENT_NEGATIVE_STOCK_GUARD_ALARM_NAME = 'zweb-document-negative-stock-disable';
+const DOCUMENT_NEGATIVE_STOCK_GUARD_BACKGROUND_STORAGE_KEY = 'zwebDocumentNegativeStockBackgroundSchedule';
+const DOCUMENT_NEGATIVE_STOCK_VISUAL_TAB_TIMEOUT_MS = 35000;
+const DOCUMENT_NEGATIVE_STOCK_VISUAL_TAB_CLOSE_DELAY_MS = 1200;
+const FISCAL_CLONE_DAV_BACKGROUND_LOG_KEY = 'zwebFiscalCloneDavDebugLog';
+const FISCAL_CLONE_DAV_BACKGROUND_LOG_LIMIT = 240;
 const DEBUGGER_PROTOCOL_VERSION = '1.3';
 const OFFSCREEN_DOWNLOAD_DOCUMENT_PATH = 'nucleo/offscreen-download.html';
 const OFFSCREEN_DOWNLOAD_DOCUMENT_URL = chrome.runtime.getURL(OFFSCREEN_DOWNLOAD_DOCUMENT_PATH);
@@ -45,6 +54,8 @@ let lastFsistTabId = null;
 let lastNfePortalTabId = null;
 let lastZwebTabId = null;
 let lastZwebWindowId = null;
+let documentNegativeStockGuardTimeout = null;
+let documentNegativeStockGuardDisableRunning = false;
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -52,11 +63,17 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', () => {
   self.clients.claim();
+  restoreDocumentNegativeStockGuardSchedule();
 });
 
 chrome.runtime.onInstalled.addListener(() => {
   refreshContextMenus();
+  restoreDocumentNegativeStockGuardSchedule();
   appendLog('Extensao instalada ou atualizada.', 'info');
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  restoreDocumentNegativeStockGuardSchedule();
 });
 
 function isNumber(value) {
@@ -72,6 +89,744 @@ function getErrorMessage(error) {
   if (typeof error === 'string') return error;
   if (error && typeof error.message === 'string') return error.message;
   return String(error);
+}
+
+function getZwebDashboardClient(payload) {
+  const root = payload && payload.data && typeof payload.data === 'object' ? payload.data : payload;
+  if (!root || typeof root !== 'object') return null;
+  return root['get-client'] || root.getClient || null;
+}
+
+function hasNegativeStockConfigurationPayload(payload) {
+  return !!(
+    payload
+    && typeof payload === 'object'
+    && !Array.isArray(payload)
+    && payload.fiscal
+    && typeof payload.fiscal === 'object'
+    && payload.fiscal.emissor
+    && typeof payload.fiscal.emissor === 'object'
+    && Object.prototype.hasOwnProperty.call(payload.fiscal.emissor, 'isAllowedNegativeStock')
+  );
+}
+
+async function postZwebApiJson(token, url, body) {
+  const cleanToken = String(token || '').trim();
+  if (!cleanToken) throw new Error('Token da Zweb ausente.');
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      'authorization-compufacil': cleanToken,
+    },
+    body: JSON.stringify(body || {}),
+  });
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (error) {}
+
+  if (!response.ok) {
+    const payloadMessage = payload && (
+      payload.message ||
+      payload.error ||
+      (payload.data && payload.data.message) ||
+      (payload.errors && Object.values(payload.errors).flat().find(Boolean))
+    );
+    throw new Error(payloadMessage ? String(payloadMessage) : ('A Zweb retornou ' + response.status + '.'));
+  }
+
+  return payload;
+}
+
+async function fetchNegativeStockConfiguration(token) {
+  const payload = await postZwebApiJson(token, ZWEB_BFF_DASHBOARD_API_URL, {
+    'get-client': {
+      request: true,
+    },
+  });
+  const client = getZwebDashboardClient(payload);
+  if (!hasNegativeStockConfigurationPayload(client)) {
+    throw new Error('A Zweb nao retornou a configuracao de estoque.');
+  }
+  return client;
+}
+
+async function persistNegativeStockConfiguration(token, payload) {
+  if (!hasNegativeStockConfigurationPayload(payload)) {
+    throw new Error('Configuracao de estoque invalida.');
+  }
+  return await postZwebApiJson(token, ZWEB_APPLICATION_PUT_CONFIGURATION_API_URL, payload);
+}
+
+function getStorageLocal(keys) {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get(keys, (value) => {
+        resolve(value || {});
+      });
+    } catch (error) {
+      resolve({});
+    }
+  });
+}
+
+function setStorageLocal(value) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.storage.local.set(value, () => {
+        const error = chrome.runtime.lastError;
+        if (error) {
+          reject(new Error(error.message));
+          return;
+        }
+        resolve();
+      });
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
+}
+
+function removeStorageLocal(keys) {
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.remove(keys, () => resolve());
+    } catch (error) {
+      resolve();
+    }
+  });
+}
+
+function createBackgroundTab(options) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.tabs.create(options, (tab) => {
+        const error = chrome.runtime.lastError;
+        if (error) {
+          reject(new Error(error.message));
+          return;
+        }
+        resolve(tab || null);
+      });
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
+}
+
+function removeTabQuietly(tabId) {
+  return new Promise((resolve) => {
+    if (!isNumber(tabId)) {
+      resolve();
+      return;
+    }
+    try {
+      chrome.tabs.remove(tabId, () => resolve());
+    } catch (error) {
+      resolve();
+    }
+  });
+}
+
+function getTabQuietly(tabId) {
+  return new Promise((resolve) => {
+    if (!isNumber(tabId)) {
+      resolve(null);
+      return;
+    }
+    try {
+      chrome.tabs.get(tabId, (tab) => {
+        const error = chrome.runtime.lastError;
+        if (error) {
+          resolve(null);
+          return;
+        }
+        resolve(tab || null);
+      });
+    } catch (error) {
+      resolve(null);
+    }
+  });
+}
+
+function executeScriptInTab(tabId, func, args) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.scripting.executeScript({
+        target: { tabId },
+        func,
+        args: Array.isArray(args) ? args : [],
+      }, (results) => {
+        const error = chrome.runtime.lastError;
+        if (error) {
+          reject(new Error(error.message));
+          return;
+        }
+        resolve(results && results[0] ? results[0].result : null);
+      });
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
+}
+
+function sendMessageToTab(tabId, message) {
+  return new Promise((resolve, reject) => {
+    try {
+      chrome.tabs.sendMessage(tabId, message, (response) => {
+        const error = chrome.runtime.lastError;
+        if (error) {
+          reject(new Error(error.message));
+          return;
+        }
+        resolve(response);
+      });
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  });
+}
+
+async function appendFiscalCloneDavBackgroundLog(event, details) {
+  const entry = {
+    at: new Date().toISOString(),
+    event: String(event || ''),
+    details: details && typeof details === 'object' ? details : (details == null ? {} : { value: String(details) }),
+  };
+  try {
+    const stored = await getStorageLocal({ [FISCAL_CLONE_DAV_BACKGROUND_LOG_KEY]: [] });
+    const current = Array.isArray(stored[FISCAL_CLONE_DAV_BACKGROUND_LOG_KEY])
+      ? stored[FISCAL_CLONE_DAV_BACKGROUND_LOG_KEY]
+      : [];
+    current.push(entry);
+    await setStorageLocal({
+      [FISCAL_CLONE_DAV_BACKGROUND_LOG_KEY]: current.slice(-FISCAL_CLONE_DAV_BACKGROUND_LOG_LIMIT),
+    });
+  } catch (error) {}
+}
+
+async function cloneDavInBackgroundTab(flow, sourceWindowId) {
+  const davNumber = String(flow && flow.davDocumentNumber || '').trim();
+  const totalValue = Number(flow && flow.totalValue);
+  const returnHash = String(flow && flow.returnHash || '#/document/davs/sale').trim() || '#/document/davs/sale';
+  if (!davNumber) throw new Error('Numero do DAV ausente para clonagem em segundo plano.');
+
+  let tab = null;
+  const tabOptions = {
+    url: 'https://zweb.com.br/' + returnHash,
+    active: false,
+  };
+  if (isNumber(sourceWindowId)) {
+    tabOptions.windowId = sourceWindowId;
+  }
+
+  try {
+    await appendFiscalCloneDavBackgroundLog('background-tab-create-start', { davNumber, returnHash, sourceWindowId });
+    tab = await withTimeout(createBackgroundTab(tabOptions), 12000, 'Criacao da aba oculta do DAV');
+    if (!tab || !isNumber(tab.id)) {
+      throw new Error('A aba oculta do DAV nao foi criada.');
+    }
+    await appendFiscalCloneDavBackgroundLog('background-tab-created', { tabId: tab.id, url: tab.url || '' });
+
+    let lastResponse = null;
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < 45000) {
+      await delay(900);
+      if (tab && isNumber(tab.id)) {
+        const stillExists = await getTabQuietly(tab.id);
+        if (!stillExists) {
+          await appendFiscalCloneDavBackgroundLog('background-tab-gone', { tabId: tab.id });
+          tab = null;
+          throw new Error('A aba oculta do DAV foi fechada antes de concluir a clonagem.');
+        }
+      }
+      try {
+        await appendFiscalCloneDavBackgroundLog('background-tab-message-send', { tabId: tab.id, elapsedMs: Date.now() - startedAt });
+        lastResponse = await withTimeout(sendMessageToTab(tab.id, {
+          type: 'fiscal-clone-dav-run-background-clone',
+          flow: {
+            davDocumentNumber: davNumber,
+            totalValue: Number.isFinite(totalValue) ? totalValue : null,
+            returnHash,
+          },
+        }), 35000, 'Comando de clonagem do DAV');
+      } catch (error) {
+        lastResponse = { ok: false, message: getErrorMessage(error) };
+        if (/No tab with id|Cannot access|Receiving end does not exist/i.test(lastResponse.message || '')) {
+          await appendFiscalCloneDavBackgroundLog('background-tab-message-terminal-error', { tabId: tab && tab.id, response: lastResponse });
+          throw new Error(lastResponse.message);
+        }
+      }
+      await appendFiscalCloneDavBackgroundLog('background-tab-message-response', { tabId: tab.id, response: lastResponse });
+
+      if (lastResponse && lastResponse.ok === false && lastResponse.terminal) {
+        throw new Error(lastResponse.message || 'Clonagem do DAV interrompida pela pagina.');
+      }
+
+      if (lastResponse && lastResponse.ok) {
+        await delay(6500);
+        await appendFiscalCloneDavBackgroundLog('background-tab-clone-ok', { tabId: tab.id });
+        return { ok: true, tabId: tab.id };
+      }
+    }
+
+    await appendFiscalCloneDavBackgroundLog('background-tab-clone-timeout', { tabId: tab && tab.id, lastResponse });
+    throw new Error(lastResponse && lastResponse.message || 'Nao foi possivel clonar o DAV em segundo plano.');
+  } finally {
+    if (tab && isNumber(tab.id)) {
+      await appendFiscalCloneDavBackgroundLog('background-tab-close', { tabId: tab.id });
+      await removeTabQuietly(tab.id);
+    }
+  }
+}
+
+function notifyDocumentNegativeStockDisabled(tabId, result) {
+  if (!isNumber(tabId)) return;
+  sendMessageToTab(tabId, {
+    type: 'document-negative-stock-disabled-notification',
+    notification: result && (result.notification || result.visualResult && result.visualResult.notification) || null,
+  }).catch(() => {});
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function withTimeout(promise, timeoutMs, label) {
+  let timer = null;
+  return Promise.race([
+    promise,
+    new Promise((resolve, reject) => {
+      timer = setTimeout(() => {
+        reject(new Error((label || 'Operacao') + ' excedeu o tempo limite.'));
+      }, timeoutMs);
+    }),
+  ]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
+
+function disableNegativeStockInConfigurationPage() {
+  try {
+    localStorage.removeItem('zwebDocumentNegativeStockGuardExpiresAt');
+    localStorage.setItem('zwebDocumentNegativeStockForceDisablePending', 'true');
+  } catch (error) {}
+
+  try {
+    const modal = document.getElementById('zweb-document-negative-stock-guard-modal');
+    const backdrop = document.getElementById('zweb-document-negative-stock-guard-backdrop');
+    if (modal) modal.remove();
+    if (backdrop) backdrop.remove();
+  } catch (error) {}
+
+  const normalize = (value) => String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+
+  const isVisible = (element) => {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return !!(rect.width || rect.height || element.getClientRects().length)
+      && style.display !== 'none'
+      && style.visibility !== 'hidden'
+      && style.opacity !== '0';
+  };
+
+  const getNotificationSnapshot = () => {
+    const selectors = [
+      '.Vue-Toastification__toast',
+      '.Toastify__toast',
+      '.v-snackbar',
+      '.v-snackbar__wrapper',
+      '.toast.show',
+      '.toast',
+      '.swal2-popup',
+      '.alert-success',
+      '.alert'
+    ];
+    const nodes = selectors
+      .reduce((acc, selector) => acc.concat(Array.from(document.querySelectorAll(selector))), [])
+      .filter((node, index, list) => node && list.indexOf(node) === index && isVisible(node));
+    const node = nodes.find((candidate) => {
+      const text = normalize(candidate.innerText || candidate.textContent || '');
+      return text && text.indexOf('estoque liberado temporariamente') === -1;
+    }) || null;
+    return node
+      ? { html: node.outerHTML || '', text: String(node.innerText || node.textContent || '').trim() }
+      : null;
+  };
+
+  const clickLikeUser = (element) => {
+    if (!element) return false;
+    const options = { bubbles: true, cancelable: true, view: window };
+    try {
+      element.dispatchEvent(new PointerEvent('pointerdown', options));
+      element.dispatchEvent(new MouseEvent('mousedown', options));
+      element.dispatchEvent(new PointerEvent('pointerup', options));
+      element.dispatchEvent(new MouseEvent('mouseup', options));
+    } catch (error) {
+      try {
+        element.dispatchEvent(new MouseEvent('mousedown', options));
+        element.dispatchEvent(new MouseEvent('mouseup', options));
+      } catch (innerError) {}
+    }
+    try {
+      element.click();
+      return true;
+    } catch (error) {
+      try {
+        element.dispatchEvent(new MouseEvent('click', options));
+        return true;
+      } catch (innerError) {
+        return false;
+      }
+    }
+  };
+
+  const rows = Array.from(document.querySelectorAll('.row, [class~="row"], .v-row, [class*="row"]'));
+  const row = rows.find((candidate) => {
+    const text = normalize(candidate.innerText || candidate.textContent || '');
+    return text.indexOf('permitir vender com estoque zerado') !== -1;
+  });
+
+  if (!row) {
+    return {
+      ok: false,
+      found: false,
+      href: location.href,
+      bodyText: String(document.body && document.body.innerText || '').slice(0, 500),
+    };
+  }
+
+  const input = row.querySelector('input#isAllowedNegativeStock, input[id="isAllowedNegativeStock"], input[type="checkbox"]');
+  const checkedByInput = input && typeof input.checked === 'boolean' ? !!input.checked : null;
+  const checkedByAria = !!row.querySelector('[aria-checked="true"]');
+  const checkedByClass = !!row.querySelector('.z-switch-checked');
+  const isOn = checkedByInput === true || checkedByAria || checkedByClass;
+
+  if (!isOn) {
+    return {
+      ok: true,
+      found: true,
+      alreadyOff: true,
+      inputChecked: checkedByInput,
+      href: location.href,
+    };
+  }
+
+  const clickableSelectors = [
+    '.v-selection-control__input',
+    '.v-selection-control__wrapper',
+    '.v-selection-control',
+    '.v-switch__track',
+    '.v-switch__thumb',
+    '.z-switch-control',
+    '.z-switch',
+    'input#isAllowedNegativeStock',
+    'input[id="isAllowedNegativeStock"]',
+    'input[type="checkbox"]',
+    '[role="switch"]',
+    'label',
+    'button',
+  ];
+
+  const getInputChecked = () => {
+    const currentInput = row.querySelector('input#isAllowedNegativeStock, input[id="isAllowedNegativeStock"], input[type="checkbox"]');
+    return currentInput && typeof currentInput.checked === 'boolean' ? !!currentInput.checked : null;
+  };
+
+  const targets = clickableSelectors
+    .map((selector) => row.querySelector(selector))
+    .filter((candidate, index, list) => candidate && list.indexOf(candidate) === index && isVisible(candidate));
+
+  if (input && targets.indexOf(input) === -1) targets.push(input);
+  if (targets.indexOf(row) === -1) targets.push(row);
+
+  return new Promise((resolve) => {
+    let index = 0;
+    const attempts = [];
+
+    const finish = (extra) => {
+      resolve({
+        ok: true,
+        found: true,
+        clicked: attempts.some((attempt) => attempt.clicked),
+        attempts,
+        notification: getNotificationSnapshot(),
+        inputCheckedBefore: checkedByInput,
+        inputCheckedAfter: getInputChecked(),
+        href: location.href,
+        directSet: !!(extra && extra.directSet),
+      });
+    };
+
+    const tryDirectSet = () => {
+      const currentInput = row.querySelector('input#isAllowedNegativeStock, input[id="isAllowedNegativeStock"], input[type="checkbox"]');
+      if (!currentInput || typeof currentInput.checked !== 'boolean') {
+        finish({ directSet: false });
+        return;
+      }
+
+      try {
+        const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'checked');
+        if (descriptor && descriptor.set) {
+          descriptor.set.call(currentInput, false);
+        } else {
+          currentInput.checked = false;
+        }
+      } catch (error) {
+        currentInput.checked = false;
+      }
+
+      currentInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      currentInput.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+      setTimeout(() => finish({ directSet: true }), 2500);
+    };
+
+    const next = () => {
+      if (getInputChecked() === false) {
+        finish();
+        return;
+      }
+
+      const target = targets[index++];
+      if (!target) {
+        tryDirectSet();
+        return;
+      }
+
+      const clicked = clickLikeUser(target);
+      attempts.push({
+        tag: target.tagName,
+        id: target.id || '',
+        className: String(target.className || ''),
+        clicked,
+      });
+
+      setTimeout(next, 1600);
+    };
+
+    next();
+  });
+}
+
+async function disableNegativeStockThroughConfigurationTab(sourceWindowId) {
+  let tab = null;
+  const startedAt = Date.now();
+  const tabOptions = {
+    url: ZWEB_DOCUMENT_CONFIGURATION_URL,
+    active: false,
+  };
+
+  if (isNumber(sourceWindowId)) {
+    tabOptions.windowId = sourceWindowId;
+  }
+
+  try {
+    tab = await withTimeout(createBackgroundTab(tabOptions), 12000, 'Criacao da aba de configuracao');
+    if (!tab || !isNumber(tab.id)) {
+      throw new Error('A aba de configuracao nao foi criada.');
+    }
+
+    let lastResult = null;
+    while (Date.now() - startedAt < DOCUMENT_NEGATIVE_STOCK_VISUAL_TAB_TIMEOUT_MS) {
+      await delay(1200);
+      try {
+        lastResult = await withTimeout(
+          sendMessageToTab(tab.id, { type: 'document-negative-stock-disable-config-page' }),
+          9000,
+          'Mensagem para a aba de configuracao'
+        );
+      } catch (error) {
+        try {
+          lastResult = await withTimeout(
+            executeScriptInTab(tab.id, disableNegativeStockInConfigurationPage),
+            12000,
+            'Script da aba de configuracao'
+          );
+        } catch (innerError) {
+          lastResult = { ok: false, message: getErrorMessage(innerError || error) };
+        }
+      }
+
+      if (lastResult && lastResult.found && lastResult.ok) {
+        await delay(Math.max(DOCUMENT_NEGATIVE_STOCK_VISUAL_TAB_CLOSE_DELAY_MS, 4000));
+        return lastResult;
+      }
+    }
+
+    throw new Error('A configuracao de estoque nao foi encontrada na aba oculta. Ultimo estado: ' + JSON.stringify(lastResult || null));
+  } finally {
+    if (tab && isNumber(tab.id)) {
+      await withTimeout(removeTabQuietly(tab.id), 5000, 'Fechamento da aba de configuracao').catch(() => {});
+    }
+  }
+}
+
+async function forceNegativeStockDisabled(token, sourceWindowId) {
+  let apiPayload = null;
+  let apiChanged = false;
+  let visualResult = null;
+
+  try {
+    apiPayload = await fetchNegativeStockConfiguration(token);
+    if (apiPayload && apiPayload.fiscal && apiPayload.fiscal.emissor) {
+      apiPayload.fiscal.emissor.isAllowedNegativeStock = false;
+      await persistNegativeStockConfiguration(token, apiPayload);
+      apiChanged = true;
+    }
+  } catch (error) {
+    appendLog('Falha ao desativar estoque zerado pela API; tentando pela tela: ' + getErrorMessage(error), 'error');
+  }
+
+  try {
+    visualResult = await disableNegativeStockThroughConfigurationTab(sourceWindowId);
+  } catch (error) {
+    if (!apiChanged) throw error;
+    visualResult = { ok: false, message: getErrorMessage(error) };
+  }
+
+  return {
+    ok: true,
+    apiChanged,
+    visualResult,
+    notification: visualResult && visualResult.notification || null,
+  };
+}
+
+function clearDocumentNegativeStockGuardTimeout() {
+  if (!documentNegativeStockGuardTimeout) return;
+  clearTimeout(documentNegativeStockGuardTimeout);
+  documentNegativeStockGuardTimeout = null;
+}
+
+function clearDocumentNegativeStockGuardAlarm() {
+  clearDocumentNegativeStockGuardTimeout();
+  try {
+    if (chrome.alarms && typeof chrome.alarms.clear === 'function') {
+      chrome.alarms.clear(DOCUMENT_NEGATIVE_STOCK_GUARD_ALARM_NAME, () => {});
+    }
+  } catch (error) {}
+}
+
+function scheduleDocumentNegativeStockGuardTimeout(expiresAt) {
+  clearDocumentNegativeStockGuardTimeout();
+  const delay = Number(expiresAt) - Date.now();
+  if (!Number.isFinite(delay) || delay <= 0) {
+    documentNegativeStockGuardTimeout = setTimeout(runDocumentNegativeStockScheduledDisable, 50);
+    return;
+  }
+  documentNegativeStockGuardTimeout = setTimeout(runDocumentNegativeStockScheduledDisable, Math.min(delay + 100, 2147483647));
+}
+
+async function scheduleDocumentNegativeStockScheduledDisable(message, sender) {
+  const expiresAt = Number(message && message.expiresAt) || 0;
+  const token = String(message && message.token || '').trim();
+  const sourceWindowId = isNumber(message && message.sourceWindowId)
+    ? message.sourceWindowId
+    : (sender && sender.tab && isNumber(sender.tab.windowId) ? sender.tab.windowId : null);
+  const sourceTabId = isNumber(message && message.sourceTabId)
+    ? message.sourceTabId
+    : (sender && sender.tab && isNumber(sender.tab.id) ? sender.tab.id : null);
+  if (!token || !Number.isFinite(expiresAt) || expiresAt <= 0) {
+    throw new Error('Agendamento invalido para a trava de estoque.');
+  }
+
+  const state = {
+    token,
+    expiresAt,
+    createdAt: Date.now(),
+    sourceWindowId,
+    sourceTabId,
+  };
+
+  await setStorageLocal({ [DOCUMENT_NEGATIVE_STOCK_GUARD_BACKGROUND_STORAGE_KEY]: state });
+
+  try {
+    if (chrome.alarms && typeof chrome.alarms.create === 'function') {
+      chrome.alarms.create(DOCUMENT_NEGATIVE_STOCK_GUARD_ALARM_NAME, { when: Math.max(Date.now() + 1000, expiresAt) });
+    }
+  } catch (error) {}
+
+  scheduleDocumentNegativeStockGuardTimeout(expiresAt);
+  return state;
+}
+
+async function clearDocumentNegativeStockScheduledDisable() {
+  clearDocumentNegativeStockGuardAlarm();
+  await removeStorageLocal(DOCUMENT_NEGATIVE_STOCK_GUARD_BACKGROUND_STORAGE_KEY);
+}
+
+async function readDocumentNegativeStockScheduledDisable() {
+  const stored = await getStorageLocal(DOCUMENT_NEGATIVE_STOCK_GUARD_BACKGROUND_STORAGE_KEY);
+  const state = stored && stored[DOCUMENT_NEGATIVE_STOCK_GUARD_BACKGROUND_STORAGE_KEY];
+  if (!state || typeof state !== 'object') return null;
+  const expiresAt = Number(state.expiresAt) || 0;
+  const token = String(state.token || '').trim();
+  const sourceWindowId = isNumber(state.sourceWindowId) ? state.sourceWindowId : null;
+  const sourceTabId = isNumber(state.sourceTabId) ? state.sourceTabId : null;
+  return token && expiresAt > 0 ? { token, expiresAt, createdAt: Number(state.createdAt) || 0, sourceWindowId, sourceTabId } : null;
+}
+
+async function runDocumentNegativeStockScheduledDisable() {
+  if (documentNegativeStockGuardDisableRunning) {
+    return { ok: true, skipped: true, reason: 'already_running' };
+  }
+
+  documentNegativeStockGuardDisableRunning = true;
+  clearDocumentNegativeStockGuardAlarm();
+
+  try {
+    const state = await readDocumentNegativeStockScheduledDisable();
+    if (!state) {
+      return { ok: true, skipped: true, reason: 'missing_schedule' };
+    }
+
+    const nowAt = Date.now();
+    if (state.expiresAt > nowAt + 500) {
+      scheduleDocumentNegativeStockGuardTimeout(state.expiresAt);
+      try {
+        if (chrome.alarms && typeof chrome.alarms.create === 'function') {
+          chrome.alarms.create(DOCUMENT_NEGATIVE_STOCK_GUARD_ALARM_NAME, { when: state.expiresAt });
+        }
+      } catch (error) {}
+      return { ok: true, skipped: true, reason: 'not_due' };
+    }
+
+    const result = await forceNegativeStockDisabled(state.token, state.sourceWindowId);
+    await clearDocumentNegativeStockScheduledDisable();
+    notifyDocumentNegativeStockDisabled(state.sourceTabId, result);
+    appendLog('Estoque zerado desativado automaticamente pelo agendamento da extensao.', 'info');
+    return Object.assign({ changed: true }, result);
+  } finally {
+    documentNegativeStockGuardDisableRunning = false;
+  }
+}
+
+async function restoreDocumentNegativeStockGuardSchedule() {
+  const state = await readDocumentNegativeStockScheduledDisable();
+  if (!state) return;
+  if (state.expiresAt <= Date.now() + 500) {
+    runDocumentNegativeStockScheduledDisable().catch((error) => {
+      appendLog('Falha ao restaurar agendamento de estoque: ' + getErrorMessage(error), 'error');
+    });
+    return;
+  }
+
+  scheduleDocumentNegativeStockGuardTimeout(state.expiresAt);
+  try {
+    if (chrome.alarms && typeof chrome.alarms.create === 'function') {
+      chrome.alarms.create(DOCUMENT_NEGATIVE_STOCK_GUARD_ALARM_NAME, { when: state.expiresAt });
+    }
+  } catch (error) {}
 }
 
 function cleanupExpiredXmlDownloads() {
@@ -143,24 +898,9 @@ function appendLog(message, level) {
 }
 
 function keepNoteAssistantSourceActive() {
-  if (isNumber(lastZwebTabId)) {
-    try {
-      chrome.tabs.update(lastZwebTabId, { active: true }, () => {});
-    } catch (error) {}
-  }
-
-  if (isNumber(lastZwebWindowId)) {
-    try {
-      chrome.windows.update(lastZwebWindowId, { focused: true }, () => {});
-    } catch (error) {}
-  }
 }
 
 function reinforceNoteAssistantSourceActive() {
-  keepNoteAssistantSourceActive();
-  [80, 220, 480, 900].forEach((delayMs) => {
-    setTimeout(() => keepNoteAssistantSourceActive(), delayMs);
-  });
 }
 
 function keepNoteAssistantTabInBackground(tabId) {
@@ -174,7 +914,6 @@ function keepNoteAssistantTabInBackground(tabId) {
 function scheduleNoteAssistantTabClose(tabId, delayMs) {
   if (!isNumber(tabId)) return;
   setTimeout(() => {
-    reinforceNoteAssistantSourceActive();
     try {
       chrome.tabs.remove(tabId, () => {});
     } catch (error) {}
@@ -519,26 +1258,11 @@ function clearPendingFocusTimers(pending) {
 
 function keepPendingSourceTabActive(pending) {
   if (!pending || !isNumber(pending.sourceTabId)) return;
-
-  try {
-    chrome.tabs.update(pending.sourceTabId, { active: true }, () => {});
-  } catch (error) {}
-
-  if (isNumber(pending.sourceWindowId)) {
-    try {
-      chrome.windows.update(pending.sourceWindowId, { focused: true }, () => {});
-    } catch (error) {}
-  }
 }
 
 function reinforcePendingSourceTabActive(pending) {
   if (!pending) return;
   clearPendingFocusTimers(pending);
-  keepPendingSourceTabActive(pending);
-
-  pending.focusTimers = [80, 220, 480, 900].map((delayMs) => (
-    setTimeout(() => keepPendingSourceTabActive(pending), delayMs)
-  ));
 }
 
 function closePendingCandidateTab(pending) {
@@ -895,8 +1619,159 @@ function triggerXmlContentDownload(content, pending, fileNameHint) {
   runDownload(dataUrl, fileNameHint, pending);
 }
 
+function buildDirectNfeBatchDownloadOptions(kind, url, fileNameHint) {
+  if (kind === 'pdf') {
+    return {
+      url,
+      filename: inferPdfFileName(url, fileNameHint),
+      saveAs: false,
+    };
+  }
+
+  return {
+    url,
+    filename: inferXmlFileName(url, fileNameHint),
+    saveAs: false,
+  };
+}
+
+function directNfeBatchDownloadUrl(kind, url, fileNameHint) {
+  return new Promise((resolve, reject) => {
+    if (kind === 'pdf') {
+      if (!NFE_BATCH_DOWNLOAD_ENABLED) {
+        reject(new Error('Download em lote de NF-e desativado.'));
+        return;
+      }
+      if (!isEligiblePdfUrl(url)) {
+        reject(new Error('URL do DANFE inválida para download.'));
+        return;
+      }
+    } else {
+      if (!NFE_BATCH_DOWNLOAD_ENABLED || !XML_DOWNLOAD_ENABLED) {
+        reject(new Error('Download de XML desativado.'));
+        return;
+      }
+      if (!isEligibleXmlUrl(url)) {
+        reject(new Error('URL do XML inválida para download.'));
+        return;
+      }
+    }
+
+    chrome.downloads.download(buildDirectNfeBatchDownloadOptions(kind, url, fileNameHint), (downloadId) => {
+      const error = chrome.runtime.lastError;
+      if (error) {
+        reject(new Error(error.message || 'Falha ao iniciar download.'));
+        return;
+      }
+      resolve({ downloadId });
+    });
+  });
+}
+
+function directNfeBatchDownloadContent(kind, content, fileNameHint) {
+  if (kind !== 'xml') {
+    return Promise.reject(new Error('Download por conteúdo só é suportado para XML.'));
+  }
+  if (!content) {
+    return Promise.reject(new Error('Conteúdo XML vazio.'));
+  }
+  const dataUrl = 'data:application/xml;charset=utf-8,' + encodeURIComponent(content);
+  return directNfeBatchDownloadUrl('xml', dataUrl, fileNameHint);
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || typeof message.type !== 'string') return;
+
+  if (message.type === 'document-negative-stock-get-configuration') {
+    fetchNegativeStockConfiguration(message.token)
+      .then((payload) => {
+        sendResponse({ ok: true, payload });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'zweb_api_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
+
+  if (message.type === 'document-negative-stock-put-configuration') {
+    persistNegativeStockConfiguration(message.token, message.payload)
+      .then((payload) => {
+        sendResponse({ ok: true, payload });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'zweb_api_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
+
+  if (message.type === 'document-negative-stock-force-disable-now') {
+    const sourceWindowId = sender && sender.tab && isNumber(sender.tab.windowId) ? sender.tab.windowId : null;
+    forceNegativeStockDisabled(message.token, sourceWindowId)
+      .then((result) => {
+        sendResponse(result || { ok: true });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'disable_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
+
+  if (message.type === 'document-negative-stock-schedule-disable') {
+    scheduleDocumentNegativeStockScheduledDisable(message, sender)
+      .then((state) => {
+        sendResponse({ ok: true, expiresAt: state.expiresAt });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'schedule_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
+
+  if (message.type === 'document-negative-stock-clear-disable') {
+    clearDocumentNegativeStockScheduledDisable()
+      .then(() => {
+        sendResponse({ ok: true });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'clear_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
+
+  if (message.type === 'document-negative-stock-run-disable-now') {
+    runDocumentNegativeStockScheduledDisable()
+      .then((result) => {
+        sendResponse(result || { ok: true });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'disable_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
+
+  if (message.type === 'fiscal-clone-dav-log') {
+    appendFiscalCloneDavBackgroundLog(
+      message.entry && message.entry.event || 'content-log',
+      message.entry || {}
+    ).then(() => {
+      sendResponse({ ok: true });
+    }).catch((error) => {
+      sendResponse({ ok: false, message: getErrorMessage(error) });
+    });
+    return true;
+  }
+
+  if (message.type === 'fiscal-clone-dav-background-start') {
+    const sourceWindowId = sender && sender.tab && isNumber(sender.tab.windowId) ? sender.tab.windowId : null;
+    cloneDavInBackgroundTab(message.flow || {}, sourceWindowId)
+      .then((result) => {
+        sendResponse(result || { ok: true });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'clone_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
 
   if (message.type === 'note-assistant-log') {
     appendLog(message.message || '', message.level || 'info');
@@ -1092,6 +1967,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
+  if (message.type === 'nfe-batch-direct-download-url') {
+    const kind = message.kind === 'pdf' ? 'pdf' : 'xml';
+    directNfeBatchDownloadUrl(kind, message.url, message.fileName || message.fileNameHint || '')
+      .then((result) => {
+        sendResponse({ ok: true, downloadId: result.downloadId });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'download_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
+
+  if (message.type === 'nfe-batch-direct-download-content') {
+    const kind = message.kind === 'pdf' ? 'pdf' : 'xml';
+    directNfeBatchDownloadContent(kind, message.content, message.fileName || message.fileNameHint || '')
+      .then((result) => {
+        sendResponse({ ok: true, downloadId: result.downloadId });
+      })
+      .catch((error) => {
+        sendResponse({ ok: false, reason: 'download_failed', message: getErrorMessage(error) });
+      });
+    return true;
+  }
+
   if (message.type === 'commission-report-download-pdf') {
     if (!COMMISSION_RETURNS_ENABLED) {
       sendResponse({ ok: false, reason: 'disabled' });
@@ -1115,6 +2014,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 });
+
+try {
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (!alarm || alarm.name !== DOCUMENT_NEGATIVE_STOCK_GUARD_ALARM_NAME) return;
+    runDocumentNegativeStockScheduledDisable().catch((error) => {
+      appendLog('Falha ao desativar estoque zerado pelo alarme: ' + getErrorMessage(error), 'error');
+      setTimeout(() => {
+        runDocumentNegativeStockScheduledDisable().catch((retryError) => {
+          appendLog('Falha na nova tentativa de desativar estoque zerado: ' + getErrorMessage(retryError), 'error');
+        });
+      }, 10000);
+    });
+  });
+} catch (error) {}
+
+restoreDocumentNegativeStockGuardSchedule();
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!info || info.menuItemId !== NOTE_ASSISTANT_CONTEXT_MENU_ID) return;
@@ -1365,7 +2280,10 @@ try {
     }
 
     if (changes.stockPriceSimulationEnabled) {
-      STOCK_PRICE_SIMULATION_ENABLED = changes.stockPriceSimulationEnabled.newValue !== false;
+      const state = self.ZWEB_FEATURES && typeof self.ZWEB_FEATURES.normalizeState === 'function'
+        ? self.ZWEB_FEATURES.normalizeState({ stockPriceSimulationEnabled: changes.stockPriceSimulationEnabled.newValue })
+        : { stockPriceSimulationEnabled: changes.stockPriceSimulationEnabled.newValue !== false };
+      STOCK_PRICE_SIMULATION_ENABLED = state.stockPriceSimulationEnabled !== false;
     }
 
     if (changes.commissionReturnsEnabled) {

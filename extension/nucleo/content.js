@@ -23,7 +23,12 @@
     '/davs/sale/new',
     '/davs/estimate/new'
   ];
-  const TARGET_FISCAL_ROUTE_FRAGMENT = '/fiscal';
+  const TARGET_DAVS_CLONE_BLOCK_ROUTES = [
+    '/document/davs/sale',
+    '/document/davs/estimate',
+    '/davs/sale',
+    '/davs/estimate'
+  ];
   const TARGET_PURCHASE_ROUTE = '/fiscal/purchase';
   const TARGET_NFE_ROUTE = '/fiscal/nfe';
   const TARGET_NFE_NEW_ROUTE = '/fiscal/nfe/new';
@@ -32,7 +37,9 @@
   const TARGET_PRODUCT_ROUTE = '/register/stock/product';
   const TARGET_PRODUCT_NEW_ROUTE = '/register/stock/product/new';
   const TARGET_CLIENT_EDIT_ROUTE = '/register/client/edit/';
+  const TARGET_SUPPLIER_EDIT_ROUTE = '/register/supplier/edit/';
   const TARGET_SIGN_IN_ROUTE = '/sign-in';
+  const TARGET_DOCUMENT_CONFIGURATION_ROUTE = '/document/document-configuration';
   const TEXTS = ['Cadastrar produto', 'Cadastrar Produto', 'Cadastrar'];
   const FORCE_HIDE_TEXTS = ['Acoes', 'Ações'];
   const BLOCK_DROPDOWN_OPTIONS = [
@@ -75,7 +82,12 @@
   const PRODUCT_CODE_RANGE_DOUBLE_CLICK_WINDOW_MS = 700;
   const PRODUCT_NATIVE_FILTER_CLEAR_LABELS = ['limpar filtros', 'limpar filtro'];
   const COMMON_FILTER_APPLY_LABELS = ['filtrar', 'buscar'];
+  const COMMON_FILTER_COLUMN_LABELS = ['coluna', 'campo'];
+  const COMMON_FILTER_VALUE_LABELS = ['valor', 'intervalo', 'conteudo', 'conteúdo'];
   const COMMON_MULTI_TERM_FILTER_ROW_HIDDEN_ATTR = 'data-zweb-common-multi-term-hidden';
+  const COMMON_MULTI_TERM_FILTER_UI_ID = 'zweb-common-filter-persistence';
+  const COMMON_MULTI_TERM_FILTER_LIST_ID = 'zweb-common-filter-persistence-list';
+  const COMMON_MULTI_TERM_FILTER_OR_ID = 'zweb-common-filter-persistence-or';
   const COMMON_MULTI_TERM_FILTER_MIN_WAIT_MS = 600;
   const COMMON_MULTI_TERM_FILTER_MAX_WAIT_MS = 5000;
   const PRODUCT_REPLICATE_SUPPLIER_SECTION_ID = 'zweb-product-replicate-supplier-section';
@@ -109,11 +121,55 @@
   const NFE_BATCH_DOWNLOAD_STATUS_WRAP_ID = 'zweb-nfe-batch-download-status-wrap';
   const NFE_BATCH_DOWNLOAD_STATUS_ID = 'zweb-nfe-batch-download-status';
   const NFE_BATCH_DOWNLOAD_HIDDEN_NATIVE_ATTR = 'data-zweb-batch-hidden-native';
+  const NFCE_CANCEL_REASON_ACTION_ID = 'zweb-nfce-cancel-reason-action';
+  const NFCE_CANCEL_REASON_MODAL_ID = 'zweb-nfce-cancel-reason-modal';
+  const NFCE_CANCEL_REASON_BACKDROP_ID = 'zweb-nfce-cancel-reason-backdrop';
+  const NFCE_CANCEL_REASON_DETAILS_ID = 'zweb-nfce-cancel-reason-details';
+  const FISCAL_CLONE_CONFIRM_MODAL_ID = 'zweb-fiscal-clone-confirm-modal';
+  const FISCAL_CLONE_CONFIRM_BACKDROP_ID = 'zweb-fiscal-clone-confirm-backdrop';
+  const FISCAL_CLONE_CONFIRM_DETAILS_ID = 'zweb-fiscal-clone-confirm-details';
+  const FISCAL_CLONE_CONFIRM_REASON_ID = 'zweb-fiscal-clone-confirm-reason';
+  const FISCAL_CLONE_CONFIRM_REASON_ERROR_ID = 'zweb-fiscal-clone-confirm-reason-error';
+  const FISCAL_CLONE_DAV_LOG_STORAGE_KEY = 'zwebFiscalCloneDavDebugLog';
+  const FISCAL_CLONE_DAV_STATE_STORAGE_KEY = 'zwebFiscalCloneDavFlowState';
+  const FISCAL_CLONE_DAV_LOG_LIMIT = 180;
+  const FISCAL_CANCEL_NFE_API_URL = 'https://api.zweb.com.br/rpc/v1/fiscal.cancel-nfe';
+  const INVENTORY_GET_SALE_PAGINATE_API_URL = 'https://api.zweb.com.br/rpc/v2/inventory.get-sale-paginate';
+  const INVENTORY_GET_DETAILED_SALE_API_URL = 'https://api.zweb.com.br/rpc/v2/inventory.get-detailed-sale';
+  const INVENTORY_POST_SALE_API_URL = 'https://api.zweb.com.br/rpc/v2/inventory.post-sale';
+  const INVENTORY_POST_CREDIT_LIMIT_API_URL = 'https://api.zweb.com.br/rpc/v1/inventory.post-credit-limit';
+  const PDV_CASH_COUNTER_ID = 'zweb-pdv-cash-counter';
+  const PDV_CASH_COUNTER_STYLE_ID = 'zweb-pdv-cash-counter-style';
+  const PDV_CASH_COUNTER_MODAL_ID = 'zweb-pdv-cash-counter-modal';
+  const PDV_CASH_COUNTER_BACKDROP_ID = 'zweb-pdv-cash-counter-backdrop';
+  const PDV_CASH_COUNTER_STORAGE_KEY = 'zwebPdvCashCounterState';
+  const PDV_CASH_COUNTER_DEBUG_STORAGE_KEY = 'zwebPdvCashCounterDebug';
+  const PDV_CASH_COUNTER_MAX_SIGNATURES = 300;
+  const PDV_CASH_COUNTER_API_SYNC_INTERVAL_MS = 30000;
   const COMMISSION_REPORT_HINT_ID = 'zweb-commission-report-hint';
   const COMMISSION_REPORT_HINT_TEXT = 'Para ajustar devolu\u00e7\u00f5es automaticamente no relat\u00f3rio de comiss\u00f5es, a extens\u00e3o usa o formato HTML. Depois voc\u00ea pode imprimir ou salvar em PDF pelo navegador.';
   const COMMISSION_REPORT_CONFIRM_MODAL_ID = 'zweb-commission-report-confirm-modal';
   const COMMISSION_REPORT_CONFIRM_BACKDROP_ID = 'zweb-commission-report-confirm-backdrop';
   const COMMISSION_REPORT_GENERATE_BOUND_ATTR = 'data-zweb-commission-generate-bound';
+  const SUPPLIER_BUSINESS_NAME_INPUT_ID = 'zweb-supplier-business-name';
+  const SUPPLIER_BUSINESS_NAME_HELPER_ID = 'zweb-supplier-business-name-helper';
+  const SUPPLIER_BUSINESS_NAME_STATUS_ID = 'zweb-supplier-business-name-status';
+  const SUPPLIER_BUSINESS_NAME_FIELD_ATTR = 'data-zweb-supplier-business-name-field';
+  const SUPPLIER_BUSINESS_NAME_ROUTE_ATTR = 'data-zweb-supplier-business-name-route';
+  const SUPPLIER_BUSINESS_NAME_FALLBACK_ATTR = 'data-zweb-supplier-business-name-fallback';
+  const SUPPLIER_BUSINESS_NAME_LOADING_ATTR = 'data-zweb-business-name-loading';
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_STORAGE_KEY = 'zwebDocumentNegativeStockGuardExpiresAt';
+  const DOCUMENT_NEGATIVE_STOCK_CONFIGURATION_STORAGE_KEY = 'zwebDocumentNegativeStockConfigurationPayload';
+  const DOCUMENT_NEGATIVE_STOCK_FORCE_DISABLE_STORAGE_KEY = 'zwebDocumentNegativeStockForceDisablePending';
+  const DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_ID = 'zweb-document-negative-stock-native-toast-clone';
+  const DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_STYLE_ID = 'zweb-document-negative-stock-native-toast-style';
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID = 'zweb-document-negative-stock-guard-modal';
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_BACKDROP_ID = 'zweb-document-negative-stock-guard-backdrop';
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_REMAINING_ID = 'zweb-document-negative-stock-guard-remaining';
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_DEFAULT_DURATION_MS = 5 * 60 * 1000;
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_DEFAULT_WARNING_MS = 15 * 1000;
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_SERVER_CHECK_INTERVAL_MS = 5 * 1000;
+  const DOCUMENT_NEGATIVE_STOCK_LABEL = 'Permitir vender com estoque zerado';
   const EXTENSION_DIALOG_TRANSITION_MS = 320;
   const NFE_CONTEXT_MENU_ID = 'menuId';
   const NFE_CONTEXT_MENU_STYLE_ID = 'zweb-nfe-context-menu-style';
@@ -124,6 +180,7 @@
   const ACTION_MENU_PREFS_STORAGE_KEY = 'actionMenuPrefs';
   const ACTION_MENU_HIDDEN_ATTR = 'data-zweb-hidden-action-menu-item';
   const ACTION_MENU_HIDDEN_SEPARATOR_ATTR = 'data-zweb-hidden-action-menu-separator';
+  const CLONE_ACTION_BLOCK_ATTR = 'data-zweb-clone-action-blocked';
   const PRODUCT_TOOLBAR_SEARCH_SELECTOR = 'input#search\\.value.grid-toolbar-search';
   const PRODUCT_EDIT_ROUTE = '#/register/stock/product/edit/';
   const PRODUCT_GRID_STORAGE_KEY = 'z_theme_config_grid';
@@ -133,6 +190,15 @@
   const PRODUCT_GET_API_URL = 'https://api.zweb.com.br/rpc/v2/inventory.get-product';
   const PRODUCT_PUT_API_URL = 'https://api.zweb.com.br/rpc/v2/inventory.put-product';
   const PERSON_API_URL = 'https://api.zweb.com.br/rpc/v2/person.get-person';
+  const BFF_DASHBOARD_API_URL = 'https://api.zweb.com.br/rpc/v2/BFF.get-dashboard';
+  const APPLICATION_PUT_CONFIGURATION_API_URL = 'https://api.zweb.com.br/rpc/v1/application.put-configuration';
+  const FISCAL_GET_NFE_PAGINATE_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-nfe-paginate';
+  const FISCAL_GET_CHECKOUT_CURRENT_USER_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-checkout-current-user';
+  const FISCAL_GET_CHECKOUT_CURRENT_MOVIMENTATION_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-checkout-current-movimentation';
+  const NFE_GET_DETAILED_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-detailed-nfe';
+  const NFE_GET_DANFE_URL_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-danfe-url';
+  const NFE_PUT_XML_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.put-xml';
+  const NFE_DOCUMENT_MODEL = 55;
   const PRODUCT_PAGINATE_PAGE_SIZE = 200;
   const NFE_RETURN_HISTORY_STORAGE_KEY = 'nfeReturnHistory';
   const NFE_RETURN_HISTORY_MAX_ITEMS = 4000;
@@ -141,7 +207,7 @@
   const XML_BRIDGE_SCRIPT_ID = 'zweb-xml-download-page-bridge';
   const XML_CONTENT_SOURCE = 'zweb-xml-content-script';
   const XML_BRIDGE_SOURCE = 'zweb-xml-page-bridge';
-  const XML_BRIDGE_VERSION = '20260514-3';
+  const XML_BRIDGE_VERSION = '20260612-2';
   const KNOWN_NFE_ACTION_ITEMS = [
     'Enviar XML por e-mail',
     'Cancelar',
@@ -161,7 +227,8 @@
     'Devolu\u00e7\u00e3o',
     'Retorno',
     'Etiquetas',
-    'Emitir MDF-e'
+    'Emitir MDF-e',
+    'Consultar motivo de cancelamento'
   ];
   const FEATURE_DEFAULTS = globalThis.ZWEB_FEATURES && typeof globalThis.ZWEB_FEATURES.getDefaults === 'function'
     ? globalThis.ZWEB_FEATURES.getDefaults()
@@ -199,6 +266,10 @@
   let EXTENSION_MODAL_BRIDGE_MESSAGE_BOUND = false;
   let LAST_NFE_CONTEXT_MENU_ANCHOR = null;
   let NFE_RETURN_HISTORY = {};
+  let PDV_CASH_COUNTER_STATE = null;
+  let PDV_CASH_COUNTER_API_SYNC_RUNNING = false;
+  let PDV_CASH_COUNTER_API_SYNC_TIMER = 0;
+  let PDV_CASH_COUNTER_LAST_API_SYNC_AT = 0;
   let LAST_NFE_RETURN_SIGNATURE = '';
   let NFE_RETURN_SYNC_TIMER = 0;
   let FEATURE_UI_REFRESH_TIMER = 0;
@@ -226,11 +297,13 @@
     rawValue: '',
     primaryTerm: '',
     terms: [],
+    filters: [],
     columnTitle: '',
     columnKey: '',
     gridSignatureBefore: '',
     armedAt: 0
   };
+  let COMMON_MULTI_TERM_FILTER_API_RUN_ID = 0;
   let PRODUCT_CODE_RANGE_MODAL_VISIBILITY_TIMER = 0;
   let PRODUCT_CODE_RANGE_SNACKBAR_HIDE_TIMER = 0;
   let PRODUCT_CODE_RANGE_SNACKBAR_ENTER_TIMER = 0;
@@ -246,6 +319,20 @@
   let NFE_BATCH_DOWNLOAD_RUNNING = false;
   let NFE_BATCH_DOWNLOAD_STATUS_TIMER = 0;
   let NFE_BATCH_DOWNLOAD_INTERNAL_CLICK = false;
+  let NFCE_CANCEL_REASON_RUNNING = false;
+  let FISCAL_CLONE_CONFIRM_PENDING = null;
+  let FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = false;
+  let DOCUMENT_NEGATIVE_STOCK_GUARD_STATE = {
+    expiresAt: 0,
+    timer: 0,
+    warningShownFor: 0,
+    disabling: false,
+    apiDisabling: false,
+    closingModal: false
+  };
+  let DOCUMENT_NEGATIVE_STOCK_GUARD_HEARTBEAT_TIMER = 0;
+  let DOCUMENT_NEGATIVE_STOCK_GUARD_SERVER_CHECK_RUNNING = false;
+  let DOCUMENT_NEGATIVE_STOCK_GUARD_LAST_SERVER_CHECK_AT = 0;
   const ITEM_SEARCH_NORMALIZE_TIMERS = new WeakMap();
   const PRODUCT_LOW_STOCK_ATTR = 'data-zweb-low-stock-highlight';
   const PRODUCT_ROW_STYLE_ATTR = 'data-zweb-product-style-managed';
@@ -329,6 +416,16 @@
     return TARGET_DAVS_ROUTES.some(route => href.indexOf(route) !== -1);
   }
 
+  function isTargetDavCloneBlockRoute() {
+    const route = getNormalizedHashRoute();
+    return TARGET_DAVS_CLONE_BLOCK_ROUTES.some((target) => route === target || route.indexOf(target + '/') === 0);
+  }
+
+  function isCloneActionBlockRoute() {
+    // Clonar voltou a ser liberado em DAV/NF-e para o fluxo assistido de cancelamento.
+    return false;
+  }
+
   function isTargetProductRoute() {
     const href = (location.href || '').toLowerCase();
     return href.indexOf(TARGET_PRODUCT_ROUTE) !== -1 && href.indexOf(TARGET_PRODUCT_NEW_ROUTE) === -1;
@@ -344,14 +441,23 @@
     return href.indexOf(TARGET_SIGN_IN_ROUTE) !== -1;
   }
 
-  function isFiscalRoute() {
-    const href = (location.href || '').toLowerCase();
-    return href.indexOf(TARGET_FISCAL_ROUTE_FRAGMENT) !== -1;
+  function isTargetDocumentConfigurationRoute() {
+    return getNormalizedHashRoute() === TARGET_DOCUMENT_CONFIGURATION_ROUTE;
+  }
+
+  function getNormalizedHashRoute() {
+    const hash = String(location.hash || '').toLowerCase();
+    const route = hash.replace(/^#/, '').split('?')[0].split('&')[0].replace(/\/+$/, '');
+    return route || '';
   }
 
   function isTargetPurchaseRoute() {
     const href = (location.href || '').toLowerCase();
     return href.indexOf(TARGET_PURCHASE_ROUTE) !== -1;
+  }
+
+  function isTargetNfeListRoute() {
+    return getNormalizedHashRoute() === TARGET_NFE_ROUTE;
   }
 
   function isTargetNfeRoute() {
@@ -369,9 +475,36 @@
     return href.indexOf(TARGET_NFCE_ROUTE) !== -1 || href.indexOf(TARGET_NFCE_PDV_ROUTE) !== -1;
   }
 
+  function isTargetPdvRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_NFCE_PDV_ROUTE) !== -1;
+  }
+
+  function isTargetNfceListRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_NFCE_ROUTE) !== -1;
+  }
+
   function isTargetClientEditRoute() {
     const href = (location.href || '').toLowerCase();
     return href.indexOf(TARGET_CLIENT_EDIT_ROUTE) !== -1;
+  }
+
+  function isTargetSupplierEditRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_SUPPLIER_EDIT_ROUTE) !== -1;
+  }
+
+  function isTargetPersonBusinessNameEditRoute() {
+    return isTargetClientEditRoute() || isTargetSupplierEditRoute();
+  }
+
+  function getPersonBusinessNameEditRouteId() {
+    const href = String(location.href || '');
+    const match = href.match(/\/register\/(?:client|supplier)\/edit\/([^/?#&]+)/i);
+    if (!match) return null;
+    const value = decodeURIComponent(match[1] || '').trim();
+    return /^\d+$/.test(value) ? Number(value) : value || null;
   }
 
   function shouldPreserveBlockedDropdownOption(normalizedText, element) {
@@ -588,6 +721,598 @@
     if (!isFeatureEnabled('nfceCardBrandCleanupEnabled') || !isTargetNfceRoute()) return;
     hideBlockedNfceBrandMultiselectOptions();
     hideBlockedNfceBrandSelectOptions();
+  }
+
+  function getTodayKey() {
+    const nowDate = new Date();
+    const year = nowDate.getFullYear();
+    const month = String(nowDate.getMonth() + 1).padStart(2, '0');
+    const day = String(nowDate.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+  }
+
+  function parsePdvMoney(value) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+    const raw = String(value == null ? '' : value).trim();
+    if (!raw) return NaN;
+    const normalized = raw
+      .replace(/[^\d,.-]/g, '')
+      .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+      .replace(',', '.');
+    if (!/\d/.test(normalized)) return NaN;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  function formatPdvMoney(value) {
+    return (Number(value) || 0).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+  }
+
+  function readPdvCashCounterState() {
+    try {
+      const parsed = JSON.parse(window.localStorage && window.localStorage.getItem(PDV_CASH_COUNTER_STORAGE_KEY) || '{}');
+      PDV_CASH_COUNTER_STATE = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (error) {
+      PDV_CASH_COUNTER_STATE = {};
+    }
+
+    if (PDV_CASH_COUNTER_STATE.dateKey !== getTodayKey()) {
+      resetPdvCashCounterState('new-day');
+    } else {
+      PDV_CASH_COUNTER_STATE.total = Number(PDV_CASH_COUNTER_STATE.total) || 0;
+      PDV_CASH_COUNTER_STATE.count = Number(PDV_CASH_COUNTER_STATE.count) || 0;
+      PDV_CASH_COUNTER_STATE.signatures = Array.isArray(PDV_CASH_COUNTER_STATE.signatures)
+        ? PDV_CASH_COUNTER_STATE.signatures.slice(-PDV_CASH_COUNTER_MAX_SIGNATURES)
+        : [];
+    }
+
+    return PDV_CASH_COUNTER_STATE;
+  }
+
+  function writePdvCashCounterState() {
+    const state = PDV_CASH_COUNTER_STATE || {
+      dateKey: getTodayKey(),
+      total: 0,
+      count: 0,
+      signatures: []
+    };
+    try {
+      window.localStorage && window.localStorage.setItem(PDV_CASH_COUNTER_STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {}
+  }
+
+  function resetPdvCashCounterState(reason) {
+    PDV_CASH_COUNTER_STATE = {
+      dateKey: getTodayKey(),
+      total: 0,
+      count: 0,
+      signatures: [],
+      resetAt: new Date().toISOString(),
+      resetReason: String(reason || 'manual')
+    };
+    writePdvCashCounterState();
+    syncPdvCashCounterUi();
+  }
+
+  function walkPdvPayload(value, visitor, path, seen) {
+    if (value == null) return;
+    const currentPath = path || [];
+    const visited = seen || new Set();
+    if (typeof value !== 'object') {
+      visitor(value, currentPath);
+      return;
+    }
+    if (visited.has(value)) return;
+    visited.add(value);
+
+    if (Array.isArray(value)) {
+      value.forEach((entry, index) => walkPdvPayload(entry, visitor, currentPath.concat(String(index)), visited));
+      return;
+    }
+
+    visitor(value, currentPath);
+    Object.keys(value).forEach((key) => {
+      walkPdvPayload(value[key], visitor, currentPath.concat(key), visited);
+    });
+  }
+
+  function getPdvValueByKeys(object, keys) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return NaN;
+    for (const key of Object.keys(object)) {
+      const normalized = normalizeText(key);
+      if (!keys.some((candidate) => normalized === candidate || normalized.indexOf(candidate) !== -1)) continue;
+      const parsed = parsePdvMoney(object[key]);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return NaN;
+  }
+
+  function isPdvCashPaymentObject(object, path) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return false;
+    const pathText = normalizeText((path || []).join(' '));
+    const keyText = normalizeText(Object.keys(object).join(' '));
+    const paymentHint = pathText.indexOf('pag') !== -1
+      || pathText.indexOf('payment') !== -1
+      || keyText.indexOf('pag') !== -1
+      || keyText.indexOf('payment') !== -1
+      || keyText.indexOf('forma') !== -1
+      || keyText.indexOf('forma') !== -1
+      || keyText.indexOf('meio') !== -1
+      || keyText.indexOf('method') !== -1
+      || keyText.indexOf('tipo') !== -1
+      || keyText.indexOf('type') !== -1;
+    if (!paymentHint) return false;
+
+    const textParts = [pathText];
+    Object.keys(object).forEach((key) => {
+      const value = object[key];
+      if (typeof value === 'string' || typeof value === 'number') {
+        textParts.push(key + ' ' + value);
+      }
+    });
+    const text = normalizeText(textParts.join(' '));
+    if (!text) return false;
+    if (text.indexOf('dinheiro') !== -1) return true;
+    if (text.indexOf('especie') !== -1 || text.indexOf('espécie') !== -1) return true;
+    if (/\b01\b/.test(text)) return true;
+    return false;
+  }
+
+  function extractPdvCashAmountFromPayload(payload) {
+    let total = 0;
+    const parsed = typeof payload === 'string' ? JSON.parse(payload || '{}') : payload;
+    walkPdvPayload(parsed, (value, path) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+      if (!isPdvCashPaymentObject(value, path)) return;
+
+      const paid = getPdvValueByKeys(value, [
+        'valorrecebido',
+        'valor recebido',
+        'received',
+        'recebido',
+        'paid',
+        'pago',
+        'pagamento',
+        'payment',
+        'amount',
+        'valor'
+      ]);
+      const change = getPdvValueByKeys(value, [
+        'troco',
+        'change'
+      ]);
+      const amount = getPdvValueByKeys(value, [
+        'valorliquido',
+        'valor liquido',
+        'valorfinal',
+        'valor final',
+        'amount',
+        'valor'
+      ]);
+
+      let contribution = NaN;
+      if (Number.isFinite(paid)) {
+        contribution = Math.max(0, paid - (Number.isFinite(change) ? change : 0));
+      } else if (Number.isFinite(amount)) {
+        contribution = Math.max(0, amount - (Number.isFinite(change) ? change : 0));
+      }
+
+      if (Number.isFinite(contribution) && contribution > 0) {
+        total += contribution;
+      }
+    }, []);
+
+    return total;
+  }
+
+  function extractPdvCashAmountFromPayloads(requestPayload, responsePayload) {
+    const requestAmount = extractPdvCashAmountFromPayload(requestPayload);
+    if (Number.isFinite(requestAmount) && requestAmount > 0) return requestAmount;
+
+    const responseAmount = extractPdvCashAmountFromPayload(responsePayload);
+    return Number.isFinite(responseAmount) ? responseAmount : 0;
+  }
+
+  function isPdvCashPaymentMode(payment) {
+    if (!payment || typeof payment !== 'object') return false;
+    const parts = [
+      payment.name,
+      payment.mode,
+      payment.meioPagamentoId,
+      payment.tPag,
+      payment.paymentType && payment.paymentType.name,
+      payment.paymentType && payment.paymentType.tPag
+    ].map((value) => normalizeText(value)).join(' ');
+    return parts.indexOf('dinheiro') !== -1 || /\b01\b/.test(parts);
+  }
+
+  function getPdvPaymentModeValue(payment) {
+    if (!payment || typeof payment !== 'object') return 0;
+    const directValue = parsePdvMoney(payment.value);
+    if (Number.isFinite(directValue)) return directValue;
+    const amountValue = parsePdvMoney(payment.amount);
+    return Number.isFinite(amountValue) ? amountValue : 0;
+  }
+
+  function getPdvDetailCheckoutOpeningId(detail) {
+    const data = detail && typeof detail === 'object' ? detail : {};
+    return data.dados && data.dados.checkout && data.dados.checkout.checkoutOpeningId
+      || data.dados && data.dados.checkoutOpening && data.dados.checkoutOpening.id
+      || data.checkout && data.checkout.checkoutOpeningId
+      || null;
+  }
+
+  function getPdvCurrentCheckoutOpeningId(payload) {
+    const data = payload && typeof payload === 'object' ? payload : {};
+    return data.checkout && data.checkout.checkoutOpeningId
+      || data.checkoutOpeningId
+      || data.id
+      || null;
+  }
+
+  function getPdvCurrentCheckoutIdentification(payload) {
+    const data = payload && typeof payload === 'object' ? payload : {};
+    return data.checkout && data.checkout.identification
+      || data.identification
+      || '';
+  }
+
+  function getPdvCheckoutOpeningValue(payload) {
+    const data = payload && typeof payload === 'object' ? payload : {};
+    const candidates = [
+      data.openCheckout && data.openCheckout.value,
+      data.checkout && data.checkout.openCheckout && data.checkout.openCheckout.value,
+      data.checkout && data.checkout.value,
+      data.openingValue,
+      data.value
+    ];
+    for (const value of candidates) {
+      const parsed = parsePdvMoney(value);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    return 0;
+  }
+
+  function isPdvAuthorizedNfceListEntry(entry) {
+    if (!entry || typeof entry !== 'object') return false;
+    return String(entry.modelo || '') === '65'
+      && Number(entry.statusTransmissao) === 4
+      && Number(entry.status) === 2;
+  }
+
+  function getPdvDetailTotal(detail, fallback) {
+    const candidates = [
+      detail && detail.valorTotal,
+      detail && detail.dados && detail.dados.total && detail.dados.total.totalNFE,
+      detail && detail.dados && detail.dados.total && detail.dados.total.totalProd,
+      fallback && fallback.valorTotal
+    ];
+    for (const value of candidates) {
+      const parsed = parsePdvMoney(value);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    return 0;
+  }
+
+  function getPdvCashAmountFromDetail(detail, fallback) {
+    const payments = detail && detail.dados && Array.isArray(detail.dados.paymentModeCollection)
+      ? detail.dados.paymentModeCollection
+      : [];
+    const cashReceived = payments
+      .filter(isPdvCashPaymentMode)
+      .reduce((sum, payment) => sum + getPdvPaymentModeValue(payment), 0);
+    if (!Number.isFinite(cashReceived) || cashReceived <= 0) return 0;
+
+    const total = getPdvDetailTotal(detail, fallback);
+    return total > 0 ? Math.min(cashReceived, total) : cashReceived;
+  }
+
+  function applyPdvCashCounterApiState(total, count, checkoutOpeningId, checkoutIdentification, openingValue, documentIds, documentNumbers) {
+    const state = {
+      dateKey: getTodayKey(),
+      total: Math.round((Number(total) || 0) * 100) / 100,
+      count: Number(count) || 0,
+      openingValue: Math.round((Number(openingValue) || 0) * 100) / 100,
+      signatures: Array.isArray(documentIds) ? documentIds.slice(-PDV_CASH_COUNTER_MAX_SIGNATURES) : [],
+      cashNfceNumbers: Array.isArray(documentNumbers) ? documentNumbers.slice(-PDV_CASH_COUNTER_MAX_SIGNATURES) : [],
+      checkoutOpeningId: checkoutOpeningId || null,
+      checkoutIdentification: checkoutIdentification || '',
+      source: 'api',
+      lastApiSyncAt: new Date().toISOString()
+    };
+    PDV_CASH_COUNTER_STATE = state;
+    writePdvCashCounterState();
+    syncPdvCashCounterUi();
+  }
+
+  async function syncPdvCashCounterFromApi(force) {
+    if (!isTargetPdvRoute()) return;
+    const nowMs = Date.now();
+    if (!force && nowMs - PDV_CASH_COUNTER_LAST_API_SYNC_AT < PDV_CASH_COUNTER_API_SYNC_INTERVAL_MS) return;
+    if (PDV_CASH_COUNTER_API_SYNC_RUNNING) return;
+
+    PDV_CASH_COUNTER_API_SYNC_RUNNING = true;
+    PDV_CASH_COUNTER_LAST_API_SYNC_AT = nowMs;
+    try {
+      const todayKey = getTodayKey();
+      const checkoutPayload = await postZwebJson(FISCAL_GET_CHECKOUT_CURRENT_USER_API_URL, { active: true });
+      const currentCheckoutOpeningId = getPdvCurrentCheckoutOpeningId(checkoutPayload);
+      const currentCheckoutIdentification = getPdvCurrentCheckoutIdentification(checkoutPayload);
+      const movimentationPayload = await postZwebJson(FISCAL_GET_CHECKOUT_CURRENT_MOVIMENTATION_API_URL, {});
+      const openingValue = getPdvCheckoutOpeningValue(movimentationPayload);
+      const listPayload = await postZwebJson(FISCAL_GET_NFE_PAGINATE_API_URL, {
+        modelos: ['65', '59'],
+        siniefN12: true,
+        page: 1,
+        maxResults: 80,
+        sort: { key: 'emission', order: 'DESC' }
+      });
+      const entries = Array.isArray(listPayload && listPayload.data) ? listPayload.data : [];
+      const todayEntries = entries.filter((entry) => {
+        return isPdvAuthorizedNfceListEntry(entry)
+          && String(entry.emission || '').slice(0, 10) === todayKey;
+      });
+
+      let total = 0;
+      let count = 0;
+      const documentIds = [];
+      const documentNumbers = [];
+      for (const entry of todayEntries) {
+        const detail = await postZwebJson(NFE_GET_DETAILED_API_URL, { id: entry.id });
+        const detailCheckoutOpeningId = getPdvDetailCheckoutOpeningId(detail);
+        if (currentCheckoutOpeningId && detailCheckoutOpeningId && String(detailCheckoutOpeningId) !== String(currentCheckoutOpeningId)) {
+          continue;
+        }
+        const cashAmount = getPdvCashAmountFromDetail(detail, entry);
+        if (cashAmount <= 0) continue;
+        total += cashAmount;
+        count += 1;
+        documentIds.push('api:' + String(entry.id));
+        documentNumbers.push(String(entry.numero || entry.number || entry.id));
+      }
+      applyPdvCashCounterApiState(total + openingValue, count, currentCheckoutOpeningId, currentCheckoutIdentification, openingValue, documentIds, documentNumbers);
+    } catch (error) {
+      try {
+        const current = JSON.parse(window.localStorage && window.localStorage.getItem(PDV_CASH_COUNTER_DEBUG_STORAGE_KEY) || '[]');
+        const list = Array.isArray(current) ? current : [];
+        list.push({
+          at: new Date().toISOString(),
+          route: String(window.location.href || ''),
+          event: 'api-sync-error',
+          error: String(error && error.message || error)
+        });
+        window.localStorage && window.localStorage.setItem(PDV_CASH_COUNTER_DEBUG_STORAGE_KEY, JSON.stringify(list.slice(-20)));
+      } catch (storageError) {}
+    } finally {
+      PDV_CASH_COUNTER_API_SYNC_RUNNING = false;
+    }
+  }
+
+  function schedulePdvCashCounterApiSync(force) {
+    if (!isTargetPdvRoute()) return;
+    if (PDV_CASH_COUNTER_API_SYNC_TIMER) return;
+    PDV_CASH_COUNTER_API_SYNC_TIMER = window.setTimeout(() => {
+      PDV_CASH_COUNTER_API_SYNC_TIMER = 0;
+      syncPdvCashCounterFromApi(!!force);
+    }, force ? 100 : 1200);
+  }
+
+  function getPdvTransmitSignature(requestPayload, responsePayload, cashAmount) {
+    const candidates = [];
+    [responsePayload, requestPayload].forEach((payload) => {
+      walkPdvPayload(payload, (value, path) => {
+        const key = normalizeText((path || []).slice(-1)[0] || '');
+        if (!/(id|uuid|numero|number|chave|key|serie|series|protocolo|protocol)/.test(key)) return;
+        if (typeof value !== 'string' && typeof value !== 'number') return;
+        const text = String(value || '').trim();
+        if (text) candidates.push(key + ':' + text);
+      }, []);
+    });
+    if (candidates.length) return candidates.slice(0, 8).join('|');
+    return 'cash:' + cashAmount.toFixed(2) + ':' + new Date().toISOString().slice(0, 16);
+  }
+
+  function applyPdvCashCounterSale(requestBody, responseText) {
+    if (!isTargetPdvRoute()) return;
+
+    let requestPayload = null;
+    let responsePayload = null;
+    try {
+      requestPayload = JSON.parse(requestBody || '{}');
+    } catch (error) {
+      return;
+    }
+    try {
+      responsePayload = responseText ? JSON.parse(responseText) : null;
+    } catch (error) {
+      responsePayload = null;
+    }
+
+    const cashAmount = extractPdvCashAmountFromPayloads(requestPayload, responsePayload);
+    if (!Number.isFinite(cashAmount) || cashAmount <= 0) return;
+
+    const state = readPdvCashCounterState();
+    const signature = getPdvTransmitSignature(requestPayload, responsePayload, cashAmount);
+    if (state.signatures.includes(signature)) return;
+
+    state.signatures.push(signature);
+    state.signatures = state.signatures.slice(-PDV_CASH_COUNTER_MAX_SIGNATURES);
+    state.total = Math.round(((Number(state.total) || 0) + cashAmount) * 100) / 100;
+    state.count = (Number(state.count) || 0) + 1;
+    state.lastSaleAt = new Date().toISOString();
+    state.lastSaleValue = Math.round(cashAmount * 100) / 100;
+    writePdvCashCounterState();
+    syncPdvCashCounterUi();
+  }
+
+  function ensurePdvCashCounterStyle() {
+    if (document.getElementById(PDV_CASH_COUNTER_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = PDV_CASH_COUNTER_STYLE_ID;
+    style.textContent = [
+      '#' + PDV_CASH_COUNTER_ID + ' { box-sizing: border-box; display: block; width: 100%; margin: 10px 0 0 0; padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, #0f5132, #198754); color: #fff; box-shadow: 0 10px 26px rgba(15, 81, 50, .22); font-weight: 700; clear: both; }',
+      '#' + PDV_CASH_COUNTER_ID + ' { cursor: pointer; user-select: none; }',
+      '#' + PDV_CASH_COUNTER_ID + ' .zweb-pdv-cash-counter-label { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; opacity: .78; }',
+      '#' + PDV_CASH_COUNTER_ID + ' .zweb-pdv-cash-counter-value { font-size: 24px; line-height: 1.1; margin-top: 3px; }',
+      '#' + PDV_CASH_COUNTER_ID + ' .zweb-pdv-cash-counter-meta { font-size: 12px; opacity: .82; margin-top: 4px; font-weight: 600; }',
+      '#' + PDV_CASH_COUNTER_BACKDROP_ID + ' { position: fixed; inset: 0; z-index: 2147483600; background: rgba(15, 23, 42, .38); }',
+      '#' + PDV_CASH_COUNTER_MODAL_ID + ' { position: fixed; z-index: 2147483601; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, calc(100vw - 24px)); max-height: calc(100vh - 48px); overflow: auto; border-radius: 16px; background: #fff; color: #172033; box-shadow: 0 24px 60px rgba(0,0,0,.28); padding: 18px; font-family: inherit; }',
+      '#' + PDV_CASH_COUNTER_MODAL_ID + ' .zweb-pdv-cash-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }',
+      '#' + PDV_CASH_COUNTER_MODAL_ID + ' .zweb-pdv-cash-modal-title { font-size: 16px; font-weight: 800; }',
+      '#' + PDV_CASH_COUNTER_MODAL_ID + ' .zweb-pdv-cash-modal-close { border: 0; border-radius: 999px; width: 30px; height: 30px; background: #edf2f7; color: #172033; font-weight: 800; cursor: pointer; }',
+      '#' + PDV_CASH_COUNTER_MODAL_ID + ' .zweb-pdv-cash-modal-empty { color: #64748b; font-size: 13px; }',
+      '#' + PDV_CASH_COUNTER_MODAL_ID + ' .zweb-pdv-cash-modal-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }',
+      '#' + PDV_CASH_COUNTER_MODAL_ID + ' .zweb-pdv-cash-modal-list li { border-radius: 10px; background: #f1f5f9; padding: 10px 12px; font-weight: 800; font-size: 15px; }'
+    ].join('\n');
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function findPdvTotalAnchor() {
+    const candidates = Array.from(document.querySelectorAll('div, section, article, aside, footer, form, .card, .row, [class*="total"]'))
+      .filter(isVisible)
+      .map((element) => ({
+        element,
+        text: normalizeText(element.innerText || element.textContent || '')
+      }))
+      .filter((entry) => {
+        if (!entry.text || entry.text.indexOf('r$') === -1) return false;
+        if (entry.text.indexOf('subtotal') !== -1) return false;
+        if (!/(^|\s)total(\s|$)/.test(entry.text)) return false;
+        return true;
+      });
+
+    const specificCandidates = candidates.filter((entry) => {
+      return !Array.from(entry.element.children || []).some((child) => {
+        if (!child || child.id === PDV_CASH_COUNTER_ID) return false;
+        const childText = normalizeText(child.innerText || child.textContent || '');
+        return childText.indexOf('r$') !== -1
+          && childText.indexOf('subtotal') === -1
+          && /(^|\s)total(\s|$)/.test(childText);
+      });
+    });
+
+    const rankedCandidates = specificCandidates.length ? specificCandidates : candidates;
+
+    rankedCandidates.sort((a, b) => {
+      const aText = normalizeText(a.element.innerText || a.element.textContent || '');
+      const bText = normalizeText(b.element.innerText || b.element.textContent || '');
+      const aExact = /^total\s+r\$/.test(aText) ? 0 : 1;
+      const bExact = /^total\s+r\$/.test(bText) ? 0 : 1;
+      if (aExact !== bExact) return aExact - bExact;
+      const aRect = a.element.getBoundingClientRect();
+      const bRect = b.element.getBoundingClientRect();
+      if (Math.abs(aRect.top - bRect.top) > 20) return aRect.top - bRect.top;
+      const aLen = (a.element.innerText || a.element.textContent || '').length;
+      const bLen = (b.element.innerText || b.element.textContent || '').length;
+      return aLen - bLen;
+    });
+
+    return rankedCandidates.length ? rankedCandidates[0].element : null;
+  }
+
+  function syncPdvCashCounterUi() {
+    const allCounters = Array.from(document.querySelectorAll('#' + PDV_CASH_COUNTER_ID));
+    const existing = allCounters.shift() || null;
+    allCounters.forEach((counter) => counter.remove());
+    if (!isTargetPdvRoute()) {
+      if (existing) existing.remove();
+      return;
+    }
+
+    ensurePdvCashCounterStyle();
+    schedulePdvCashCounterApiSync(false);
+    const anchor = findPdvTotalAnchor();
+    if (!anchor) return;
+
+    const state = readPdvCashCounterState();
+    let counter = existing;
+    if (!counter) {
+      counter = document.createElement('div');
+      counter.id = PDV_CASH_COUNTER_ID;
+    }
+
+    counter.innerHTML = [
+      '<div class="zweb-pdv-cash-counter-label">Dinheiro acumulado no caixa</div>',
+      '<div class="zweb-pdv-cash-counter-value">' + formatPdvMoney(state.total) + '</div>',
+      '<div class="zweb-pdv-cash-counter-meta">' + (Number(state.count) || 0) + ' venda(s) em dinheiro hoje</div>'
+    ].join('');
+
+    if (counter.parentElement !== anchor.parentElement || counter.previousElementSibling !== anchor) {
+      anchor.insertAdjacentElement('afterend', counter);
+    }
+  }
+
+  function closePdvCashCounterModal() {
+    const modal = document.getElementById(PDV_CASH_COUNTER_MODAL_ID);
+    const backdrop = document.getElementById(PDV_CASH_COUNTER_BACKDROP_ID);
+    if (modal) modal.remove();
+    if (backdrop) backdrop.remove();
+  }
+
+  function openPdvCashCounterModal() {
+    if (!isTargetPdvRoute()) return;
+    closePdvCashCounterModal();
+    ensurePdvCashCounterStyle();
+
+    const state = readPdvCashCounterState();
+    const isApiReady = state && state.source === 'api' && state.lastApiSyncAt;
+    const numbers = Array.isArray(state.cashNfceNumbers)
+      ? state.cashNfceNumbers.filter(Boolean)
+      : [];
+
+    const backdrop = document.createElement('div');
+    backdrop.id = PDV_CASH_COUNTER_BACKDROP_ID;
+    backdrop.addEventListener('click', closePdvCashCounterModal);
+
+    const modal = document.createElement('div');
+    modal.id = PDV_CASH_COUNTER_MODAL_ID;
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.innerHTML = [
+      '<div class="zweb-pdv-cash-modal-head">',
+      '  <div class="zweb-pdv-cash-modal-title">NFC-e em dinheiro</div>',
+      '  <button type="button" class="zweb-pdv-cash-modal-close" aria-label="Fechar">×</button>',
+      '</div>',
+      !isApiReady
+        ? '<div class="zweb-pdv-cash-modal-empty">Ainda carregando as NFC-e em dinheiro. Tente novamente em alguns segundos.</div>'
+        : numbers.length
+        ? '<ul class="zweb-pdv-cash-modal-list">' + numbers.map((number) => '<li>' + escapeHtml(number) + '</li>').join('') + '</ul>'
+        : '<div class="zweb-pdv-cash-modal-empty">Nenhuma NFC-e em dinheiro neste caixa.</div>'
+    ].join('');
+
+    const closeButton = modal.querySelector('.zweb-pdv-cash-modal-close');
+    if (closeButton) closeButton.addEventListener('click', closePdvCashCounterModal);
+
+    document.body.appendChild(backdrop);
+    document.body.appendChild(modal);
+  }
+
+  function handlePdvCashCounterDoubleClick(event) {
+    const target = event && event.target && event.target.closest
+      ? event.target.closest('#' + PDV_CASH_COUNTER_ID)
+      : null;
+    if (!target) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openPdvCashCounterModal();
+  }
+
+  function handlePdvCashCounterResetClick(event) {
+    if (!isTargetPdvRoute()) return;
+    const target = event && event.target && event.target.closest
+      ? event.target.closest('button, a, [role="button"], .btn')
+      : null;
+    if (!target) return;
+    const text = normalizeText(target.innerText || target.textContent || target.getAttribute('aria-label') || '');
+    if (!text) return;
+    if (text.indexOf('abrir caixa') !== -1 || text.indexOf('fechar caixa') !== -1 || text.indexOf('fechamento de caixa') !== -1) {
+      resetPdvCashCounterState(text);
+      PDV_CASH_COUNTER_LAST_API_SYNC_AT = 0;
+      schedulePdvCashCounterApiSync(true);
+    }
   }
 
   function parseRgbColor(value) {
@@ -1217,6 +1942,7 @@
       rawValue: '',
       primaryTerm: '',
       terms: [],
+      filters: [],
       columnTitle: '',
       columnKey: '',
       gridSignatureBefore: '',
@@ -1309,13 +2035,22 @@
   }
 
   function readCommonFilterSelectedColumn(modal) {
-    return readCommonFilterSelectValue(findCommonFilterFieldContainer(modal, ['coluna']));
+    return readCommonFilterSelectValue(findCommonFilterFieldContainer(modal, COMMON_FILTER_COLUMN_LABELS));
   }
 
   function findCommonFilterValueInput(modal) {
-    const container = findCommonFilterFieldContainer(modal, ['valor']);
-    if (!container) return null;
-    return container.querySelector('input.form-control:not([type="checkbox"]):not([type="radio"]), textarea, input:not([type="checkbox"]):not([type="radio"])');
+    const container = findCommonFilterFieldContainer(modal, COMMON_FILTER_VALUE_LABELS);
+    const scopedInput = container && container.querySelector('input.form-control:not([type="checkbox"]):not([type="radio"]), textarea, input:not([type="checkbox"]):not([type="radio"])');
+    if (scopedInput) return scopedInput;
+
+    const inputs = Array.from((modal || document).querySelectorAll('input.form-control:not([type="checkbox"]):not([type="radio"]), textarea, input:not([type="checkbox"]):not([type="radio"])'));
+    return inputs.find((input) => {
+      if (!isVisible(input)) return false;
+      if (input.closest && input.closest('.multiselect')) return false;
+      const value = String(input.value || '').trim();
+      const placeholder = normalizeText(input.getAttribute('placeholder') || '');
+      return value || placeholder.indexOf('valor') !== -1 || placeholder.indexOf('intervalo') !== -1 || placeholder.indexOf('conteudo') !== -1;
+    }) || inputs.find((input) => input && isVisible(input) && !(input.closest && input.closest('.multiselect'))) || null;
   }
 
   function tokenizeCommonFilterValue(rawValue) {
@@ -1325,6 +2060,295 @@
         .map(normalizeText)
         .filter(Boolean)
     );
+  }
+
+  function normalizeCommonFilterColumnKey(columnTitle) {
+    const key = normalizeText(columnTitle);
+    if (!key) return '';
+    if (key.indexOf('descri') === 0) return 'descricao';
+    if (key.indexOf('cod') === 0) return 'codigo';
+    if (key.indexOf('refer') === 0) return 'referencia';
+    if (key.indexOf('observ') === 0) return 'observacao';
+    if (key.indexOf('preco') === 0) return 'preco r$';
+    if (key.indexOf('custo') === 0) return 'custo r$';
+    if (key.indexOf('quant') === 0) return 'quantidade';
+    return key;
+  }
+
+  function createCommonPersistentFilter(columnTitle, rawValue, joinMode) {
+    const cleanColumnTitle = String(columnTitle || '').trim();
+    const cleanRawValue = String(rawValue || '').trim();
+    const terms = tokenizeCommonFilterValue(cleanRawValue);
+    if (!cleanColumnTitle || !terms.length) return null;
+
+    return {
+      id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 8),
+      join: joinMode === 'or' ? 'or' : 'and',
+      rawValue: cleanRawValue,
+      terms,
+      columnTitle: cleanColumnTitle,
+      columnKey: normalizeCommonFilterColumnKey(cleanColumnTitle)
+    };
+  }
+
+  function getCommonPersistentFilters() {
+    if (Array.isArray(COMMON_MULTI_TERM_FILTER_STATE.filters) && COMMON_MULTI_TERM_FILTER_STATE.filters.length) {
+      return COMMON_MULTI_TERM_FILTER_STATE.filters;
+    }
+
+    if (!COMMON_MULTI_TERM_FILTER_STATE.active || !COMMON_MULTI_TERM_FILTER_STATE.columnKey || !COMMON_MULTI_TERM_FILTER_STATE.terms.length) {
+      return [];
+    }
+
+    return [{
+      id: 'legacy',
+      join: 'and',
+      rawValue: COMMON_MULTI_TERM_FILTER_STATE.rawValue,
+      terms: COMMON_MULTI_TERM_FILTER_STATE.terms,
+      columnTitle: COMMON_MULTI_TERM_FILTER_STATE.columnTitle,
+      columnKey: COMMON_MULTI_TERM_FILTER_STATE.columnKey
+    }];
+  }
+
+  function updateCommonPersistentFilterState(filters, options) {
+    const nextFilters = Array.isArray(filters) ? filters.filter(Boolean) : [];
+    const nativeGrid = getVisibleNativeGridTableWrapper();
+    const first = nextFilters[0] || null;
+
+    COMMON_MULTI_TERM_FILTER_STATE = {
+      active: nextFilters.length > 0,
+      pending: !!(options && options.pending && nextFilters.length),
+      rawValue: first ? first.rawValue : '',
+      primaryTerm: first && first.terms.length ? first.terms[0] : '',
+      terms: first ? first.terms.slice() : [],
+      filters: nextFilters,
+      columnTitle: first ? first.columnTitle : '',
+      columnKey: first ? first.columnKey : '',
+      gridSignatureBefore: getVisibleGridRowsSignature(nativeGrid),
+      armedAt: Date.now()
+    };
+  }
+
+  function renderCommonPersistentFilterList() {
+    const list = document.getElementById(COMMON_MULTI_TERM_FILTER_LIST_ID);
+    if (!list) return;
+
+    const filters = getCommonPersistentFilters();
+    if (!filters.length) {
+      list.innerHTML = '';
+      return;
+    }
+
+    list.innerHTML = filters.map((filter, index) => {
+      const joinLabel = index === 0 ? '' : (filter.join === 'or' ? 'OU ' : 'E ');
+      return [
+        '<div data-common-persistent-filter-item="' + escapeHtml(filter.id) + '" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid rgba(120,130,150,.28);border-radius:8px;background:rgba(120,130,150,.08);">',
+        '  <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;"><strong>' + escapeHtml(joinLabel + filter.columnTitle) + ':</strong> ' + escapeHtml(filter.rawValue) + '</span>',
+        '  <button type="button" data-common-persistent-filter-remove="' + escapeHtml(filter.id) + '" class="btn btn-sm btn-light" style="padding:1px 7px;font-size:12px;line-height:1.3;">x</button>',
+        '</div>'
+      ].join('');
+    }).join('');
+  }
+
+  function ensureCommonFilterPersistenceUi() {
+    if (!isTargetProductRoute() || !isFeatureEnabled('multiTermFilterEnabled')) {
+      const existing = document.getElementById(COMMON_MULTI_TERM_FILTER_UI_ID);
+      if (existing) existing.remove();
+      return;
+    }
+
+    const modal = findProductFilterModal();
+    if (!modal) return;
+
+    const valueInput = findCommonFilterValueInput(modal);
+    const valueContainer = findCommonFilterFieldContainer(modal, COMMON_FILTER_VALUE_LABELS)
+      || valueInput && (valueInput.closest('.col-md-5, .col-md-4, .col-md-3, .col-sm-12, .col, .form-group') || valueInput.parentElement)
+      || modal.querySelector('.modal-body')
+      || modal;
+    if (!valueContainer) return;
+
+    let panel = document.getElementById(COMMON_MULTI_TERM_FILTER_UI_ID);
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = COMMON_MULTI_TERM_FILTER_UI_ID;
+      panel.style.cssText = [
+        'margin-top:10px',
+        'padding:10px 12px',
+        'border:1px solid rgba(22,100,192,.22)',
+        'border-radius:10px',
+        'background:rgba(22,100,192,.07)',
+        'display:grid',
+        'gap:8px'
+      ].join(';');
+      panel.innerHTML = [
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">',
+        '  <span></span>',
+        '  <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:12px;cursor:pointer;">',
+        '    <input id="' + COMMON_MULTI_TERM_FILTER_OR_ID + '" type="checkbox" style="margin:0;"> Utilizar OU',
+        '  </label>',
+        '</div>',
+        '<div id="' + COMMON_MULTI_TERM_FILTER_LIST_ID + '" style="display:grid;gap:6px;"></div>'
+      ].join('');
+      if (valueContainer === modal || valueContainer.classList && valueContainer.classList.contains('modal-body')) {
+        valueContainer.appendChild(panel);
+      } else {
+        valueContainer.insertAdjacentElement('afterend', panel);
+      }
+    } else if (panel.previousElementSibling !== valueContainer && panel.parentElement !== valueContainer) {
+      if (valueContainer === modal || valueContainer.classList && valueContainer.classList.contains('modal-body')) {
+        valueContainer.appendChild(panel);
+      } else {
+      valueContainer.insertAdjacentElement('afterend', panel);
+      }
+    }
+
+    renderCommonPersistentFilterList();
+  }
+
+  function addCommonPersistentFilterFromModal(modal) {
+    if (!modal) return false;
+    const valueInput = findCommonFilterValueInput(modal);
+    const columnTitle = readCommonFilterSelectedColumn(modal);
+    const rawValue = String(valueInput && valueInput.value || '').trim();
+    const useOr = !!(document.getElementById(COMMON_MULTI_TERM_FILTER_OR_ID) || {}).checked;
+    const filter = createCommonPersistentFilter(columnTitle, rawValue, useOr ? 'or' : 'and');
+    if (!filter) return false;
+
+    const filters = getCommonPersistentFilters().slice();
+    if (!filters.length) filter.join = 'and';
+    filters.push(filter);
+    updateCommonPersistentFilterState(filters, { pending: true });
+    renderCommonPersistentFilterList();
+    if (valueInput) {
+      setInputValueAndNotify(valueInput, '');
+      valueInput.focus();
+    }
+    restoreCommonMultiTermFilterRows();
+    COMMON_MULTI_TERM_FILTER_STATE.pending = false;
+    COMMON_MULTI_TERM_FILTER_STATE.gridSignatureBefore = '';
+    applyCommonPersistentFiltersByApi();
+    scheduleFeatureUiRefresh(120);
+    return true;
+  }
+
+  function removeCommonPersistentFilter(filterId) {
+    const filters = getCommonPersistentFilters().filter((filter) => filter.id !== filterId);
+    updateCommonPersistentFilterState(filters, { pending: false });
+    renderCommonPersistentFilterList();
+    if (!filters.length) {
+      resetCommonMultiTermFilterState();
+      clearProductCodeRangeFilter();
+    } else {
+      applyCommonPersistentFiltersByApi();
+    }
+    scheduleFeatureUiRefresh(80);
+  }
+
+  function clearCommonPersistentFilters() {
+    COMMON_MULTI_TERM_FILTER_API_RUN_ID += 1;
+    resetCommonMultiTermFilterState();
+    renderCommonPersistentFilterList();
+    clearProductCodeRangeFilter();
+    scheduleFeatureUiRefresh(80);
+  }
+
+  function isCommonPersistentFilterColumnMatch(headerTitle, filterKey) {
+    const headerKey = normalizeText(headerTitle);
+    const key = normalizeText(filterKey);
+    if (!headerKey || !key) return false;
+    return headerKey === key || headerKey.indexOf(key) === 0;
+  }
+
+  function commonPersistentFilterMatchesRow(row, structure, filter) {
+    if (!row || !filter || !filter.terms || !filter.terms.length) return true;
+    const header = structure && structure.headerCells.find((cell) => isCommonPersistentFilterColumnMatch(cell.normalizedTitle, filter.columnKey));
+    const columnIndex = header ? header.index : -1;
+    const sourceCell = columnIndex >= 0 ? row.children[columnIndex] : null;
+    const sourceText = normalizeText(
+      sourceCell
+        ? (sourceCell.textContent || '')
+        : (row.textContent || '')
+    );
+    return filter.terms.every((term) => sourceText.indexOf(term) !== -1);
+  }
+
+  function canApplyCommonPersistentFilters(structure, filters) {
+    if (!filters || !filters.length) return false;
+    if (!structure || !Array.isArray(structure.headerCells) || !structure.headerCells.length) return false;
+    return filters.every((filter) => {
+      if (!filter || !filter.columnKey) return false;
+      return structure.headerCells.some((cell) => isCommonPersistentFilterColumnMatch(cell.normalizedTitle, filter.columnKey));
+    });
+  }
+
+  function commonPersistentFiltersMatchRow(row, structure, filters) {
+    if (!filters.length) return true;
+    let result = commonPersistentFilterMatchesRow(row, structure, filters[0]);
+    for (let index = 1; index < filters.length; index += 1) {
+      const matches = commonPersistentFilterMatchesRow(row, structure, filters[index]);
+      result = filters[index].join === 'or' ? (result || matches) : (result && matches);
+    }
+    return result;
+  }
+
+  function commonPersistentFilterMatchesProduct(item, filter) {
+    if (!item || !filter || !filter.terms || !filter.terms.length) return true;
+    const directValue = getProductCodeRangeColumnValue(item, filter.columnKey);
+    const fallbackParts = [];
+    if (filter.columnKey === 'descricao') {
+      fallbackParts.push(item.description, item.name, item.title);
+    } else if (filter.columnKey === 'codigo') {
+      fallbackParts.push(item.sequence, item.code, item.id);
+    } else if (filter.columnKey === 'referencia') {
+      fallbackParts.push(item.reference, item.referenceCode);
+    }
+    const sourceText = normalizeText([directValue].concat(fallbackParts).filter((value) => value != null && value !== '').join(' '));
+    if (!sourceText) return false;
+    return filter.terms.every((term) => sourceText.indexOf(term) !== -1);
+  }
+
+  function commonPersistentFiltersMatchProduct(item, filters) {
+    if (!filters.length) return true;
+    let result = commonPersistentFilterMatchesProduct(item, filters[0]);
+    for (let index = 1; index < filters.length; index += 1) {
+      const matches = commonPersistentFilterMatchesProduct(item, filters[index]);
+      result = filters[index].join === 'or' ? (result || matches) : (result && matches);
+    }
+    return result;
+  }
+
+  function setCommonPersistentProductResults(items, error) {
+    PRODUCT_CODE_RANGE_STATE = {
+      active: true,
+      enabled: true,
+      loading: false,
+      startCode: '',
+      endCode: '',
+      items: Array.isArray(items) ? items : [],
+      error: error || '',
+      selectedSequence: '',
+      selectedCellIndex: 0
+    };
+    renderProductCodeRangePanel();
+  }
+
+  async function applyCommonPersistentFiltersByApi() {
+    const filters = getCommonPersistentFilters();
+    const runId = ++COMMON_MULTI_TERM_FILTER_API_RUN_ID;
+    if (!filters.length) {
+      clearProductCodeRangeFilter();
+      return;
+    }
+
+    try {
+      const products = await fetchAllFilteredProducts();
+      if (runId !== COMMON_MULTI_TERM_FILTER_API_RUN_ID) return;
+      const matched = products.filter((item) => commonPersistentFiltersMatchProduct(item, filters));
+      setCommonPersistentProductResults(matched, '');
+    } catch (error) {
+      if (runId !== COMMON_MULTI_TERM_FILTER_API_RUN_ID) return;
+      setCommonPersistentProductResults([], error && error.message ? error.message : 'Nao foi possivel consultar os produtos.');
+    }
   }
 
   function getVisibleGridRowsSignature(tableWrapper) {
@@ -1365,6 +2389,7 @@
       rawValue,
       primaryTerm,
       terms,
+      filters: [createCommonPersistentFilter(columnTitle, rawValue, 'and')].filter(Boolean),
       columnTitle,
       columnKey: normalizeText(columnTitle),
       gridSignatureBefore: getVisibleGridRowsSignature(nativeGrid),
@@ -1382,59 +2407,11 @@
       return;
     }
 
+    restoreCommonMultiTermFilterRows();
+
     if (!COMMON_MULTI_TERM_FILTER_STATE.active) {
-      restoreCommonMultiTermFilterRows();
       return;
     }
-
-    const tableWrapper = getVisibleNativeGridTableWrapper();
-    if (!tableWrapper) return;
-
-    const currentSignature = getVisibleGridRowsSignature(tableWrapper);
-    if (COMMON_MULTI_TERM_FILTER_STATE.pending) {
-      const age = Date.now() - COMMON_MULTI_TERM_FILTER_STATE.armedAt;
-      if (
-        currentSignature
-        && COMMON_MULTI_TERM_FILTER_STATE.gridSignatureBefore
-        && currentSignature === COMMON_MULTI_TERM_FILTER_STATE.gridSignatureBefore
-        && age < COMMON_MULTI_TERM_FILTER_MAX_WAIT_MS
-      ) {
-        return;
-      }
-
-      if (age < COMMON_MULTI_TERM_FILTER_MIN_WAIT_MS) {
-        return;
-      }
-
-      COMMON_MULTI_TERM_FILTER_STATE.pending = false;
-    }
-
-    const structure = getProductCodeRangeGridStructure(tableWrapper);
-    const header = structure && structure.headerCells.find((cell) => cell.normalizedTitle === COMMON_MULTI_TERM_FILTER_STATE.columnKey);
-    const columnIndex = header ? header.index : -1;
-    const rows = Array.from(tableWrapper.querySelectorAll('.table-row'))
-      .filter((row) => !row.classList.contains('header'));
-
-    rows.forEach((row) => {
-      const sourceCell = columnIndex >= 0 ? row.children[columnIndex] : null;
-      const sourceText = normalizeText(
-        sourceCell
-          ? (sourceCell.textContent || '')
-          : (row.textContent || '')
-      );
-      const matches = COMMON_MULTI_TERM_FILTER_STATE.terms.every((term) => sourceText.indexOf(term) !== -1);
-
-      if (matches) {
-        row.removeAttribute(COMMON_MULTI_TERM_FILTER_ROW_HIDDEN_ATTR);
-        row.style.display = '';
-        row.removeAttribute('aria-hidden');
-        return;
-      }
-
-      row.setAttribute(COMMON_MULTI_TERM_FILTER_ROW_HIDDEN_ATTR, 'true');
-      row.style.display = 'none';
-      row.setAttribute('aria-hidden', 'true');
-    });
   }
 
   function syncProductCodeRangeToolbarStatus(toolbar, theme, typography) {
@@ -2294,6 +3271,207 @@
     setInputValueAndNotify(input, String(nextValue == null ? '' : nextValue));
   }
 
+  function getSupplierBusinessNameNativeInput() {
+    return document.getElementById('person.businessName');
+  }
+
+  function getSupplierBusinessNameFallbackInput() {
+    return document.getElementById(SUPPLIER_BUSINESS_NAME_INPUT_ID);
+  }
+
+  function getSupplierBusinessNameInput() {
+    return getSupplierBusinessNameNativeInput() || getSupplierBusinessNameFallbackInput();
+  }
+
+  function getSupplierBusinessNameFieldHost(input) {
+    if (!input || !input.closest) return null;
+    return input.closest('.col-md-4, .col-md-3, .col-md-2, .col, [class*="col-"], .form-group')
+      || input.parentElement;
+  }
+
+  function removeSupplierBusinessNameEditor() {
+    const fallback = document.querySelector('[' + SUPPLIER_BUSINESS_NAME_FALLBACK_ATTR + '="true"]');
+    if (fallback) fallback.remove();
+    const helper = document.getElementById(SUPPLIER_BUSINESS_NAME_HELPER_ID);
+    if (helper) helper.remove();
+    const nativeInput = getSupplierBusinessNameNativeInput();
+    if (nativeInput) {
+      nativeInput.removeAttribute(SUPPLIER_BUSINESS_NAME_FIELD_ATTR);
+      nativeInput.removeAttribute(SUPPLIER_BUSINESS_NAME_ROUTE_ATTR);
+      nativeInput.removeAttribute(SUPPLIER_BUSINESS_NAME_LOADING_ATTR);
+    }
+  }
+
+  function setSupplierBusinessNameStatus(text, kind) {
+    const status = document.getElementById(SUPPLIER_BUSINESS_NAME_STATUS_ID);
+    if (!status) return;
+    status.textContent = text || '';
+    status.style.color = kind === 'error' ? '#c43d3d' : '#6c757d';
+  }
+
+  function bindSupplierBusinessNameClearButton(helper, input) {
+    const button = helper && helper.querySelector('[data-zweb-supplier-business-name-clear]');
+    if (!button || button.getAttribute('data-zweb-bound') === 'true') return;
+    button.setAttribute('data-zweb-bound', 'true');
+    button.addEventListener('click', function(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const current = getSupplierBusinessNameInput() || input;
+      if (!current) return;
+      if (current.getAttribute(SUPPLIER_BUSINESS_NAME_LOADING_ATTR) === 'true') {
+        setSupplierBusinessNameStatus('Aguarde carregar o nome fantasia atual antes de limpar.', 'info');
+        return;
+      }
+      current.removeAttribute('disabled');
+      current.removeAttribute('readonly');
+      current.disabled = false;
+      current.readOnly = false;
+      setInputValueAndNotify(current, '');
+      current.focus();
+      setSupplierBusinessNameStatus('Nome fantasia limpo. Clique em Salvar para enviar vazio ao Zweb.', 'info');
+    }, true);
+  }
+
+  function ensureSupplierBusinessNameHelper(input, routeId) {
+    const host = getSupplierBusinessNameFieldHost(input);
+    if (!host) return;
+
+    let helper = document.getElementById(SUPPLIER_BUSINESS_NAME_HELPER_ID);
+    if (helper && helper.parentElement !== host) helper.remove();
+    helper = document.getElementById(SUPPLIER_BUSINESS_NAME_HELPER_ID);
+
+    if (!helper) {
+      helper = document.createElement('div');
+      helper.id = SUPPLIER_BUSINESS_NAME_HELPER_ID;
+      helper.style.cssText = [
+        'margin-top:6px',
+        'display:flex',
+        'align-items:center',
+        'gap:8px',
+        'flex-wrap:wrap',
+        'font-size:12px',
+        'line-height:1.35'
+      ].join(';');
+      host.appendChild(helper);
+    }
+
+    if (!helper.querySelector('#' + SUPPLIER_BUSINESS_NAME_STATUS_ID) || !helper.querySelector('[data-zweb-supplier-business-name-clear]')) {
+      helper.innerHTML = [
+        '<span id="' + SUPPLIER_BUSINESS_NAME_STATUS_ID + '" style="color:#6c757d;">A extensao vai salvar este valor, inclusive vazio.</span>',
+        '<button type="button" data-zweb-supplier-business-name-clear="true" class="btn btn-sm btn-light" style="padding:2px 8px;font-size:11px;line-height:1.4;">Limpar</button>'
+      ].join('');
+    }
+    helper.setAttribute(SUPPLIER_BUSINESS_NAME_ROUTE_ATTR, String(routeId || ''));
+    bindSupplierBusinessNameClearButton(helper, input);
+  }
+
+  async function fetchPersonById(personId) {
+    const payload = await postZwebJson(PERSON_API_URL, { id: personId });
+    const list = Array.isArray(payload) ? payload : payload && Array.isArray(payload.data) ? payload.data : [];
+    return list[0] || null;
+  }
+
+  function markSupplierBusinessNameInput(input, routeId) {
+    if (!input) return;
+    input.setAttribute(SUPPLIER_BUSINESS_NAME_FIELD_ATTR, 'true');
+    input.setAttribute(SUPPLIER_BUSINESS_NAME_ROUTE_ATTR, String(routeId || ''));
+    if (input.getAttribute(SUPPLIER_BUSINESS_NAME_LOADING_ATTR) !== 'true') {
+      input.removeAttribute('disabled');
+      input.removeAttribute('readonly');
+      input.disabled = false;
+      input.readOnly = false;
+    }
+  }
+
+  async function hydrateSupplierBusinessNameFallback(input, routeId) {
+    if (!input || !routeId) return;
+    const routeKey = String(routeId);
+    if (input.getAttribute('data-zweb-loaded-route') === routeKey) return;
+    input.setAttribute('data-zweb-loaded-route', routeKey);
+    input.setAttribute(SUPPLIER_BUSINESS_NAME_LOADING_ATTR, 'true');
+    input.disabled = true;
+    input.readOnly = true;
+    setSupplierBusinessNameStatus('Carregando nome fantasia atual...', 'info');
+
+    try {
+      const person = await fetchPersonById(routeId);
+      if (!isTargetPersonBusinessNameEditRoute() || String(getPersonBusinessNameEditRouteId()) !== routeKey) return;
+      if (!input.getAttribute('data-zweb-user-edited')) {
+        setInputValueAndNotify(input, person && person.businessName != null ? person.businessName : '');
+      }
+      input.removeAttribute(SUPPLIER_BUSINESS_NAME_LOADING_ATTR);
+      input.disabled = false;
+      input.readOnly = false;
+      setSupplierBusinessNameStatus('A extensao vai salvar este valor, inclusive vazio.', 'info');
+    } catch (error) {
+      input.setAttribute(SUPPLIER_BUSINESS_NAME_LOADING_ATTR, 'true');
+      input.disabled = true;
+      input.readOnly = true;
+      setSupplierBusinessNameStatus('Nao foi possivel carregar o nome fantasia automaticamente.', 'error');
+    }
+  }
+
+  function createSupplierBusinessNameFallback(routeId) {
+    const existing = getSupplierBusinessNameFallbackInput();
+    if (existing) {
+      const routeKey = String(routeId || '');
+      markSupplierBusinessNameInput(existing, routeId);
+      ensureSupplierBusinessNameHelper(existing, routeId);
+      if (routeKey && existing.getAttribute('data-zweb-loaded-route') !== routeKey) {
+        existing.removeAttribute('data-zweb-user-edited');
+        setInputValueAndNotify(existing, '');
+        hydrateSupplierBusinessNameFallback(existing, routeId);
+      }
+      return existing;
+    }
+
+    const anchor = document.getElementById('person.cityCode') || document.getElementById('content.name');
+    const anchorHost = getSupplierBusinessNameFieldHost(anchor);
+    if (!anchorHost || !anchorHost.parentElement) return null;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = anchorHost.className || 'col-md-4';
+    wrapper.setAttribute(SUPPLIER_BUSINESS_NAME_FALLBACK_ATTR, 'true');
+    wrapper.innerHTML = [
+      '<label for="' + SUPPLIER_BUSINESS_NAME_INPUT_ID + '" class="form-label">Nome fantasia</label>',
+      '<input id="' + SUPPLIER_BUSINESS_NAME_INPUT_ID + '" class="form-control" maxlength="100" autocomplete="none" type="text" style="padding-left:17px;height:30px;">'
+    ].join('');
+    anchorHost.parentElement.insertBefore(wrapper, anchorHost.nextSibling);
+
+    const input = wrapper.querySelector('#' + SUPPLIER_BUSINESS_NAME_INPUT_ID);
+    if (input) {
+      input.addEventListener('input', function() {
+        input.setAttribute('data-zweb-user-edited', 'true');
+      }, true);
+      markSupplierBusinessNameInput(input, routeId);
+      ensureSupplierBusinessNameHelper(input, routeId);
+      hydrateSupplierBusinessNameFallback(input, routeId);
+    }
+
+    return input;
+  }
+
+  function ensureSupplierBusinessNameEditor() {
+    if (!isTargetPersonBusinessNameEditRoute()) {
+      removeSupplierBusinessNameEditor();
+      return;
+    }
+
+    const routeId = getPersonBusinessNameEditRouteId();
+    if (routeId == null) return;
+
+    const nativeInput = getSupplierBusinessNameNativeInput();
+    if (nativeInput) {
+      const fallback = document.querySelector('[' + SUPPLIER_BUSINESS_NAME_FALLBACK_ATTR + '="true"]');
+      if (fallback) fallback.remove();
+      markSupplierBusinessNameInput(nativeInput, routeId);
+      ensureSupplierBusinessNameHelper(nativeInput, routeId);
+      return;
+    }
+
+    createSupplierBusinessNameFallback(routeId);
+  }
+
   function normalizeItemSearchValue(e) {
     if (!isFeatureEnabled('itemSearchHashEnabled')) return;
     const input = e && e.target;
@@ -2330,7 +3508,9 @@
   function shouldUsePageBridge() {
     if (isTargetPurchaseRoute()) return true;
     if (isTargetNfceRoute()) return true;
-    if (isFiscalRoute() && isFeatureEnabled('xmlDownloadEnabled')) return true;
+    if (isTargetClientEditRoute()) return true;
+    if (isTargetSupplierEditRoute()) return true;
+    if (isTargetNfeListRoute() && isFeatureEnabled('xmlDownloadEnabled')) return true;
     if (isTargetNfeNewRoute() && isFeatureEnabled('itemSearchHashEnabled')) return true;
     if (isTargetProductRoute() && isFeatureEnabled('productPreferredSupplierBulkEnabled')) return true;
     return false;
@@ -2360,6 +3540,7 @@
 
   function forwardXmlBridgePayload(payload) {
     if (!isFeatureEnabled('xmlDownloadEnabled')) return;
+    if (!isTargetNfeListRoute()) return;
     const runtime = getRuntimeApi();
     if (!runtime || typeof runtime.sendMessage !== 'function') return;
 
@@ -2369,13 +3550,40 @@
   }
 
   function handleXmlBridgeMessage(event) {
-    if (event.source !== window) return;
+    if (event.type !== XML_BRIDGE_SOURCE && event.source !== window) return;
 
-    const data = event && event.data;
+    const data = event && (event.detail || event.data);
     if (!data || data.source !== XML_BRIDGE_SOURCE) return;
 
     if (data.type === 'product-paginate-request' && data.payload && typeof data.payload === 'object') {
       LAST_PRODUCT_PAGINATE_REQUEST_PAYLOAD = Object.assign({}, data.payload);
+      return;
+    }
+
+    if (data.type === 'nfe-list-response' && data.payload && typeof data.payload === 'object') {
+      handleNfeListApiResponsePayload(data.payload);
+      return;
+    }
+
+    if (data.type === 'document-negative-stock-configuration-request' && data.payload && typeof data.payload === 'object') {
+      handleDocumentNegativeStockConfigurationRequest(data);
+      return;
+    }
+
+    if (data.type === 'pdv-nfce-transmit-result') {
+      applyPdvCashCounterSale(data.requestBody || '', data.responseText || '');
+      PDV_CASH_COUNTER_LAST_API_SYNC_AT = 0;
+      schedulePdvCashCounterApiSync(true);
+      return;
+    }
+
+    if (data.type === 'fiscal-cancel-request-log') {
+      logFiscalCloneDav('fiscal-cancel-request-log', {
+        url: data.url || '',
+        requestBody: data.requestBody || '',
+        responseText: data.responseText || '',
+        status: data.status || 0
+      });
       return;
     }
 
@@ -2404,7 +3612,7 @@
 
   function armXmlDownloadFlow(e) {
     if (!isFeatureEnabled('xmlDownloadEnabled')) return;
-    if (!isFiscalRoute()) return;
+    if (!isTargetNfeListRoute()) return;
     if (NFE_BATCH_DOWNLOAD_INTERNAL_CLICK) return;
 
     const trigger = findXmlDownloadTrigger(e && e.target);
@@ -2470,6 +3678,1003 @@
     if (label !== 'salvar') return;
 
     syncClientIdentificationValueForPersist(document.getElementById('content.identification'));
+  }
+
+  function getDocumentNegativeStockGuardDurationMs() {
+    const raw = document.documentElement && document.documentElement.dataset
+      ? Number(document.documentElement.dataset.zwebNegativeStockGuardDurationMs)
+      : 0;
+    return Number.isFinite(raw) && raw >= 1000
+      ? raw
+      : DOCUMENT_NEGATIVE_STOCK_GUARD_DEFAULT_DURATION_MS;
+  }
+
+  function getDocumentNegativeStockGuardWarningMs() {
+    const durationMs = getDocumentNegativeStockGuardDurationMs();
+    const raw = document.documentElement && document.documentElement.dataset
+      ? Number(document.documentElement.dataset.zwebNegativeStockGuardWarningMs)
+      : 0;
+    const warningMs = Number.isFinite(raw) && raw >= 500
+      ? raw
+      : DOCUMENT_NEGATIVE_STOCK_GUARD_DEFAULT_WARNING_MS;
+    return Math.max(0, Math.min(warningMs, Math.max(0, durationMs - 500)));
+  }
+
+  function formatDocumentNegativeStockDurationLabel(durationMs) {
+    const totalSeconds = Math.max(1, Math.round((Number(durationMs) || 0) / 1000));
+    if (totalSeconds >= 60) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      if (!seconds) return minutes === 1 ? '1 minuto' : minutes + ' minutos';
+      const minuteLabel = minutes === 1 ? '1 minuto' : minutes + ' minutos';
+      const secondLabel = seconds === 1 ? '1 segundo' : seconds + ' segundos';
+      return minuteLabel + ' e ' + secondLabel;
+    }
+    return totalSeconds === 1 ? '1 segundo' : totalSeconds + ' segundos';
+  }
+
+  function scheduleDocumentNegativeStockBackgroundDisable(expiresAt) {
+    const value = Number(expiresAt) || 0;
+    if (!value || value <= Date.now()) return;
+
+    try {
+      sendRuntimeMessage({
+        type: 'document-negative-stock-schedule-disable',
+        token: getZwebToken(),
+        expiresAt: value
+      }).catch(() => {});
+    } catch (error) {}
+  }
+
+  function clearDocumentNegativeStockBackgroundDisable() {
+    try {
+      sendRuntimeMessage({ type: 'document-negative-stock-clear-disable' }).catch(() => {});
+    } catch (error) {}
+  }
+
+  function escapeDocumentNegativeStockToastText(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showDocumentNegativeStockNativeToastClone(snapshot) {
+    if (!document.body) return;
+
+    const previous = document.getElementById(DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_ID);
+    if (previous) previous.remove();
+
+    if (!document.getElementById(DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_STYLE_ID)) {
+      const style = document.createElement('style');
+      style.id = DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_STYLE_ID;
+      style.textContent = [
+        '#' + DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_ID + ' { position: fixed; right: 22px; top: 76px; z-index: 2147483647; max-width: min(420px, calc(100vw - 24px)); }',
+        '#' + DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_ID + ' [data-zweb-fallback-toast] { background: #ffffff; color: #202124; border-left: 4px solid #24a148; border-radius: 8px; box-shadow: 0 10px 32px rgba(15, 23, 42, 0.22); padding: 14px 16px; font-size: 13px; line-height: 1.45; }',
+        '#' + DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_ID + ' [data-zweb-fallback-toast-title] { font-weight: 700; margin-bottom: 2px; }'
+      ].join('\n');
+      (document.head || document.documentElement).appendChild(style);
+    }
+
+    const host = document.createElement('div');
+    host.id = DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_ID;
+
+    const html = snapshot && typeof snapshot.html === 'string' ? snapshot.html.trim() : '';
+    if (html) {
+      const template = document.createElement('template');
+      template.innerHTML = html;
+      const node = template.content && template.content.firstElementChild;
+      if (node) {
+        host.appendChild(node);
+      }
+    }
+
+    if (!host.firstElementChild) {
+      const text = snapshot && snapshot.text ? String(snapshot.text) : 'Configuração salva com sucesso.';
+      host.innerHTML = [
+        '<div data-zweb-fallback-toast>',
+        '  <div data-zweb-fallback-toast-title>Sucesso</div>',
+        '  <div>' + escapeDocumentNegativeStockToastText(text) + '</div>',
+        '</div>'
+      ].join('');
+    }
+
+    document.body.appendChild(host);
+    window.setTimeout(() => {
+      const current = document.getElementById(DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_ID);
+      if (current) current.remove();
+    }, 5200);
+  }
+
+  function requestDocumentNegativeStockForceDisableNow() {
+    try {
+      return sendRuntimeMessage({
+        type: 'document-negative-stock-force-disable-now',
+        token: getZwebToken()
+      }).then((response) => {
+        if (response && response.ok !== false) {
+          showDocumentNegativeStockNativeToastClone(response.notification || response.visualResult && response.visualResult.notification);
+        }
+        return response;
+      }).catch(() => null);
+    } catch (error) {
+      return Promise.resolve(null);
+    }
+  }
+
+  function readDocumentNegativeStockForceDisablePending() {
+    try {
+      return window.localStorage && window.localStorage.getItem(DOCUMENT_NEGATIVE_STOCK_FORCE_DISABLE_STORAGE_KEY) === 'true';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function writeDocumentNegativeStockForceDisablePending(enabled) {
+    try {
+      if (!window.localStorage) return;
+      if (enabled) {
+        window.localStorage.setItem(DOCUMENT_NEGATIVE_STOCK_FORCE_DISABLE_STORAGE_KEY, 'true');
+      } else {
+        window.localStorage.removeItem(DOCUMENT_NEGATIVE_STOCK_FORCE_DISABLE_STORAGE_KEY);
+      }
+    } catch (error) {}
+  }
+
+  function readDocumentNegativeStockGuardExpiresAt() {
+    try {
+      const value = Number(window.localStorage && window.localStorage.getItem(DOCUMENT_NEGATIVE_STOCK_GUARD_STORAGE_KEY));
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    } catch (error) {
+      return DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
+    }
+  }
+
+  function writeDocumentNegativeStockGuardExpiresAt(expiresAt) {
+    const value = Number(expiresAt) || 0;
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt = value;
+
+    if (document.documentElement && document.documentElement.dataset) {
+      if (value > 0) {
+        document.documentElement.dataset.zwebDocumentNegativeStockGuardExpiresAt = String(value);
+      } else {
+        delete document.documentElement.dataset.zwebDocumentNegativeStockGuardExpiresAt;
+      }
+    }
+
+    try {
+      if (!window.localStorage) return;
+      if (value > 0) {
+        window.localStorage.setItem(DOCUMENT_NEGATIVE_STOCK_GUARD_STORAGE_KEY, String(value));
+      } else {
+        window.localStorage.removeItem(DOCUMENT_NEGATIVE_STOCK_GUARD_STORAGE_KEY);
+      }
+    } catch (error) {}
+
+    if (value > 0) {
+      scheduleDocumentNegativeStockBackgroundDisable(value);
+    }
+  }
+
+  function getDocumentNegativeStockConfigurationEmitter(payload) {
+    return payload
+      && typeof payload === 'object'
+      && !Array.isArray(payload)
+      && payload.fiscal
+      && typeof payload.fiscal === 'object'
+      && payload.fiscal.emissor
+      && typeof payload.fiscal.emissor === 'object'
+      ? payload.fiscal.emissor
+      : null;
+  }
+
+  function hasDocumentNegativeStockConfigurationPayload(payload) {
+    const emitter = getDocumentNegativeStockConfigurationEmitter(payload);
+    return !!(emitter && Object.prototype.hasOwnProperty.call(emitter, 'isAllowedNegativeStock'));
+  }
+
+  function readDocumentNegativeStockConfigurationPayload() {
+    try {
+      const payload = parseJson(window.localStorage && window.localStorage.getItem(DOCUMENT_NEGATIVE_STOCK_CONFIGURATION_STORAGE_KEY));
+      return hasDocumentNegativeStockConfigurationPayload(payload) ? payload : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writeDocumentNegativeStockConfigurationPayload(payload) {
+    if (!hasDocumentNegativeStockConfigurationPayload(payload)) return false;
+    try {
+      window.localStorage && window.localStorage.setItem(DOCUMENT_NEGATIVE_STOCK_CONFIGURATION_STORAGE_KEY, JSON.stringify(payload));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function setDocumentNegativeStockConfigurationEnabled(payload, enabled) {
+    const emitter = getDocumentNegativeStockConfigurationEmitter(payload);
+    if (!emitter) return false;
+    emitter.isAllowedNegativeStock = enabled === true;
+    return true;
+  }
+
+  function isDocumentNegativeStockStoredConfigurationEnabled() {
+    const payload = readDocumentNegativeStockConfigurationPayload();
+    const emitter = getDocumentNegativeStockConfigurationEmitter(payload);
+    return !!(emitter && emitter.isAllowedNegativeStock === true);
+  }
+
+  function updateDocumentNegativeStockStoredConfigurationEnabled(enabled) {
+    const payload = readDocumentNegativeStockConfigurationPayload();
+    if (!payload || !setDocumentNegativeStockConfigurationEnabled(payload, enabled)) return false;
+    return writeDocumentNegativeStockConfigurationPayload(payload);
+  }
+
+  function getDocumentNegativeStockDashboardClient(payload) {
+    const root = payload && payload.data && typeof payload.data === 'object' ? payload.data : payload;
+    if (!root || typeof root !== 'object') return null;
+    return root['get-client'] || root.getClient || null;
+  }
+
+  async function fetchDocumentNegativeStockConfigurationPayload() {
+    try {
+      const response = await sendRuntimeMessage({
+        type: 'document-negative-stock-get-configuration',
+        token: getZwebToken()
+      });
+      if (response && response.ok === true && hasDocumentNegativeStockConfigurationPayload(response.payload)) {
+        writeDocumentNegativeStockConfigurationPayload(response.payload);
+        return response.payload;
+      }
+      if (response && response.message) {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      // Fallback direto mantem compatibilidade se o service worker ainda estiver reiniciando.
+    }
+
+    const payload = await postZwebJson(BFF_DASHBOARD_API_URL, {
+      'get-client': {
+        request: true
+      }
+    });
+    const client = getDocumentNegativeStockDashboardClient(payload);
+    if (!hasDocumentNegativeStockConfigurationPayload(client)) return null;
+    writeDocumentNegativeStockConfigurationPayload(client);
+    return client;
+  }
+
+  async function persistDocumentNegativeStockConfigurationPayload(payload) {
+    try {
+      const response = await sendRuntimeMessage({
+        type: 'document-negative-stock-put-configuration',
+        token: getZwebToken(),
+        payload
+      });
+      if (response && response.ok === true) return response.payload;
+      if (response && response.message) {
+        throw new Error(response.message);
+      }
+    } catch (error) {
+      // Fallback direto mantem a desativacao funcionando em versoes antigas do background.
+    }
+
+    return await postZwebJson(APPLICATION_PUT_CONFIGURATION_API_URL, payload);
+  }
+
+  async function getDocumentNegativeStockConfigurationPayloadForDisable() {
+    const stored = readDocumentNegativeStockConfigurationPayload();
+    if (stored) return stored;
+
+    try {
+      return await fetchDocumentNegativeStockConfigurationPayload();
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function ensureDocumentNegativeStockGuardStartedFromStoredConfiguration() {
+    if (!isDocumentNegativeStockStoredConfigurationEnabled()) return false;
+
+    const nowAt = Date.now();
+    const expiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
+    if (expiresAt > nowAt) return true;
+
+    writeDocumentNegativeStockGuardExpiresAt(nowAt + getDocumentNegativeStockGuardDurationMs());
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = 0;
+    return true;
+  }
+
+  async function checkDocumentNegativeStockServerState(force) {
+    if (isSignInRoute()) return;
+    if (DOCUMENT_NEGATIVE_STOCK_GUARD_SERVER_CHECK_RUNNING) return;
+
+    const nowAt = Date.now();
+    const expiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
+    if (expiresAt > nowAt) return;
+
+    if (!force && DOCUMENT_NEGATIVE_STOCK_GUARD_LAST_SERVER_CHECK_AT > 0) {
+      const elapsed = nowAt - DOCUMENT_NEGATIVE_STOCK_GUARD_LAST_SERVER_CHECK_AT;
+      if (elapsed < DOCUMENT_NEGATIVE_STOCK_GUARD_SERVER_CHECK_INTERVAL_MS) return;
+    }
+
+    DOCUMENT_NEGATIVE_STOCK_GUARD_LAST_SERVER_CHECK_AT = nowAt;
+    DOCUMENT_NEGATIVE_STOCK_GUARD_SERVER_CHECK_RUNNING = true;
+
+    try {
+      const payload = await fetchDocumentNegativeStockConfigurationPayload();
+      const emitter = getDocumentNegativeStockConfigurationEmitter(payload);
+      if (!emitter) return;
+
+      if (emitter.isAllowedNegativeStock === true) {
+        const detectedAt = Date.now();
+        const currentExpiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
+        if (!currentExpiresAt || currentExpiresAt <= detectedAt) {
+          writeDocumentNegativeStockGuardExpiresAt(detectedAt + getDocumentNegativeStockGuardDurationMs());
+          DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = 0;
+        }
+        syncDocumentNegativeStockGuard();
+        return;
+      }
+
+      updateDocumentNegativeStockStoredConfigurationEnabled(false);
+    } catch (error) {
+      // Sem token ou sem resposta da Zweb: o heartbeat tenta novamente no proximo ciclo.
+    } finally {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_SERVER_CHECK_RUNNING = false;
+    }
+  }
+
+  function handleDocumentNegativeStockConfigurationRequest(data) {
+    const payload = data && data.payload;
+    if (!writeDocumentNegativeStockConfigurationPayload(payload)) return;
+
+    if (data.enabled === true) {
+      const nowAt = Date.now();
+      const currentExpiresAt = readDocumentNegativeStockGuardExpiresAt();
+      if (!currentExpiresAt || currentExpiresAt <= nowAt) {
+        writeDocumentNegativeStockGuardExpiresAt(nowAt + getDocumentNegativeStockGuardDurationMs());
+      }
+      scheduleDocumentNegativeStockGuard(250);
+      return;
+    }
+
+    clearDocumentNegativeStockBackgroundDisable();
+    resetDocumentNegativeStockGuard(true);
+  }
+
+  function findDocumentNegativeStockGuardRow() {
+    const root = document.getElementById('inventory') || document;
+    const targetText = normalizeText(DOCUMENT_NEGATIVE_STOCK_LABEL);
+    const rows = Array.from(root.querySelectorAll('.row, [class~="row"]'));
+
+    return rows.find((row) => {
+      const text = normalizeText(row.innerText || row.textContent || '');
+      return text.indexOf(targetText) !== -1;
+    }) || null;
+  }
+
+  function getDocumentNegativeStockGuardControls() {
+    const row = findDocumentNegativeStockGuardRow();
+    if (!row) return null;
+
+    const input = row.querySelector('input#isAllowedNegativeStock, input[id="isAllowedNegativeStock"], input[type="checkbox"]');
+    const clickableSelectors = [
+      '.v-selection-control__input',
+      '.v-selection-control__wrapper',
+      '.v-selection-control',
+      '.v-switch__track',
+      '.z-switch-control',
+      '.z-switch'
+    ];
+    const clickable = clickableSelectors
+      .map((selector) => row.querySelector(selector))
+      .find((candidate) => candidate && isVisible(candidate))
+      || input
+      || row.querySelector('[role="switch"], button, label');
+
+    return {
+      row,
+      input,
+      clickable
+    };
+  }
+
+  function isDocumentNegativeStockGuardSwitchOn(controls) {
+    if (!controls) return false;
+    const input = controls.input;
+    if (input && typeof input.checked === 'boolean') return !!input.checked;
+
+    const ariaTarget = controls.clickable || controls.row;
+    const ariaChecked = ariaTarget && ariaTarget.getAttribute ? ariaTarget.getAttribute('aria-checked') : '';
+    if (ariaChecked === 'true') return true;
+    if (ariaChecked === 'false') return false;
+
+    return !!(controls.row && controls.row.querySelector('.z-switch-checked, .v-selection-control--dirty[aria-checked="true"]'));
+  }
+
+  function clickDocumentNegativeStockGuardSwitch(controls) {
+    if (!controls) return false;
+    const target = controls.clickable || controls.input;
+    if (!target) return false;
+
+    try {
+      clickLikeUser(target);
+      scheduleFeatureUiRefresh(220);
+      window.setTimeout(() => scheduleFeatureUiRefresh(0), 900);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function forceDocumentNegativeStockGuardUiOff() {
+    const controls = getDocumentNegativeStockGuardControls();
+    if (!controls) return;
+
+    const input = controls.input;
+    if (input && typeof input.checked === 'boolean') {
+      try {
+        const descriptor = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'checked');
+        if (descriptor && descriptor.set) {
+          descriptor.set.call(input, false);
+        } else {
+          input.checked = false;
+        }
+      } catch (error) {
+        input.checked = false;
+      }
+
+      input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+    }
+
+    if (controls.row) {
+      Array.from(controls.row.querySelectorAll('.z-switch-checked')).forEach((node) => {
+        node.classList.remove('z-switch-checked');
+      });
+      Array.from(controls.row.querySelectorAll('[aria-checked="true"], [role="switch"]')).forEach((node) => {
+        if (node && node.setAttribute) node.setAttribute('aria-checked', 'false');
+      });
+    }
+  }
+
+  function clearDocumentNegativeStockGuardTimer() {
+    if (!DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.timer) return;
+    window.clearTimeout(DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.timer);
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.timer = 0;
+  }
+
+  function closeDocumentNegativeStockGuardModal() {
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.closingModal = true;
+    const modal = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID);
+    const backdrop = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_BACKDROP_ID);
+    hideExtensionNativeModal(modal, backdrop);
+    window.setTimeout(() => {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.closingModal = false;
+    }, EXTENSION_DIALOG_TRANSITION_MS + 180);
+  }
+
+  function isDocumentNegativeStockGuardModalActive() {
+    const modal = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID);
+    return !!(modal && modal.classList.contains('show') && modal.style.display !== 'none');
+  }
+
+  function isDocumentNegativeStockGuardModalTarget(target) {
+    const modal = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID);
+    return !!(modal && target && modal.contains(target));
+  }
+
+  function focusDocumentNegativeStockGuardModal() {
+    const modal = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID);
+    if (!modal) return;
+    const keepButton = modal.querySelector('[data-document-negative-stock-keep]');
+    const focusTarget = keepButton || modal;
+    try {
+      focusTarget.focus({ preventScroll: true });
+    } catch (error) {
+      try {
+        focusTarget.focus();
+      } catch (innerError) {}
+    }
+  }
+
+  function blockDocumentNegativeStockGuardModalEscape(event) {
+    if (!event) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    focusDocumentNegativeStockGuardModal();
+  }
+
+  function handleDocumentNegativeStockGuardModalBlock(event) {
+    if (!isDocumentNegativeStockGuardModalActive()) return;
+    if (isDocumentNegativeStockGuardModalTarget(event && event.target)) {
+      if (event.type === 'keydown' && event.key === 'Escape') {
+        blockDocumentNegativeStockGuardModalEscape(event);
+      }
+      return;
+    }
+
+    if (event.type === 'keydown' && event.key === 'Tab') {
+      focusDocumentNegativeStockGuardModal();
+    }
+
+    blockDocumentNegativeStockGuardModalEscape(event);
+  }
+
+  function handleDocumentNegativeStockGuardBeforeUnload(event) {
+    if (!isDocumentNegativeStockGuardModalActive()) return;
+    const message = 'A liberação de estoque está pendente. Use Manter ou aguarde a desativação automática.';
+    event.preventDefault();
+    event.returnValue = message;
+    return message;
+  }
+
+  function resetDocumentNegativeStockGuard(clearStorage) {
+    clearDocumentNegativeStockGuardTimer();
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt = 0;
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = 0;
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling = false;
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.apiDisabling = false;
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.closingModal = false;
+    closeDocumentNegativeStockGuardModal();
+    if (clearStorage) writeDocumentNegativeStockGuardExpiresAt(0);
+  }
+
+  async function disableDocumentNegativeStockGuardByApi(trigger) {
+    if (DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.apiDisabling) return;
+    writeDocumentNegativeStockForceDisablePending(true);
+
+    const payload = await getDocumentNegativeStockConfigurationPayloadForDisable();
+    if (!payload || !setDocumentNegativeStockConfigurationEnabled(payload, false)) {
+      const controls = getDocumentNegativeStockGuardControls();
+      if (controls && isDocumentNegativeStockGuardSwitchOn(controls)) {
+        clickDocumentNegativeStockGuardSwitch(controls);
+        scheduleDocumentNegativeStockGuard(1200);
+        return;
+      }
+      resetDocumentNegativeStockGuard(true);
+      if (trigger === 'manual-current' || trigger === 'manual-hidden') {
+        clearDocumentNegativeStockBackgroundDisable();
+      }
+      if (trigger === 'manual-hidden') {
+        requestDocumentNegativeStockForceDisableNow();
+      }
+      return;
+    }
+
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.apiDisabling = true;
+    closeDocumentNegativeStockGuardModal();
+
+    try {
+      await persistDocumentNegativeStockConfigurationPayload(payload);
+      writeDocumentNegativeStockConfigurationPayload(payload);
+      forceDocumentNegativeStockGuardUiOff();
+      updateDocumentNegativeStockStoredConfigurationEnabled(false);
+      resetDocumentNegativeStockGuard(true);
+      if (trigger === 'manual-current' || trigger === 'manual-hidden') {
+        clearDocumentNegativeStockBackgroundDisable();
+      }
+      if (trigger === 'manual-hidden') {
+        requestDocumentNegativeStockForceDisableNow();
+      }
+    } catch (error) {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.apiDisabling = false;
+      scheduleDocumentNegativeStockGuard(15000);
+    }
+  }
+
+  function applyDocumentNegativeStockGuardModalTheme(modal) {
+    if (!modal) return;
+    const theme = getExtensionOverlayTheme(modal.parentElement || document.body);
+    const compact = window.innerWidth < 560;
+    const dialog = modal.querySelector('[data-document-negative-stock-dialog]');
+    const content = modal.querySelector('.modal-content');
+    const title = modal.querySelector('[data-document-negative-stock-title]');
+    const details = modal.querySelector('[data-document-negative-stock-details]');
+
+    if (dialog) {
+      dialog.style.maxWidth = compact ? 'calc(100vw - 16px)' : '460px';
+      dialog.style.margin = compact ? '8px auto' : '';
+    }
+    if (content) {
+      content.style.background = theme.modalBackground;
+      content.style.border = theme.modalBorder;
+      content.style.boxShadow = theme.modalBoxShadow;
+      content.style.color = theme.bodyColor;
+    }
+    if (title) title.style.color = theme.titleColor;
+    if (details) {
+      details.style.background = theme.cardBackground;
+      details.style.border = theme.cardBorder;
+      details.style.color = theme.cardTextColor;
+    }
+  }
+
+  function ensureDocumentNegativeStockGuardModal() {
+    if (!document.body) return;
+
+    if (!document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_BACKDROP_ID)) {
+      const backdrop = document.createElement('div');
+      backdrop.id = DOCUMENT_NEGATIVE_STOCK_GUARD_BACKDROP_ID;
+      backdrop.className = 'modal-backdrop fade';
+      backdrop.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'inset:0',
+        'background:rgba(3, 8, 16, 0.62)',
+        'z-index:2147483645'
+      ].join(';');
+      document.body.appendChild(backdrop);
+    }
+
+    if (!document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID)) {
+      const modal = document.createElement('div');
+      modal.id = DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID;
+      modal.className = 'modal fade';
+      modal.tabIndex = -1;
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.style.cssText = [
+        'display:none',
+        'position:fixed',
+        'inset:0',
+        'overflow-x:hidden',
+        'overflow-y:auto',
+        'outline:0',
+        'z-index:2147483646'
+      ].join(';');
+      modal.innerHTML = [
+        '<div class="modal-dialog modal-dialog-centered" data-document-negative-stock-dialog>',
+        '  <div class="modal-content">',
+        '    <div class="modal-header">',
+        '      <h2 data-document-negative-stock-title class="fw-semibold fs-6 fw-light text-primary">Estoque liberado temporariamente</h2>',
+        '    </div>',
+        '    <div class="modal-body pb-4" style="padding-top:8px;">',
+        '      <div data-document-negative-stock-details class="rounded p-4" style="display:grid;gap:8px;font-size:13px;line-height:1.5;">',
+        '        <div>O estoque está <strong style="color:#dc3545;">aberto</strong> a cinco minutos, deseja fecha-lo?</div>',
+        '        <div style="opacity:.78;">Fechamento automático em <strong id="' + DOCUMENT_NEGATIVE_STOCK_GUARD_REMAINING_ID + '">15 segundos</strong>. Para manter por mais <strong data-document-negative-stock-keep-duration>5 minutos</strong>, pressione <strong>Manter</strong>.</div>',
+      '      </div>',
+        '    </div>',
+        '    <div class="modal-footer pt-0">',
+        '      <button type="button" data-document-negative-stock-disable class="btn btn-light btn-sm" style="font-size:13px;">Desativar agora</button>',
+        '      <button type="button" data-document-negative-stock-keep class="btn btn-primary btn-sm" style="font-size:13px;">Manter</button>',
+        '    </div>',
+        '  </div>',
+        '</div>'
+      ].join('');
+      modal.addEventListener('click', (event) => {
+        const target = event.target && event.target.closest
+          ? event.target.closest('[data-document-negative-stock-keep], [data-document-negative-stock-disable]')
+          : null;
+        if (!target) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (target.hasAttribute('data-document-negative-stock-keep')) {
+          keepDocumentNegativeStockGuardEnabled();
+          return;
+        }
+        disableDocumentNegativeStockGuardSwitch(isTargetDocumentConfigurationRoute() ? 'manual-current' : 'manual-hidden');
+      }, true);
+      document.body.appendChild(modal);
+    }
+
+    applyDocumentNegativeStockGuardModalTheme(document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID));
+  }
+
+  function updateDocumentNegativeStockGuardModalRemaining() {
+    const remaining = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_REMAINING_ID);
+    if (!remaining) return;
+    const seconds = Math.max(0, Math.ceil((DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt - Date.now()) / 1000));
+    remaining.textContent = seconds === 1 ? '1 segundo' : seconds + ' segundos';
+  }
+
+  function showDocumentNegativeStockGuardWarning() {
+    if (DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.apiDisabling || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.closingModal) return;
+    ensureDocumentNegativeStockGuardModal();
+    const modal = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID);
+    const backdrop = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_BACKDROP_ID);
+    if (!modal || !backdrop) return;
+
+    const keepDuration = modal.querySelector('[data-document-negative-stock-keep-duration]');
+    if (keepDuration) {
+      keepDuration.textContent = formatDocumentNegativeStockDurationLabel(getDocumentNegativeStockGuardDurationMs());
+    }
+    updateDocumentNegativeStockGuardModalRemaining();
+    applyDocumentNegativeStockGuardModalTheme(modal);
+    showExtensionNativeModal(modal, backdrop);
+    window.setTimeout(focusDocumentNegativeStockGuardModal, 40);
+  }
+
+  function scheduleDocumentNegativeStockGuard(delayMs) {
+    clearDocumentNegativeStockGuardTimer();
+    const delay = Math.max(250, Math.min(Number(delayMs) || 250, 60 * 1000));
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.timer = window.setTimeout(() => {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.timer = 0;
+      syncDocumentNegativeStockGuard();
+    }, delay);
+  }
+
+  function keepDocumentNegativeStockGuardEnabled() {
+    const controls = getDocumentNegativeStockGuardControls();
+    if (isTargetDocumentConfigurationRoute() && !isDocumentNegativeStockGuardSwitchOn(controls)) {
+      resetDocumentNegativeStockGuard(true);
+      return;
+    }
+
+    const expiresAt = Date.now() + getDocumentNegativeStockGuardDurationMs();
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = 0;
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling = false;
+    writeDocumentNegativeStockGuardExpiresAt(expiresAt);
+    closeDocumentNegativeStockGuardModal();
+    scheduleDocumentNegativeStockGuard(Math.max(250, expiresAt - Date.now() - getDocumentNegativeStockGuardWarningMs()));
+  }
+
+  function getDocumentNegativeStockNativeNotificationSnapshot() {
+    const selectors = [
+      '.Vue-Toastification__toast',
+      '.Toastify__toast',
+      '.v-snackbar',
+      '.v-snackbar__wrapper',
+      '.toast.show',
+      '.toast',
+      '.swal2-popup',
+      '.alert-success',
+      '.alert'
+    ];
+
+    const nodes = selectors
+      .reduce((acc, selector) => acc.concat(Array.from(document.querySelectorAll(selector))), [])
+      .filter((node, index, list) => node && list.indexOf(node) === index && isVisible(node));
+
+    const node = nodes.find((candidate) => {
+      const text = normalizeText(candidate.innerText || candidate.textContent || '');
+      return text && text.indexOf('estoque liberado temporariamente') === -1;
+    }) || null;
+
+    if (!node) return null;
+    return {
+      html: node.outerHTML || '',
+      text: String(node.innerText || node.textContent || '').trim()
+    };
+  }
+
+  function inspectDocumentNegativeStockGuardControls() {
+    const controls = getDocumentNegativeStockGuardControls();
+    return {
+      found: !!controls,
+      inputChecked: controls && controls.input && typeof controls.input.checked === 'boolean' ? !!controls.input.checked : null,
+      switchOn: controls ? isDocumentNegativeStockGuardSwitchOn(controls) : null,
+      href: location.href
+    };
+  }
+
+  function disableDocumentNegativeStockGuardFromConfigPageRequest(sendResponse) {
+    if (!isTargetDocumentConfigurationRoute()) {
+      sendResponse({ ok: false, found: false, reason: 'wrong_route', href: location.href });
+      return;
+    }
+
+    writeDocumentNegativeStockGuardExpiresAt(0);
+    closeDocumentNegativeStockGuardModal();
+
+    const startedAt = Date.now();
+    let attempts = 0;
+
+    const finish = (extra) => {
+      const state = inspectDocumentNegativeStockGuardControls();
+      if (!state.switchOn) writeDocumentNegativeStockForceDisablePending(false);
+      resetDocumentNegativeStockGuard(true);
+      clearDocumentNegativeStockBackgroundDisable();
+      sendResponse(Object.assign({ ok: true, attempts, notification: getDocumentNegativeStockNativeNotificationSnapshot() }, state, extra || {}));
+    };
+
+    const tryDisable = () => {
+      const controls = getDocumentNegativeStockGuardControls();
+      if (!controls) {
+        if (Date.now() - startedAt < 18000) {
+          window.setTimeout(tryDisable, 700);
+          return;
+        }
+        sendResponse({ ok: false, found: false, reason: 'control_not_found', href: location.href });
+        return;
+      }
+
+      if (!isDocumentNegativeStockGuardSwitchOn(controls)) {
+        finish({ alreadyOff: true });
+        return;
+      }
+
+      attempts += 1;
+      clickDocumentNegativeStockGuardSwitch(controls);
+
+      window.setTimeout(() => {
+        const next = getDocumentNegativeStockGuardControls();
+        if (!next || !isDocumentNegativeStockGuardSwitchOn(next) || attempts >= 4) {
+          finish({ clicked: true });
+          return;
+        }
+        tryDisable();
+      }, 1400);
+    };
+
+    tryDisable();
+  }
+
+  function verifyDocumentNegativeStockGuardDisabled(attempt, persistWithApi, trigger) {
+    const controls = getDocumentNegativeStockGuardControls();
+    if (!controls || !isDocumentNegativeStockGuardSwitchOn(controls)) {
+      if (persistWithApi && readDocumentNegativeStockConfigurationPayload()) {
+        disableDocumentNegativeStockGuardByApi(trigger);
+        return;
+      }
+      if (trigger === 'manual-current' || trigger === 'manual-hidden') {
+        clearDocumentNegativeStockBackgroundDisable();
+      }
+      resetDocumentNegativeStockGuard(true);
+      return;
+    }
+
+    if (attempt >= 2) {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling = false;
+      disableDocumentNegativeStockGuardByApi(trigger);
+      return;
+    }
+
+    clickDocumentNegativeStockGuardSwitch(controls);
+    window.setTimeout(() => verifyDocumentNegativeStockGuardDisabled(attempt + 1, persistWithApi, trigger), 900);
+  }
+
+  function disableDocumentNegativeStockGuardSwitch(trigger) {
+    const controls = getDocumentNegativeStockGuardControls();
+    if (!isTargetDocumentConfigurationRoute() || !controls) {
+      disableDocumentNegativeStockGuardByApi(trigger);
+      return;
+    }
+
+    if (!controls || !isDocumentNegativeStockGuardSwitchOn(controls)) {
+      if (trigger === 'manual-current' || trigger === 'manual-hidden') {
+        clearDocumentNegativeStockBackgroundDisable();
+      }
+      resetDocumentNegativeStockGuard(true);
+      return;
+    }
+
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling = true;
+    closeDocumentNegativeStockGuardModal();
+    clickDocumentNegativeStockGuardSwitch(controls);
+    window.setTimeout(() => verifyDocumentNegativeStockGuardDisabled(0, true, trigger), 900);
+  }
+
+  function syncDocumentNegativeStockGuardByTimer() {
+    const nowAt = Date.now();
+    let expiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
+    if (!expiresAt) {
+      if (!ensureDocumentNegativeStockGuardStartedFromStoredConfiguration()) {
+        closeDocumentNegativeStockGuardModal();
+        return false;
+      }
+      expiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
+    }
+
+    if (nowAt >= expiresAt) {
+      disableDocumentNegativeStockGuardByApi();
+      return true;
+    }
+
+    const warningMs = getDocumentNegativeStockGuardWarningMs();
+    const warningAt = Math.max(nowAt, expiresAt - warningMs);
+    if (warningMs > 0 && nowAt >= warningAt) {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt = expiresAt;
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = expiresAt;
+      showDocumentNegativeStockGuardWarning();
+      scheduleDocumentNegativeStockGuard(Math.min(1000, Math.max(250, expiresAt - nowAt)));
+      return true;
+    }
+
+    closeDocumentNegativeStockGuardModal();
+    scheduleDocumentNegativeStockGuard(Math.max(250, warningAt - nowAt));
+    return true;
+  }
+
+  function syncDocumentNegativeStockGuard() {
+    if (!isTargetDocumentConfigurationRoute()) {
+      syncDocumentNegativeStockGuardByTimer();
+      return;
+    }
+
+    const controls = getDocumentNegativeStockGuardControls();
+    if (!controls) {
+      if (readDocumentNegativeStockGuardExpiresAt() || isDocumentNegativeStockStoredConfigurationEnabled()) {
+        syncDocumentNegativeStockGuardByTimer();
+        return;
+      }
+      checkDocumentNegativeStockServerState(false);
+      scheduleDocumentNegativeStockGuard(700);
+      return;
+    }
+
+    if (!isDocumentNegativeStockGuardSwitchOn(controls)) {
+      writeDocumentNegativeStockForceDisablePending(false);
+      if (isDocumentNegativeStockStoredConfigurationEnabled()) {
+        disableDocumentNegativeStockGuardByApi();
+        return;
+      }
+      updateDocumentNegativeStockStoredConfigurationEnabled(false);
+      resetDocumentNegativeStockGuard(true);
+      return;
+    }
+
+    if (DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling) {
+      scheduleDocumentNegativeStockGuard(600);
+      return;
+    }
+
+    if (readDocumentNegativeStockForceDisablePending()) {
+      closeDocumentNegativeStockGuardModal();
+      disableDocumentNegativeStockGuardSwitch();
+      return;
+    }
+
+    const nowAt = Date.now();
+    const durationMs = getDocumentNegativeStockGuardDurationMs();
+    const warningMs = getDocumentNegativeStockGuardWarningMs();
+    let expiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
+
+    if (!expiresAt || expiresAt > nowAt + durationMs) {
+      expiresAt = nowAt + durationMs;
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = 0;
+      writeDocumentNegativeStockGuardExpiresAt(expiresAt);
+    } else {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt = expiresAt;
+    }
+
+    if (nowAt >= expiresAt) {
+      disableDocumentNegativeStockGuardSwitch();
+      return;
+    }
+
+    const warningAt = Math.max(nowAt, expiresAt - warningMs);
+    if (warningMs > 0 && nowAt >= warningAt) {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = expiresAt;
+      showDocumentNegativeStockGuardWarning();
+      scheduleDocumentNegativeStockGuard(Math.min(1000, Math.max(250, expiresAt - nowAt)));
+      return;
+    }
+
+    closeDocumentNegativeStockGuardModal();
+    scheduleDocumentNegativeStockGuard(Math.max(250, warningAt - nowAt));
+  }
+
+  function handleDocumentNegativeStockGuardInteraction(event) {
+    if (!isTargetDocumentConfigurationRoute()) return;
+    const target = event && event.target;
+    const row = findDocumentNegativeStockGuardRow();
+    if (!target || !row || !row.contains(target)) return;
+
+    window.setTimeout(syncDocumentNegativeStockGuard, 120);
+    window.setTimeout(syncDocumentNegativeStockGuard, 900);
+  }
+
+  function runDocumentNegativeStockGuardHeartbeat() {
+    const hasActiveTimer = !!readDocumentNegativeStockGuardExpiresAt();
+    if (isTargetDocumentConfigurationRoute() || hasActiveTimer || isDocumentNegativeStockStoredConfigurationEnabled()) {
+      syncDocumentNegativeStockGuard();
+      return;
+    }
+
+    checkDocumentNegativeStockServerState(false);
+  }
+
+  function startDocumentNegativeStockGuardHeartbeat() {
+    if (DOCUMENT_NEGATIVE_STOCK_GUARD_HEARTBEAT_TIMER) return;
+    DOCUMENT_NEGATIVE_STOCK_GUARD_HEARTBEAT_TIMER = window.setInterval(runDocumentNegativeStockGuardHeartbeat, 1000);
+    runDocumentNegativeStockGuardHeartbeat();
   }
 
   function ensureExtensionModalBridge() {
@@ -2543,6 +4748,30 @@
 
   function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function waitForCondition(predicate, timeoutMs, intervalMs) {
+    const startedAt = Date.now();
+    const timeout = Number(timeoutMs) || 5000;
+    const interval = Number(intervalMs) || 150;
+    while ((Date.now() - startedAt) <= timeout) {
+      const result = predicate();
+      if (result) return result;
+      await delay(interval);
+    }
+    return null;
+  }
+
+  function withTimeout(promise, timeoutMs, fallbackValue) {
+    let timer = 0;
+    return Promise.race([
+      promise,
+      new Promise((resolve) => {
+        timer = setTimeout(() => resolve(fallbackValue), timeoutMs);
+      })
+    ]).finally(() => {
+      if (timer) clearTimeout(timer);
+    });
   }
 
   function isVisible(el) {
@@ -2619,6 +4848,7 @@
         const normalized = normalizeDavIntegerQuantityText(data);
         if (normalized) {
           event.preventDefault();
+          event.stopImmediatePropagation();
           replaceDefaultQuantity(normalized);
           return;
         }
@@ -2635,6 +4865,7 @@
 
       if (shouldReplaceDefaultQuantity() && /^[0-9]$/.test(key) && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
+        event.stopImmediatePropagation();
         replaceDefaultQuantity(key);
         return;
       }
@@ -2933,6 +5164,27 @@
     return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
   }
 
+  function getDavQuantityFractionDigits(input) {
+    const value = String(input && input.value || '').trim();
+    const match = value.match(/[,.](\d+)$/);
+    if (match && match[1]) {
+      const digits = match[1].length;
+      if (digits >= 2 && digits <= 4) return digits;
+    }
+    return 2;
+  }
+
+  function formatDavQuantityForZwebInput(input, rawValue) {
+    const normalized = normalizeDavIntegerQuantityText(rawValue);
+    if (!normalized) return '';
+
+    const quantity = Number(normalized);
+    if (!Number.isInteger(quantity) || quantity <= 0) return '';
+
+    const decimals = getDavQuantityFractionDigits(input);
+    return String(quantity) + ',' + '0'.repeat(decimals);
+  }
+
   function isDefaultDavQuantityValue(rawValue) {
     const text = String(rawValue || '').trim().replace(/\s+/g, '');
     if (!text) return false;
@@ -2990,7 +5242,7 @@
 
   function setDavQuantityValue(input, rawValue) {
     if (!input) return false;
-    const formatted = normalizeDavIntegerQuantityText(rawValue);
+    const formatted = formatDavQuantityForZwebInput(input, rawValue);
     if (!formatted) return false;
 
     ensureDavQuantityUserBinding(input);
@@ -3151,7 +5403,7 @@
         const t = normalizeText(opt.innerText || opt.textContent || '');
         return t.indexOf(normalizedTerm) !== -1;
       });
-      return exact || options[0];
+      return normalizedTerm ? (exact || null) : options[0];
     }
 
     const controlsId = input.getAttribute('aria-controls');
@@ -3173,7 +5425,7 @@
     while (Date.now() - start < timeout) {
       const option = findFirstSearchResult(input, term);
       if (option && isVisible(option)) return option;
-      await delay(100);
+      await delay(50);
     }
     return null;
   }
@@ -3184,7 +5436,7 @@
     while (Date.now() - start < timeout) {
       const btn = findAddButton();
       if (btn && isVisible(btn) && !btn.disabled && !btn.hasAttribute('disabled')) return btn;
-      await delay(100);
+      await delay(60);
     }
     return null;
   }
@@ -3197,7 +5449,7 @@
       if (input && !input.disabled && !input.readOnly) {
         return input;
       }
-      await delay(120);
+      await delay(80);
     }
     return findMainSearchInput();
   }
@@ -3206,18 +5458,14 @@
     if (!input) return null;
 
     const attempts = [
-      { settleDelay: 380, waitTimeout: 6000, resetFirst: false },
-      { settleDelay: 520, waitTimeout: 8000, resetFirst: true }
+      { clearDelay: 40, waitTimeout: 5200 },
+      { clearDelay: 80, waitTimeout: 7800 }
     ];
 
     for (const attempt of attempts) {
-      if (attempt.resetFirst) {
-        setInputValueDirect(input, '');
-        await delay(180);
-      }
-
+      setInputValueDirect(input, '');
+      await delay(attempt.clearDelay);
       setInputValueDirect(input, normalizedCode);
-      await delay(attempt.settleDelay);
 
       const option = await waitForSearchResult(input, normalizedCode, attempt.waitTimeout);
       if (option) return option;
@@ -3305,20 +5553,20 @@
     let option = await waitForSearchResult(input, normalizedCode, 1400);
     if (option) {
       clickOptionDirect(option);
-      await delay(180);
+      await delay(80);
     }
 
     dispatchEnter(input);
-    await delay(120);
+    await delay(70);
 
     const qtyInput = findQuantityInput();
     if (qtyInput) {
       qtyInput.focus();
       qtyInput.dispatchEvent(new Event('focus', { bubbles: true }));
-      await delay(100);
+      await delay(60);
     } else {
       input.blur();
-      await delay(100);
+      await delay(60);
     }
 
     const second = await waitForEnabledAddButton(1600);
@@ -3327,7 +5575,7 @@
     option = await waitForSearchResult(input, normalizedCode, 1200);
     if (option) {
       clickOptionDirect(option);
-      await delay(180);
+      await delay(80);
     }
   }
 
@@ -3340,13 +5588,13 @@
     const option = await resolveBatchSearchOption(input, normalizedCode);
     if (option) {
       clickOptionDirect(option);
-      await delay(220);
+      await delay(80);
     } else {
       throw new Error('Nenhum resultado encontrado para ' + normalizedCode);
     }
 
     await ensureDescriptionConfirmed(input, normalizedCode);
-    await delay(220);
+    await delay(60);
 
     const qtyInput = findQuantityInput();
     if (qtyInput) {
@@ -3359,7 +5607,7 @@
         await ensureDavQuantityApplied(qtyInput, quantityNumber, 2200);
       }
       qtyInput.dispatchEvent(new Event('blur', { bubbles: true }));
-      await delay(180);
+      await delay(60);
       await ensureDavQuantityApplied(qtyInput, quantityNumber, 1800);
     }
 
@@ -3373,7 +5621,7 @@
     clickLikeUser(addButton);
     const confirmed = await waitForItemConfirmation(normalizedCode, 8000);
     if (!confirmed) throw new Error('Item nao confirmou apos clicar adicionar para ' + normalizedCode);
-    await delay(280);
+    await delay(120);
   }
 
   function updateBatchStatus(text) {
@@ -4678,6 +6926,7 @@
     if (!response.ok) {
       const payloadMessage = payload && (
         payload.message ||
+        payload.error_message ||
         payload.error ||
         (payload.data && payload.data.message) ||
         (payload.errors && Object.values(payload.errors).flat().find(Boolean))
@@ -5913,12 +8162,13 @@
   }
 
   function rememberNfeContextMenuAnchor(event) {
-    if (!isTargetNfeRoute()) return;
+    if (!isTargetNfeRoute() && !isTargetNfceListRoute() && !isTargetDavCloneBlockRoute()) return;
     const row = findNfeContextMenuRow(event && event.target);
     if (!row) return;
 
     const rect = row.getBoundingClientRect();
     LAST_NFE_CONTEXT_MENU_ANCHOR = {
+      row,
       x: Math.round(event.clientX || rect.left || 0),
       y: Math.round(event.clientY || rect.top || 0),
       rowTop: Math.round(rect.top || 0),
@@ -6103,6 +8353,34 @@
     return ((preferred && preferred.textContent) || cell.textContent || '').trim();
   }
 
+  function getNfeRowDocumentId(row, checkbox) {
+    const candidates = [
+      row && row.getAttribute('data-id'),
+      row && row.dataset && row.dataset.id,
+      row && row.getAttribute('data-row-id'),
+      row && row.dataset && row.dataset.rowId,
+      checkbox && checkbox.value,
+      checkbox && checkbox.getAttribute('data-id'),
+      checkbox && checkbox.dataset && checkbox.dataset.id
+    ];
+
+    const nested = row && row.querySelector && row.querySelector('[data-id], [data-row-id], input[value]');
+    if (nested) {
+      candidates.push(
+        nested.getAttribute('data-id'),
+        nested.getAttribute('data-row-id'),
+        nested.value
+      );
+    }
+
+    for (let index = 0; index < candidates.length; index += 1) {
+      const value = String(candidates[index] == null ? '' : candidates[index]).trim();
+      if (/^\d+$/.test(value)) return Number(value);
+    }
+
+    return null;
+  }
+
   function isCashSaleNfeNature(natureText) {
     const normalized = normalizeText(natureText);
     return normalized.indexOf('5102') !== -1 && normalized.indexOf('vista') !== -1;
@@ -6113,22 +8391,29 @@
 
     const resolvedHeaderMap = headerMap || getNfeHeaderMap();
     const documentCol = findNfeColumnIndex(resolvedHeaderMap, ['documento', 'numero', 'número']) ?? 1;
+    const seriesCol = findNfeColumnIndex(resolvedHeaderMap, ['serie', 'série']);
     const customerCol = findNfeColumnIndex(resolvedHeaderMap, ['cliente', 'destinatario', 'emitente']) ?? 0;
     const natureCol = findNfeColumnIndex(resolvedHeaderMap, ['natureza de operacao']) ?? 2;
+    const statusCol = findNfeColumnIndex(resolvedHeaderMap, ['status', 'situacao', 'situação']);
     const checkbox = row.querySelector('input[type="checkbox"]');
     const documentNumber = getNfeRowCellText(row, documentCol);
 
     if (!documentNumber) return null;
 
     const customerName = getNfeRowCellText(row, customerCol);
+    const seriesText = Number.isFinite(seriesCol) ? getNfeRowCellText(row, seriesCol) : '';
     const natureText = getNfeRowCellText(row, natureCol);
+    const statusText = Number.isFinite(statusCol) ? getNfeRowCellText(row, statusCol) : '';
 
     return {
       row,
       checkbox,
+      id: getNfeRowDocumentId(row, checkbox),
       documentNumber,
+      seriesText,
       customerName,
       natureText,
+      statusText,
       isCashSale: isCashSaleNfeNature(natureText)
     };
   }
@@ -6321,7 +8606,7 @@
     });
   }
 
-  function setNfeBatchDownloadStatus(text, kind) {
+  function setNfeBatchDownloadStatus(text, kind, progress) {
     if (!document.body) return;
 
     let wrap = document.getElementById(NFE_BATCH_DOWNLOAD_STATUS_WRAP_ID);
@@ -6337,19 +8622,46 @@
         'width:min(360px, calc(100vw - 24px))',
         'pointer-events:none'
       ].join(';');
-      wrap.innerHTML = '<div id="' + NFE_BATCH_DOWNLOAD_STATUS_ID + '"></div>';
+      wrap.innerHTML = [
+        '<div id="' + NFE_BATCH_DOWNLOAD_STATUS_ID + '">',
+        '  <div data-nfe-batch-status-text></div>',
+        '  <div data-nfe-batch-progress-wrap style="display:none;margin-top:9px;">',
+        '    <div data-nfe-batch-progress-track style="width:100%;height:7px;border-radius:999px;overflow:hidden;background:rgba(127,127,127,0.18);">',
+        '      <div data-nfe-batch-progress-fill style="height:100%;width:0%;border-radius:999px;background:#1664c0;transition:width .22s ease;"></div>',
+        '    </div>',
+        '    <div data-nfe-batch-progress-label style="margin-top:5px;font-size:11px;opacity:.78;"></div>',
+        '  </div>',
+        '</div>'
+      ].join('');
       document.body.appendChild(wrap);
     }
 
     const status = wrap.querySelector('#' + NFE_BATCH_DOWNLOAD_STATUS_ID);
     if (!status) return;
+    if (!status.querySelector('[data-nfe-batch-status-text]')) {
+      status.innerHTML = [
+        '<div data-nfe-batch-status-text></div>',
+        '<div data-nfe-batch-progress-wrap style="display:none;margin-top:9px;">',
+        '  <div data-nfe-batch-progress-track style="width:100%;height:7px;border-radius:999px;overflow:hidden;background:rgba(127,127,127,0.18);">',
+        '    <div data-nfe-batch-progress-fill style="height:100%;width:0%;border-radius:999px;background:#1664c0;transition:width .22s ease;"></div>',
+        '  </div>',
+        '  <div data-nfe-batch-progress-label style="margin-top:5px;font-size:11px;opacity:.78;"></div>',
+        '</div>'
+      ].join('');
+    }
+
+    const textElement = status.querySelector('[data-nfe-batch-status-text]');
+    const progressWrap = status.querySelector('[data-nfe-batch-progress-wrap]');
+    const progressFill = status.querySelector('[data-nfe-batch-progress-fill]');
+    const progressLabel = status.querySelector('[data-nfe-batch-progress-label]');
 
     clearTimeout(NFE_BATCH_DOWNLOAD_STATUS_TIMER);
     NFE_BATCH_DOWNLOAD_STATUS_TIMER = 0;
 
     if (!text) {
       wrap.style.display = 'none';
-      status.textContent = '';
+      if (textElement) textElement.textContent = '';
+      if (progressWrap) progressWrap.style.display = 'none';
       return;
     }
 
@@ -6386,7 +8698,29 @@
     status.style.boxShadow = theme.isDark
       ? '0 18px 32px rgba(0, 0, 0, 0.34)'
       : '0 12px 26px rgba(12, 30, 55, 0.14)';
-    status.textContent = text;
+    if (textElement) {
+      textElement.textContent = text;
+    } else {
+      status.textContent = text;
+    }
+
+    const total = progress && Number(progress.total);
+    const current = progress && Number(progress.current);
+    const hasProgress = Number.isFinite(total) && total > 0 && Number.isFinite(current);
+    if (progressWrap && progressFill && progressLabel) {
+      progressWrap.style.display = hasProgress ? 'block' : 'none';
+      if (hasProgress) {
+        const percent = Math.max(0, Math.min(100, Math.round((current / total) * 100)));
+        progressFill.style.width = percent + '%';
+        progressFill.style.background = error
+          ? '#a53434'
+          : success
+            ? '#249b4d'
+            : '#1664c0';
+        progressLabel.textContent = Math.max(0, Math.min(current, total)) + ' de ' + total + ' concluído(s)';
+      }
+    }
+
     if (!NFE_BATCH_DOWNLOAD_RUNNING && (error || success)) {
       NFE_BATCH_DOWNLOAD_STATUS_TIMER = window.setTimeout(() => {
         setNfeBatchDownloadStatus('', '');
@@ -6402,6 +8736,194 @@
       : ('NFe-' + documentNumber + '.xml');
   }
 
+  function unwrapZwebPayload(payload) {
+    if (!payload || typeof payload !== 'object') return payload;
+    if (payload.data && typeof payload.data === 'object') return payload.data;
+    if (payload.result && typeof payload.result === 'object') return payload.result;
+    return payload;
+  }
+
+  function isHttpUrl(value) {
+    return /^https?:\/\//i.test(String(value || '').trim());
+  }
+
+  function isPdfUrl(value) {
+    const url = String(value || '').trim();
+    return isHttpUrl(url) && (/\.pdf(?:$|[?#])/i.test(url) || /\/reports\/report\//i.test(url));
+  }
+
+  function isXmlUrl(value) {
+    const url = String(value || '').trim();
+    return isHttpUrl(url)
+      && (
+        /\.xml(?:$|[?#])/i.test(url)
+        || /\/uploads\/nfe\//i.test(url)
+        || (/^https:\/\/zweb\.com\.br\//i.test(url) && url.indexOf('#/') === -1)
+      );
+  }
+
+  function looksLikeXmlContent(value) {
+    const text = String(value || '').trim().slice(0, 200).toLowerCase();
+    return text.indexOf('<?xml') === 0
+      || text.indexOf('<nfeproc') === 0
+      || text.indexOf('<nfe') === 0
+      || text.indexOf('<proc') === 0;
+  }
+
+  function findNestedValue(root, predicate, depth, seen, keyPath) {
+    if (depth > 5 || root == null) return null;
+    const path = keyPath || '';
+    if (predicate(root, path)) return root;
+    if (typeof root !== 'object') return null;
+    if (seen.has(root)) return null;
+    seen.add(root);
+
+    const keys = Array.isArray(root) ? root.map((_, index) => index) : Object.keys(root);
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys[index];
+      const value = root[key];
+      const nextPath = path ? (path + '.' + key) : String(key);
+      const found = findNestedValue(value, predicate, depth + 1, seen, nextPath);
+      if (found != null) return found;
+    }
+
+    return null;
+  }
+
+  function extractNfeBatchUrl(payload, kind) {
+    const data = unwrapZwebPayload(payload);
+    const matcher = kind === 'pdf' ? isPdfUrl : isXmlUrl;
+    const keyPattern = kind === 'pdf' ? /(danfe|pdf|url)/i : /(xml|url)/i;
+    const preferred = findNestedValue(data, (value, path) => (
+      typeof value === 'string'
+      && matcher(value)
+      && keyPattern.test(path)
+    ), 0, new Set(), '');
+    if (preferred) return String(preferred).trim();
+
+    const fallback = findNestedValue(data, (value) => (
+      typeof value === 'string' && matcher(value)
+    ), 0, new Set(), '');
+    return fallback ? String(fallback).trim() : '';
+  }
+
+  function extractNfeBatchXmlContent(payload) {
+    const data = unwrapZwebPayload(payload);
+    const found = findNestedValue(data, (value, path) => (
+      typeof value === 'string'
+      && looksLikeXmlContent(value)
+      && /(xml|content|conteudo|arquivo|file)/i.test(path)
+    ), 0, new Set(), '');
+    if (found) return String(found);
+
+    const fallback = findNestedValue(data, (value) => (
+      typeof value === 'string' && looksLikeXmlContent(value)
+    ), 0, new Set(), '');
+    return fallback ? String(fallback) : '';
+  }
+
+  function getNfeBatchDetailId(detail, entry) {
+    const data = unwrapZwebPayload(detail);
+    const candidates = [
+      entry && entry.id,
+      data && data.id,
+      data && data.dados && data.dados.id,
+      data && data.document && data.document.id
+    ];
+
+    for (let index = 0; index < candidates.length; index += 1) {
+      const number = normalizeFiscalDocumentNumber(candidates[index]);
+      if (number) return number;
+    }
+
+    return null;
+  }
+
+  async function fetchNfeBatchDetail(entry) {
+    const request = { modelo: NFE_DOCUMENT_MODEL };
+    if (entry && entry.id) {
+      request.id = entry.id;
+    } else {
+      const documentNumber = normalizeFiscalDocumentNumber(entry && entry.documentNumber);
+      const seriesNumber = normalizeFiscalDocumentNumber(entry && entry.seriesText) || 1;
+      if (!documentNumber) {
+        throw new Error('Não foi possível identificar o número da NF-e selecionada.');
+      }
+      request.numero = documentNumber;
+      request.serie = seriesNumber;
+    }
+
+    const payload = await postZwebJson(NFE_GET_DETAILED_API_URL, request);
+    const detail = unwrapZwebPayload(payload);
+    if (!detail || typeof detail !== 'object') {
+      throw new Error('A Zweb não retornou os detalhes da NF-e ' + ((entry && entry.documentNumber) || '') + '.');
+    }
+
+    return detail;
+  }
+
+  async function requestNfeBatchDirectDownload(kind, entry) {
+    const detail = await fetchNfeBatchDetail(entry);
+    const id = getNfeBatchDetailId(detail, entry);
+    const fileName = buildNfeBatchFileNameHint(kind, entry);
+
+    if (kind === 'pdf') {
+      if (!id) throw new Error('Não foi possível identificar o ID da NF-e ' + entry.documentNumber + ' para baixar o DANFE.');
+      const payload = await postZwebJson(NFE_GET_DANFE_URL_API_URL, { id });
+      const url = extractNfeBatchUrl(payload, 'pdf') || extractNfeBatchUrl(detail, 'pdf');
+      if (!url) throw new Error('A Zweb não retornou a URL do DANFE da NF-e ' + entry.documentNumber + '.');
+      const response = await sendRuntimeMessage({
+        type: 'nfe-batch-direct-download-url',
+        kind,
+        url,
+        fileName
+      });
+      if (!response || response.ok === false) {
+        throw new Error(response && response.message ? response.message : 'Falha ao iniciar o download do DANFE.');
+      }
+      return;
+    }
+
+    if (!id) throw new Error('Não foi possível identificar o ID da NF-e ' + entry.documentNumber + ' para baixar o XML.');
+    const payload = await postZwebJson(NFE_PUT_XML_API_URL, { id });
+    let url = extractNfeBatchUrl(payload, 'xml') || extractNfeBatchUrl(detail, 'xml');
+    let content = extractNfeBatchXmlContent(payload) || extractNfeBatchXmlContent(detail);
+
+    if (!url && !content) {
+      const refreshedDetail = await fetchNfeBatchDetail(Object.assign({}, entry, { id }));
+      url = extractNfeBatchUrl(refreshedDetail, 'xml');
+      content = extractNfeBatchXmlContent(refreshedDetail);
+    }
+
+    if (url) {
+      const response = await sendRuntimeMessage({
+        type: 'nfe-batch-direct-download-url',
+        kind,
+        url,
+        fileName
+      });
+      if (!response || response.ok === false) {
+        throw new Error(response && response.message ? response.message : 'Falha ao iniciar o download do XML.');
+      }
+      return;
+    }
+
+    if (content) {
+      const response = await sendRuntimeMessage({
+        type: 'nfe-batch-direct-download-content',
+        kind,
+        content,
+        fileName
+      });
+      if (!response || response.ok === false) {
+        throw new Error(response && response.message ? response.message : 'Falha ao iniciar o download do XML.');
+      }
+      return;
+    }
+
+    throw new Error('A Zweb não retornou o XML da NF-e ' + entry.documentNumber + '.');
+  }
+
   async function runNfeBatchDownload(kind) {
     if (NFE_BATCH_DOWNLOAD_RUNNING) return;
 
@@ -6411,72 +8933,36 @@
       return;
     }
 
-    const actionLabels = kind === 'pdf'
-      ? ['Visualizar DANFE']
-      : ['Gerar XML'];
-    const originalCheckboxes = selectedEntries.map((entry) => entry.checkbox).filter(Boolean);
     NFE_BATCH_DOWNLOAD_RUNNING = true;
     setNfeBatchDownloadStatus(
-      'Preparando ' + selectedEntries.length + ' download(s) de ' + (kind === 'pdf' ? 'PDF' : 'XML') + '...',
-      ''
+      'Preparando ' + selectedEntries.length + ' download(s) de ' + (kind === 'pdf' ? 'DANFE' : 'XML') + '...',
+      '',
+      { current: 0, total: selectedEntries.length }
     );
 
     try {
       for (let index = 0; index < selectedEntries.length; index += 1) {
         const entry = selectedEntries[index];
-        if (!entry.checkbox || !entry.checkbox.isConnected) {
-          throw new Error('A linha da NF-e ' + entry.documentNumber + ' nao esta mais visivel na grade.');
-        }
 
         setNfeBatchDownloadStatus(
-          'Processando ' + (index + 1) + ' de ' + selectedEntries.length + ': documento ' + entry.documentNumber + '.',
-          ''
+          'Baixando ' + (kind === 'pdf' ? 'DANFE' : 'XML') + ' ' + (index + 1) + ' de ' + selectedEntries.length + ': NF-e ' + entry.documentNumber + '.',
+          '',
+          { current: index, total: selectedEntries.length }
         );
 
-        await setOnlyNfeRowChecked(entry.checkbox, originalCheckboxes);
-
-        const requestId = ['nfe', kind, Date.now(), index].join('-');
-        if (kind === 'pdf') {
-          await sendRuntimeMessage({
-            type: 'pdf-download-arm',
-            requestId,
-            fileNameHint: buildNfeBatchFileNameHint(kind, entry)
-          });
-        } else {
-          await sendRuntimeMessage({
-            type: 'xml-download-arm',
-            requestId,
-            fileNameHint: buildNfeBatchFileNameHint(kind, entry)
-          });
-        }
-
-        let menu = await openNfeActionsMenu(index > 0);
-        let actionItem = findNfeActionMenuItem(menu, actionLabels, true);
-        if (!actionItem) {
-          menu = await openNfeActionsMenu(true);
-          actionItem = findNfeActionMenuItem(menu, actionLabels, true);
-        }
-        if (!actionItem) {
-          throw new Error('Nao foi possivel localizar a acao "' + actionLabels[0] + '" no menu.');
-        }
-
-        NFE_BATCH_DOWNLOAD_INTERNAL_CLICK = true;
-        try {
-          if (typeof actionItem.click === 'function') {
-            actionItem.click();
-          } else {
-            clickLikeUser(actionItem);
-          }
-        } finally {
-          await delay(40);
-          NFE_BATCH_DOWNLOAD_INTERNAL_CLICK = false;
-        }
-        await delay(kind === 'pdf' ? 2400 : 1800);
+        await requestNfeBatchDirectDownload(kind, entry);
+        setNfeBatchDownloadStatus(
+          'Baixando ' + (kind === 'pdf' ? 'DANFE' : 'XML') + ' ' + (index + 1) + ' de ' + selectedEntries.length + ': NF-e ' + entry.documentNumber + '.',
+          '',
+          { current: index + 1, total: selectedEntries.length }
+        );
+        await delay(160);
       }
 
       setNfeBatchDownloadStatus(
-        'Downloads em lote iniciados para ' + selectedEntries.length + ' documento(s).',
-        'success'
+        'Downloads concluídos para ' + selectedEntries.length + ' documento(s).',
+        'success',
+        { current: selectedEntries.length, total: selectedEntries.length }
       );
     } catch (error) {
       setNfeBatchDownloadStatus(
@@ -6484,7 +8970,6 @@
         'error'
       );
     } finally {
-      restoreNfeRowSelection(originalCheckboxes);
       NFE_BATCH_DOWNLOAD_RUNNING = false;
     }
   }
@@ -6527,6 +9012,404 @@
         }, true);
         menu.appendChild(listItem);
       });
+    });
+  }
+
+  function normalizeFiscalDocumentNumber(value) {
+    const digits = String(value == null ? '' : value).replace(/\D/g, '');
+    if (!digits) return null;
+    const number = Number(digits);
+    return Number.isFinite(number) && number > 0 ? number : null;
+  }
+
+  function buildNfceCancellationReasonEntry(row, headerMap) {
+    if (!row || row.classList.contains('header')) return null;
+
+    const baseEntry = buildNfeRowSelectionEntry(row, headerMap || getNfeHeaderMap()) || {};
+    const documentNumber = getNfeRowCellText(row, 0) || baseEntry.documentNumber || '';
+    const seriesText = getNfeRowCellText(row, 1) || baseEntry.seriesText || '';
+    const customerName = getNfeRowCellText(row, 3) || baseEntry.customerName || '';
+    const accessKeyText = getNfeRowCellText(row, 4) || '';
+    const statusText = getNfeRowCellText(row, 5) || baseEntry.statusText || '';
+
+    if (!documentNumber) return null;
+
+    return Object.assign({}, baseEntry, {
+      row,
+      checkbox: row.querySelector('input[type="checkbox"]'),
+      documentNumber,
+      seriesText,
+      customerName,
+      accessKeyText,
+      statusText
+    });
+  }
+
+  function getSelectedNfceCancellationReasonRows() {
+    const headerMap = getNfeHeaderMap();
+    return Array.from(document.querySelectorAll('.table-row input[type="checkbox"]:checked'))
+      .map((checkbox) => buildNfceCancellationReasonEntry(checkbox.closest('.table-row'), headerMap))
+      .filter(Boolean);
+  }
+
+  function getRecentNfceCancellationReasonContextEntry() {
+    if (
+      LAST_NFE_CONTEXT_MENU_ANCHOR
+      && LAST_NFE_CONTEXT_MENU_ANCHOR.row
+      && LAST_NFE_CONTEXT_MENU_ANCHOR.row.isConnected
+      && (Date.now() - LAST_NFE_CONTEXT_MENU_ANCHOR.at) <= NFE_CONTEXT_MENU_ANCHOR_TTL_MS
+    ) {
+      const contextEntry = buildNfceCancellationReasonEntry(LAST_NFE_CONTEXT_MENU_ANCHOR.row, getNfeHeaderMap());
+      if (contextEntry) return contextEntry;
+    }
+
+    return null;
+  }
+
+  function getNfceCancellationReasonTargetEntry() {
+    const contextEntry = getRecentNfceCancellationReasonContextEntry();
+    if (contextEntry && getNfeContextMenuPopup()) return contextEntry;
+
+    const selected = getSelectedNfceCancellationReasonRows();
+    if (selected.length) return selected[selected.length - 1];
+
+    if (contextEntry) return contextEntry;
+
+    const activeRow = findActiveNfeActionRow();
+    if (!activeRow) return null;
+
+    return buildNfceCancellationReasonEntry(activeRow, getNfeHeaderMap());
+  }
+
+  function isNfceCancellationReasonEntryCanceled(entry) {
+    return normalizeText(entry && entry.statusText) === 'cancelada';
+  }
+
+  function getXmlNodeText(xmlDocument, tagNames) {
+    if (!xmlDocument) return '';
+    for (let index = 0; index < tagNames.length; index += 1) {
+      const nodes = xmlDocument.getElementsByTagName(tagNames[index]);
+      const text = nodes && nodes[0] ? (nodes[0].textContent || '').trim() : '';
+      if (text) return text;
+    }
+    return '';
+  }
+
+  function extractNfceCancellationReasonFromXml(xmlText) {
+    const raw = String(xmlText || '').trim();
+    if (!raw) return '';
+
+    try {
+      const xmlDocument = new DOMParser().parseFromString(raw, 'application/xml');
+      if (xmlDocument.getElementsByTagName('parsererror').length) return '';
+      return getXmlNodeText(xmlDocument, ['xJust', 'justificativa', 'motivoCancelamento'])
+        || getXmlNodeText(xmlDocument, ['xMotivo']);
+    } catch (error) {
+      return '';
+    }
+  }
+
+  async function fetchNfceCancellationReasonFromXml(detail) {
+    const xmlUrl = detail && (detail.canceledXml || detail.cancelledXml || detail.cancelXml || detail.xmlCancelamento);
+    if (!xmlUrl) return '';
+
+    try {
+      const response = await fetch(xmlUrl, { method: 'GET', credentials: 'omit' });
+      if (!response.ok) return '';
+      return extractNfceCancellationReasonFromXml(await response.text());
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function extractNfceCancellationReasonFromDetail(detail) {
+    if (!detail || typeof detail !== 'object') return '';
+
+    const candidates = [
+      detail.justificativa,
+      detail.motivoCancelamento,
+      detail.cancellationReason,
+      detail.cancelReason,
+      detail.reason,
+      detail.motivo,
+      detail.xmlData && detail.xmlData.justificativa,
+      detail.xmlDados && detail.xmlDados.justificativa
+    ];
+
+    for (let index = 0; index < candidates.length; index += 1) {
+      const text = String(candidates[index] == null ? '' : candidates[index]).trim();
+      if (text) return text;
+    }
+
+    if (typeof detail.xml === 'string') return extractNfceCancellationReasonFromXml(detail.xml);
+    if (typeof detail.xmlCancelamento === 'string' && detail.xmlCancelamento.indexOf('<') !== -1) {
+      return extractNfceCancellationReasonFromXml(detail.xmlCancelamento);
+    }
+
+    return '';
+  }
+
+  function isDetailedNfceCanceled(detail, entry) {
+    if (!detail || typeof detail !== 'object') return false;
+    const status = Number(detail.status);
+    const statusText = normalizeText(
+      (entry && entry.statusText)
+        || detail.statusText
+        || detail.statusLabel
+        || detail.situacao
+        || ''
+    );
+
+    return status === 3
+      || !!(detail.canceledXml || detail.cancelledXml || detail.cancelXml || detail.xmlCancelamento)
+      || statusText.indexOf('cancel') !== -1;
+  }
+
+  function getNfceCancellationReasonDisplayValue(value) {
+    const text = String(value == null ? '' : value).trim();
+    return text || '-';
+  }
+
+  function closeNfceCancellationReasonModal() {
+    const modal = document.getElementById(NFCE_CANCEL_REASON_MODAL_ID);
+    const backdrop = document.getElementById(NFCE_CANCEL_REASON_BACKDROP_ID);
+    hideExtensionNativeModal(modal, backdrop);
+  }
+
+  function applyNfceCancellationReasonModalTheme(modal) {
+    if (!modal) return;
+
+    const theme = getExtensionOverlayTheme(modal.parentElement || document.body);
+    const compact = window.innerWidth < 560;
+    const dialog = modal.querySelector('[data-nfce-cancel-reason-dialog]');
+    const content = modal.querySelector('.modal-content');
+    const title = modal.querySelector('[data-nfce-cancel-reason-title]');
+    const details = modal.querySelector('#' + NFCE_CANCEL_REASON_DETAILS_ID);
+
+    if (dialog) {
+      dialog.style.maxWidth = compact ? 'calc(100vw - 16px)' : '560px';
+      dialog.style.margin = compact ? '8px auto' : '';
+    }
+    if (content) {
+      content.style.background = theme.modalBackground;
+      content.style.border = theme.modalBorder;
+      content.style.boxShadow = theme.modalBoxShadow;
+      content.style.color = theme.bodyColor;
+    }
+    if (title) {
+      title.style.color = theme.titleColor;
+    }
+    if (details) {
+      details.style.background = theme.cardBackground;
+      details.style.border = theme.cardBorder;
+      details.style.color = theme.cardTextColor;
+    }
+  }
+
+  function ensureNfceCancellationReasonModal() {
+    if (!document.body) return;
+
+    if (!document.getElementById(NFCE_CANCEL_REASON_BACKDROP_ID)) {
+      const backdrop = document.createElement('div');
+      backdrop.id = NFCE_CANCEL_REASON_BACKDROP_ID;
+      backdrop.className = 'modal-backdrop fade';
+      backdrop.style.cssText = [
+        'display:none',
+        'z-index:1061'
+      ].join(';');
+      backdrop.addEventListener('click', closeNfceCancellationReasonModal);
+      document.body.appendChild(backdrop);
+    }
+
+    if (!document.getElementById(NFCE_CANCEL_REASON_MODAL_ID)) {
+      const modal = document.createElement('div');
+      modal.id = NFCE_CANCEL_REASON_MODAL_ID;
+      modal.className = 'modal fade';
+      modal.tabIndex = -1;
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.style.cssText = [
+        'display:none',
+        'z-index:1065'
+      ].join(';');
+      modal.innerHTML = [
+        '<div class="modal-dialog modal-dialog-centered" data-nfce-cancel-reason-dialog>',
+        '  <div class="modal-content">',
+        '    <div class="modal-header">',
+        '      <h2 data-nfce-cancel-reason-title class="fw-semibold fs-6 fw-light text-primary">Motivo de cancelamento</h2>',
+        '      <button type="button" data-nfce-cancel-reason-close class="btn-close" aria-label="Close"></button>',
+        '    </div>',
+        '    <div class="modal-body pb-5" style="padding-top:8px;">',
+        '      <div id="' + NFCE_CANCEL_REASON_DETAILS_ID + '" class="rounded p-4" style="display:grid;gap:10px;font-size:13px;line-height:1.48;"></div>',
+        '    </div>',
+        '    <div class="modal-footer pt-0">',
+        '      <button type="button" data-nfce-cancel-reason-close class="btn btn-primary btn-sm" style="font-size:13px;">Fechar</button>',
+        '    </div>',
+        '  </div>',
+        '</div>'
+      ].join('');
+      modal.addEventListener('click', (event) => {
+        const target = event.target && event.target.closest
+          ? event.target.closest('[data-nfce-cancel-reason-close]')
+          : null;
+        if (!target) return;
+        event.preventDefault();
+        closeNfceCancellationReasonModal();
+      }, true);
+      document.body.appendChild(modal);
+    }
+
+    applyNfceCancellationReasonModalTheme(document.getElementById(NFCE_CANCEL_REASON_MODAL_ID));
+  }
+
+  function showNfceCancellationReasonModal(payload) {
+    ensureNfceCancellationReasonModal();
+
+    const modal = document.getElementById(NFCE_CANCEL_REASON_MODAL_ID);
+    const backdrop = document.getElementById(NFCE_CANCEL_REASON_BACKDROP_ID);
+    const details = document.getElementById(NFCE_CANCEL_REASON_DETAILS_ID);
+    if (!modal || !backdrop || !details) return;
+
+    const detail = payload && payload.detail ? payload.detail : {};
+    const entry = payload && payload.entry ? payload.entry : {};
+    const number = detail.numero || detail.number || entry.documentNumber;
+    const series = detail.serie || detail.series || entry.seriesText || 1;
+    const key = detail.chave || detail.key || detail.chaveAcesso || detail.accessKey || entry.accessKeyText || '';
+    const xmlUrl = detail.canceledXml || detail.cancelledXml || detail.cancelXml || detail.xmlCancelamento || '';
+    const reason = payload && payload.reason ? payload.reason : '';
+    const canceled = payload && payload.canceled;
+    const errorMessage = payload && payload.errorMessage ? payload.errorMessage : '';
+
+    if (errorMessage) {
+      details.innerHTML = [
+        '<div style="font-weight:700;">Não foi possível consultar o motivo.</div>',
+        '<div>' + escapeHtml(errorMessage) + '</div>'
+      ].join('');
+    } else {
+      details.innerHTML = [
+        '<div><strong>NFC-e:</strong> ' + escapeHtml(getNfceCancellationReasonDisplayValue(number)) + ' <span style="opacity:.72;">Série ' + escapeHtml(getNfceCancellationReasonDisplayValue(series)) + '</span></div>',
+        '<div><strong>Status:</strong> ' + escapeHtml(canceled ? 'Cancelada' : 'Não cancelada') + '</div>',
+        '<div style="display:grid;gap:6px;"><strong>Motivo:</strong><div style="font-weight:700;">' + escapeHtml(reason || 'Nenhuma justificativa de cancelamento foi localizada para este cupom.') + '</div></div>',
+        key ? '<div style="word-break:break-all;"><strong>Chave:</strong> ' + escapeHtml(key) + '</div>' : '',
+        xmlUrl ? '<div><a href="' + escapeHtml(xmlUrl) + '" target="_blank" rel="noopener noreferrer">Abrir XML de cancelamento</a></div>' : ''
+      ].filter(Boolean).join('');
+    }
+
+    applyNfceCancellationReasonModalTheme(modal);
+    showExtensionNativeModal(modal, backdrop);
+  }
+
+  async function runNfceCancellationReasonLookup() {
+    if (NFCE_CANCEL_REASON_RUNNING) return;
+    NFCE_CANCEL_REASON_RUNNING = true;
+
+    try {
+      const entry = getNfceCancellationReasonTargetEntry();
+      if (!entry) {
+        throw new Error('Selecione ou abra o menu de uma NFC-e antes de consultar o motivo.');
+      }
+
+      if (!isNfceCancellationReasonEntryCanceled(entry)) {
+        throw new Error('A consulta do motivo está disponível apenas para NFC-e com status Cancelada.');
+      }
+
+      const documentNumber = normalizeFiscalDocumentNumber(entry.documentNumber);
+      if (!documentNumber) {
+        throw new Error('Não foi possível identificar o número da NFC-e selecionada.');
+      }
+
+      const seriesNumber = normalizeFiscalDocumentNumber(entry.seriesText) || 1;
+      setNfeBatchDownloadStatus('Consultando motivo de cancelamento da NFC-e ' + documentNumber + '...', '');
+
+      const payload = await postZwebJson(NFE_GET_DETAILED_API_URL, {
+        numero: documentNumber,
+        serie: seriesNumber,
+        modelo: 65
+      });
+      const detail = payload && payload.data && typeof payload.data === 'object' ? payload.data : payload;
+      const canceled = isDetailedNfceCanceled(detail, entry);
+      let reason = extractNfceCancellationReasonFromDetail(detail);
+
+      if (!reason && canceled) {
+        reason = await fetchNfceCancellationReasonFromXml(detail);
+      }
+
+      setNfeBatchDownloadStatus('', '');
+      showNfceCancellationReasonModal({
+        detail,
+        entry,
+        reason,
+        canceled
+      });
+    } catch (error) {
+      setNfeBatchDownloadStatus('', '');
+      showNfceCancellationReasonModal({
+        errorMessage: error && error.message ? error.message : 'Erro inesperado ao consultar o motivo de cancelamento.'
+      });
+    } finally {
+      NFCE_CANCEL_REASON_RUNNING = false;
+    }
+  }
+
+  function ensureNfceCancellationReasonActionItems() {
+    if (!isTargetNfceListRoute()) {
+      removeNfceCancellationReasonUi();
+      return;
+    }
+
+    if (!isNfceCancellationReasonEntryCanceled(getNfceCancellationReasonTargetEntry())) {
+      removeNfceCancellationReasonActionItems();
+      return;
+    }
+
+    getOpenNfeActionMenus().forEach((menu) => {
+      if (menu.querySelector('#' + NFCE_CANCEL_REASON_ACTION_ID)) return;
+
+      const listItem = document.createElement('li');
+      listItem.className = 'has-submenu';
+      listItem.innerHTML = [
+        '<a id="' + NFCE_CANCEL_REASON_ACTION_ID + '" role="button" class="dropdown-item flex-container">',
+        '  <span class="label-item">Consultar motivo de cancelamento</span>',
+        '</a>'
+      ].join('');
+
+      const actionItem = listItem.querySelector('a');
+      actionItem.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        closeNfceCancellationReasonSourceMenus(actionItem);
+        runNfceCancellationReasonLookup().catch(() => {});
+      }, true);
+      menu.appendChild(listItem);
+    });
+  }
+
+  function closeNfceCancellationReasonSourceMenus(source) {
+    const containers = new Set();
+    getOpenNfeActionMenus().forEach((menu) => containers.add(menu));
+
+    if (source && source.closest) {
+      [
+        source.closest('.z-dropdown-menu'),
+        source.closest('.dropdown-menu'),
+        source.closest('#' + NFE_CONTEXT_MENU_ID)
+      ].forEach((container) => {
+        if (container) containers.add(container);
+      });
+    }
+
+    containers.forEach((container) => {
+      if (!container) return;
+      container.classList.remove('show');
+      if (container.id === NFE_CONTEXT_MENU_ID) {
+        container.style.display = 'none';
+      }
+    });
+
+    Array.from(document.querySelectorAll('.grid-toolbar.no-print [aria-expanded="true"], #' + NFE_CONTEXT_MENU_ID + ' [aria-expanded="true"]')).forEach((toggle) => {
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.classList.remove('show');
     });
   }
 
@@ -6594,7 +9477,7 @@
         const label = normalizeText(extractActionMenuItemLabel(item));
         if (!label) return;
 
-        if (hiddenLabels.has(label)) {
+        if (hiddenLabels.has(label) && !isCloneActionLabel(label)) {
           item.setAttribute(ACTION_MENU_HIDDEN_ATTR, 'true');
           item.style.display = 'none';
         } else {
@@ -6605,6 +9488,1117 @@
 
       syncActionMenuSeparators(menu);
     });
+  }
+
+  function isCloneActionLabel(label) {
+    const normalized = normalizeText(label);
+    return normalized === 'clonar' || normalized.indexOf('clonar ') === 0;
+  }
+
+  function getCloneActionMenus() {
+    return Array.from(document.querySelectorAll(
+      '.grid-toolbar.no-print .z-dropdown-menu, #menuId .dropdown-menu, #menuId, .popup .dropdown-menu, .dropdown-menu, .z-dropdown-menu'
+    ));
+  }
+
+  function restoreCloneActionBlockItems() {
+    Array.from(document.querySelectorAll('[' + CLONE_ACTION_BLOCK_ATTR + '="true"]')).forEach((item) => {
+      item.removeAttribute(CLONE_ACTION_BLOCK_ATTR);
+      item.style.display = '';
+    });
+  }
+
+  function syncCloneActionBlockItems() {
+    const active = isCloneActionBlockRoute();
+    Array.from(document.querySelectorAll('[' + CLONE_ACTION_BLOCK_ATTR + '="true"]')).forEach((item) => {
+      const label = normalizeText(extractActionMenuItemLabel(item) || item.innerText || item.textContent || '');
+      if (active && isCloneActionLabel(label)) return;
+      item.removeAttribute(CLONE_ACTION_BLOCK_ATTR);
+      item.style.display = '';
+    });
+
+    if (!active) {
+      return;
+    }
+
+    const menus = getCloneActionMenus();
+    menus.forEach((menu) => {
+      const items = Array.from(menu.querySelectorAll(':scope > li, li.has-submenu, li, a.dropdown-item, button.dropdown-item'));
+      items.forEach((item) => {
+        const label = normalizeText(extractActionMenuItemLabel(item) || item.innerText || item.textContent || '');
+        if (!isCloneActionLabel(label)) return;
+
+        const target = item.closest('li, .dropdown-item, .has-submenu, .menu-item') || item;
+        target.setAttribute(CLONE_ACTION_BLOCK_ATTR, 'true');
+        target.style.display = 'none';
+      });
+
+      syncActionMenuSeparators(menu);
+    });
+  }
+
+  function findCloneActionTrigger(target) {
+    if (!target || !target.closest || !isCloneActionBlockRoute()) return null;
+
+    let el = target;
+    for (let i = 0; i < 7 && el; i += 1, el = el.parentElement) {
+      const label = normalizeText(extractActionMenuItemLabel(el) || el.innerText || el.textContent || '');
+      if (!isCloneActionLabel(label)) continue;
+      return el.matches && el.matches('a, button') ? el : (el.querySelector && el.querySelector('a, button')) || el;
+    }
+
+    return null;
+  }
+
+  function handleCloneActionBlock(event) {
+    if (!findCloneActionTrigger(event && event.target)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return false;
+  }
+
+  function isFiscalCloneConfirmRoute() {
+    return isTargetNfeRoute() || isTargetNfceListRoute() || isTargetDavCloneBlockRoute();
+  }
+
+  function findFiscalCloneActionTrigger(target) {
+    if (!target || !target.closest || !isFiscalCloneConfirmRoute()) return null;
+
+    let el = target;
+    for (let i = 0; i < 7 && el; i += 1, el = el.parentElement) {
+      const label = normalizeText(extractActionMenuItemLabel(el) || el.innerText || el.textContent || '');
+      if (!isCloneActionLabel(label)) continue;
+      return el.matches && el.matches('a, button') ? el : (el.querySelector && el.querySelector('a, button')) || el;
+    }
+
+    return null;
+  }
+
+  function findFiscalCancelActionNearClone(trigger) {
+    const containers = [];
+    if (trigger && trigger.closest) {
+      [
+        trigger.closest('.z-dropdown-menu'),
+        trigger.closest('.dropdown-menu'),
+        trigger.closest('#' + NFE_CONTEXT_MENU_ID),
+        trigger.closest('ul')
+      ].forEach((container) => {
+        if (container && containers.indexOf(container) === -1) containers.push(container);
+      });
+    }
+    getOpenNfeActionMenus().forEach((menu) => {
+      if (menu && containers.indexOf(menu) === -1) containers.push(menu);
+    });
+
+    for (const container of containers) {
+      const item = Array.from(container.querySelectorAll('a, button, li')).find((candidate) => {
+        return normalizeText(extractActionMenuItemLabel(candidate) || candidate.innerText || candidate.textContent || '') === 'cancelar';
+      });
+      if (!item) continue;
+      return item.matches && item.matches('a, button') ? item : (item.querySelector && item.querySelector('a, button')) || item;
+    }
+
+    return null;
+  }
+
+  async function openFiscalCloneRowContextMenu(row) {
+    if (!row) return null;
+
+    const existingMenus = getOpenNfeActionMenus();
+    if (existingMenus.length) return existingMenus[existingMenus.length - 1];
+
+    try {
+      const rect = row.getBoundingClientRect();
+      const x = Math.round(rect.left + Math.min(Math.max(rect.width * 0.25, 80), Math.max(rect.width - 120, 80)));
+      const y = Math.round(rect.top + Math.max(Math.min(rect.height / 2, rect.height - 4), 4));
+      row.dispatchEvent(new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+        clientX: x,
+        clientY: y,
+        button: 2
+      }));
+    } catch (error) {}
+
+    let menu = await waitForCondition(() => {
+      const menus = getOpenNfeActionMenus();
+      return menus.length ? menus[menus.length - 1] : null;
+    }, 1800, 120);
+    if (menu) return menu;
+
+    const actionTarget = Array.from(row.querySelectorAll([
+      '[class*="action"]',
+      '[class*="acoes"]',
+      '[class*="ações"]',
+      '[aria-label*="Ações"]',
+      '[aria-label*="Acoes"]',
+      '[title*="Ações"]',
+      '[title*="Acoes"]'
+    ].join(','))).find((candidate) => {
+      const label = normalizeText([
+        candidate.getAttribute('aria-label'),
+        candidate.getAttribute('title'),
+        candidate.innerText,
+        candidate.textContent
+      ].filter(Boolean).join(' '));
+      if (label === 'abrir' || label === 'excluir') return false;
+      if (candidate.classList && candidate.classList.contains('icon-actions') && !/a[cç][oõ]es/i.test(label)) return false;
+      return true;
+    });
+    if (actionTarget) {
+      clickLikeUser(actionTarget);
+      menu = await waitForCondition(() => {
+        const menus = getOpenNfeActionMenus();
+        return menus.length ? menus[menus.length - 1] : null;
+      }, 2400, 120);
+    }
+
+    return menu || null;
+  }
+
+  function activateFiscalMenuAction(action, options) {
+    if (!action) return;
+    const singleClick = !!(options && options.singleClick);
+    if (typeof action.click === 'function') {
+      action.click();
+      if (singleClick) return;
+    }
+    action.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window
+    }));
+  }
+
+  function getFiscalCloneConfirmEntry(trigger) {
+    if (isTargetDavCloneBlockRoute()) {
+      const row = findNfeContextMenuRow(trigger) || findActiveNfeActionRow();
+      const headerMap = getNfeHeaderMap();
+      const customerCol = findNfeColumnIndex(headerMap, ['cliente']);
+      const statusCol = findNfeColumnIndex(headerMap, ['situacao', 'situação', 'status']);
+      const davNumber = row ? getDavNumberFromRow(row) : '';
+      if (row || davNumber) {
+        return {
+          row,
+          documentNumber: davNumber,
+          seriesText: '',
+          customerName: Number.isFinite(customerCol) ? getNfeRowCellText(row, customerCol) : '',
+          statusText: Number.isFinite(statusCol) ? getNfeRowCellText(row, statusCol) : ''
+        };
+      }
+    }
+
+    const row = findNfeContextMenuRow(trigger) || findActiveNfeActionRow();
+    const entry = row ? buildNfeRowSelectionEntry(row, getNfeHeaderMap()) : null;
+    if (entry) return entry;
+    return {
+      documentNumber: '',
+      seriesText: '',
+      customerName: '',
+      statusText: ''
+    };
+  }
+
+  function getFiscalCloneDavTotalValue(row) {
+    if (!row) return null;
+    const headerMap = getNfeHeaderMap();
+    const totalCol = findNfeColumnIndex(headerMap, ['total r$', 'total', 'valor', 'valor r$']);
+    const totalText = Number.isFinite(totalCol) ? getNfeRowCellText(row, totalCol) : '';
+    const parsed = parsePdvMoney(totalText);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+
+    const cells = Array.from(row.querySelectorAll('.cell'))
+      .map((cell) => String(cell.innerText || cell.textContent || '').trim())
+      .filter(Boolean);
+    for (let index = cells.length - 1; index >= 0; index -= 1) {
+      if (/\d{1,2}\/\d{1,2}\/\d{2,4}/.test(cells[index])) continue;
+      if (!/^-?\s*(?:R\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}$|^-?\s*(?:R\$\s*)?\d+,\d{2}$/.test(cells[index])) continue;
+      const value = parsePdvMoney(cells[index]);
+      if (Number.isFinite(value) && value > 0) return value;
+    }
+
+    return null;
+  }
+
+  function buildFiscalCloneDavFlow(pending) {
+    const entry = pending && pending.entry;
+    const row = entry && entry.row || findNfeContextMenuRow(pending && pending.trigger) || findActiveNfeActionRow();
+    const davNumber = getDavNumberFromRow(row) || (entry && entry.documentNumber) || '';
+    const totalValue = getFiscalCloneDavTotalValue(row);
+    return {
+      davDocumentNumber: davNumber,
+      totalValue,
+      returnHash: window.location.hash || '#/document/davs/sale',
+      createdAt: Date.now()
+    };
+  }
+
+  function getFiscalCloneDavPendingFlow() {
+    const pending = FISCAL_CLONE_CONFIRM_PENDING;
+    if (!pending || !isTargetDavCloneBlockRoute()) return null;
+    if (!pending.davFlow) {
+      pending.davFlow = buildFiscalCloneDavFlow(pending);
+    }
+    return pending.davFlow;
+  }
+
+  function isFiscalCloneAuthorizedStatus(value) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric === 2;
+    }
+    const text = normalizeText(getApiDisplayText(value) || value);
+    if (!text) return false;
+    if (text.indexOf('cancel') !== -1 || text.indexOf('inutil') !== -1 || text.indexOf('deneg') !== -1) return false;
+    return text.indexOf('autoriz') !== -1 || text === '100' || text === '1';
+  }
+
+  function getFiscalCloneStatusLabel(value) {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      switch (numeric) {
+        case 2: return 'Autorizada';
+        case 3: return 'Cancelada';
+        case 4: return 'Inutilizada';
+        case 5: return 'Denegada';
+        default: return 'Status ' + String(value);
+      }
+    }
+    const text = getApiDisplayText(value) || String(value == null ? '' : value).trim();
+    return text || '-';
+  }
+
+  function getFiscalCloneApiTotal(item) {
+    const value = getNestedValue(item, [
+      'total',
+      'price',
+      'valorTotal',
+      'value',
+      'amount',
+      'dados.total',
+      'dados.price',
+      'dados.valorTotal',
+      'dados.totalNfe',
+      'dados.valor'
+    ]);
+    const parsed = typeof value === 'number' ? value : parsePdvMoney(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  function getFiscalCloneApiNumber(item) {
+    return normalizeApiDocumentNumber(getNestedValue(item, [
+      'numero',
+      'number',
+      'documentNumber',
+      'sequence',
+      'dados.numero',
+      'dados.number',
+      'dados.nNF',
+      'nNF'
+    ]));
+  }
+
+  function normalizeFiscalCloneNfceApiMatch(item) {
+    if (!item || typeof item !== 'object') return null;
+    const number = getFiscalCloneApiNumber(item);
+    const total = getFiscalCloneApiTotal(item);
+    if (!number || !Number.isFinite(total)) return null;
+
+    const status = getNestedValue(item, [
+      'statusText',
+      'statusLabel',
+      'situacao',
+      'status',
+      'dados.statusText',
+      'dados.statusLabel',
+      'dados.situacao',
+      'dados.status'
+    ]);
+    const serie = getNestedValue(item, ['serie', 'series', 'dados.serie', 'dados.series']);
+    const customer = getApiDisplayText(getNestedValue(item, [
+      'customer',
+      'client',
+      'buyer',
+      'destinatario',
+      'dados.customer',
+      'dados.client',
+      'dados.buyer',
+      'dados.destinatario'
+    ]));
+
+    return {
+      id: getNestedValue(item, ['id', 'dados.id']),
+      nfceNumber: number,
+      seriesText: serie == null ? '' : String(serie),
+      customerName: customer,
+      statusText: getFiscalCloneStatusLabel(status),
+      totalValue: total,
+      authorized: isFiscalCloneAuthorizedStatus(status),
+      raw: item
+    };
+  }
+
+  function isSameFiscalCloneMoney(a, b) {
+    const left = Number(a);
+    const right = Number(b);
+    return Number.isFinite(left) && Number.isFinite(right) && Math.abs(left - right) < 0.005;
+  }
+
+  async function findFiscalCloneDavNfceByApi(flow) {
+    const total = Number(flow && flow.totalValue);
+    if (!Number.isFinite(total) || total <= 0) return null;
+
+    const payload = await postZwebJson(FISCAL_GET_NFE_PAGINATE_API_URL, {
+      modelos: ['65'],
+      siniefN12: true,
+      page: 1,
+      maxResults: 80,
+      sort: { key: 'emission', order: 'DESC' }
+    });
+    const matches = getNfeApiRows(payload)
+      .map(normalizeFiscalCloneNfceApiMatch)
+      .filter(Boolean)
+      .filter((entry) => isSameFiscalCloneMoney(entry.totalValue, total));
+
+    return matches.find((entry) => entry.authorized) || matches[0] || null;
+  }
+
+  function setFiscalCloneConfirmActionState(options) {
+    const modal = document.getElementById(FISCAL_CLONE_CONFIRM_MODAL_ID);
+    if (!modal) return;
+    const yesButton = modal.querySelector('[data-fiscal-clone-confirm-cancel-original]');
+    const noButton = modal.querySelector('[data-fiscal-clone-confirm-only]');
+    const closeButton = modal.querySelector('[data-fiscal-clone-confirm-close]');
+    const disabled = !!(options && options.disabled);
+    const busy = !!(options && options.busy);
+    [yesButton, noButton, closeButton].forEach((button) => {
+      if (!button) return;
+      if (busy || (button === yesButton && disabled)) {
+        button.setAttribute('disabled', 'true');
+        button.setAttribute('aria-disabled', 'true');
+      } else {
+        button.removeAttribute('disabled');
+        button.removeAttribute('aria-disabled');
+      }
+    });
+    if (yesButton && options && typeof options.yesLabel === 'string') {
+      yesButton.textContent = options.yesLabel;
+    }
+  }
+
+  function getFiscalCloneDavCancelReason() {
+    const input = document.getElementById(FISCAL_CLONE_CONFIRM_REASON_ID);
+    return String(input && input.value || '').trim();
+  }
+
+  function setFiscalCloneDavReasonError(message) {
+    const error = document.getElementById(FISCAL_CLONE_CONFIRM_REASON_ERROR_ID);
+    if (!error) return;
+    error.textContent = String(message || '');
+    error.style.display = message ? 'block' : 'none';
+  }
+
+  function syncFiscalCloneDavReasonState() {
+    const pending = FISCAL_CLONE_CONFIRM_PENDING;
+    if (!pending || !isTargetDavCloneBlockRoute()) return;
+    const match = pending.davNfceMatch || null;
+    const reason = getFiscalCloneDavCancelReason();
+    const disabled = !match || !match.authorized || !reason;
+    setFiscalCloneConfirmActionState({ disabled, yesLabel: 'Sim' });
+    if (reason) setFiscalCloneDavReasonError('');
+  }
+
+  function renderFiscalCloneDavDetails(entry, flow, match, statusText) {
+    const details = document.getElementById(FISCAL_CLONE_CONFIRM_DETAILS_ID);
+    if (!details) return;
+    const totalText = Number.isFinite(Number(flow && flow.totalValue))
+      ? formatPdvMoney(flow.totalValue)
+      : '-';
+    const rows = [
+      '<div><strong>Pedido de venda:</strong> ' + escapeHtml(entry && entry.documentNumber || '-') + '</div>',
+      entry && entry.customerName ? '<div><strong>Cliente:</strong> ' + escapeHtml(entry.customerName) + '</div>' : '',
+      '<div><strong>Valor:</strong> ' + escapeHtml(totalText) + '</div>'
+    ];
+
+    if (match) {
+      const statusColor = match.authorized ? '#20c997' : '#ff6b6b';
+      rows.push(
+        '<div style="margin-top:8px;color:' + statusColor + ';"><strong>Cupom localizado:</strong> NFC-e ' + escapeHtml(match.nfceNumber || '-') + '</div>',
+        '<div><strong>Status:</strong> ' + escapeHtml(match.statusText || '-') + '</div>'
+      );
+      if (match.authorized) {
+        rows.push(
+          '<div style="margin-top:12px;">',
+          '  <label for="' + FISCAL_CLONE_CONFIRM_REASON_ID + '" style="display:block;margin-bottom:6px;font-weight:600;">Motivo do cancelamento</label>',
+          '  <textarea id="' + FISCAL_CLONE_CONFIRM_REASON_ID + '" class="form-control" rows="3" placeholder="Digite o motivo do cancelamento" style="resize:vertical;font-size:13px;"></textarea>',
+          '  <div id="' + FISCAL_CLONE_CONFIRM_REASON_ERROR_ID + '" class="text-danger" style="display:none;margin-top:6px;font-size:12px;"></div>',
+          '</div>'
+        );
+      }
+    } else if (statusText) {
+      rows.push('<div style="margin-top:8px;color:#adb5bd;">' + escapeHtml(statusText) + '</div>');
+    }
+
+    details.innerHTML = rows.filter(Boolean).join('');
+    const reasonInput = document.getElementById(FISCAL_CLONE_CONFIRM_REASON_ID);
+    if (reasonInput) {
+      reasonInput.addEventListener('input', syncFiscalCloneDavReasonState);
+      reasonInput.addEventListener('change', syncFiscalCloneDavReasonState);
+      setTimeout(() => {
+        try { reasonInput.focus({ preventScroll: true }); } catch (error) {}
+      }, 80);
+    }
+  }
+
+  function startFiscalCloneDavLookup(pending) {
+    const flow = getFiscalCloneDavPendingFlow();
+    if (!pending || !flow) return;
+
+    renderFiscalCloneDavDetails(pending.entry, flow, null, 'Localizando cupom com o mesmo valor...');
+    setFiscalCloneConfirmActionState({ disabled: true, yesLabel: 'Sim' });
+
+    findFiscalCloneDavNfceByApi(flow)
+      .then((match) => {
+        if (!FISCAL_CLONE_CONFIRM_PENDING || FISCAL_CLONE_CONFIRM_PENDING !== pending) return;
+        pending.davNfceMatch = match || null;
+        if (match) {
+          pending.davFlow = Object.assign({}, flow, match);
+          renderFiscalCloneDavDetails(pending.entry, pending.davFlow, match, '');
+          syncFiscalCloneDavReasonState();
+          logFiscalCloneDav('dav-nfce-match-found', {
+            davDocumentNumber: pending.davFlow.davDocumentNumber,
+            totalValue: pending.davFlow.totalValue,
+            nfceNumber: match.nfceNumber,
+            statusText: match.statusText,
+            authorized: match.authorized
+          });
+          return;
+        }
+        renderFiscalCloneDavDetails(pending.entry, flow, null, 'Nenhum cupom com o mesmo valor foi localizado automaticamente.');
+        setFiscalCloneConfirmActionState({ disabled: true, yesLabel: 'Sim' });
+        logFiscalCloneDav('dav-nfce-match-missing', flow);
+      })
+      .catch((error) => {
+        if (!FISCAL_CLONE_CONFIRM_PENDING || FISCAL_CLONE_CONFIRM_PENDING !== pending) return;
+        renderFiscalCloneDavDetails(pending.entry, flow, null, 'Não foi possível consultar o cupom automaticamente.');
+        setFiscalCloneConfirmActionState({ disabled: true, yesLabel: 'Sim' });
+        logFiscalCloneDav('dav-nfce-match-error', {
+          message: error && error.message ? error.message : String(error || ''),
+          flow
+        });
+      });
+  }
+
+  function setFiscalCloneDavState(state) {
+    try {
+      if (!state) {
+        sessionStorage.removeItem(FISCAL_CLONE_DAV_STATE_STORAGE_KEY);
+        return;
+      }
+      sessionStorage.setItem(FISCAL_CLONE_DAV_STATE_STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {}
+  }
+
+  function getFiscalCloneDavState() {
+    try {
+      const raw = sessionStorage.getItem(FISCAL_CLONE_DAV_STATE_STORAGE_KEY);
+      const state = raw ? JSON.parse(raw) : null;
+      if (!state || typeof state !== 'object') return null;
+      if (Date.now() - Number(state.createdAt || 0) > 180000) {
+        setFiscalCloneDavState(null);
+        return null;
+      }
+      return state;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function startFiscalCloneDavBackgroundClone(flow) {
+    logFiscalCloneDav('background-start-request', flow || {});
+    return sendRuntimeMessage({
+      type: 'fiscal-clone-dav-background-start',
+      flow: flow || {}
+    }).catch((error) => {
+      logFiscalCloneDav('background-start-error', {
+        message: error && error.message ? error.message : String(error || '')
+      });
+      return null;
+    });
+  }
+
+  async function cancelFiscalCloneDavNfceByApi(flow, reason) {
+    const id = Number(flow && (flow.id || flow.raw && flow.raw.id));
+    if (!Number.isFinite(id) || id <= 0) {
+      throw new Error('ID da NFC-e nao encontrado para cancelamento.');
+    }
+    const justification = String(reason || '').trim();
+    if (!justification) {
+      throw new Error('Motivo do cancelamento nao informado.');
+    }
+
+    const request = {
+      modelo: '65',
+      id,
+      justification,
+      deleteLinkedFlows: true
+    };
+    logFiscalCloneDav('nfce-cancel-api-start', {
+      id: request.id,
+      nfceNumber: flow && flow.nfceNumber,
+      justification: request.justification
+    });
+
+    const response = await postZwebJson(FISCAL_CANCEL_NFE_API_URL, request);
+    logFiscalCloneDav('nfce-cancel-api-ok', {
+      id: request.id,
+      nfceNumber: flow && flow.nfceNumber
+    });
+    return response;
+  }
+
+  async function findFiscalCloneDavSaleIdBySequence(sequence) {
+    const requested = String(sequence || '').replace(/\D+/g, '');
+    if (!requested) return null;
+
+    const payload = await postZwebJson(INVENTORY_GET_SALE_PAGINATE_API_URL, {
+      page: 1,
+      maxResults: 80
+    });
+    const rows = getNfeApiRows(payload);
+    const match = rows.find((item) => String(getNestedValue(item, ['sequence', 'numero', 'number', 'id']) || '').replace(/\D+/g, '') === requested);
+    const id = Number(match && match.id);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }
+
+  function buildFiscalCloneDavPostSalePayload(detail) {
+    const clone = JSON.parse(JSON.stringify(detail || {}));
+    clone.id = null;
+    clone.sequence = null;
+    clone.nfeId = null;
+    clone.refNFe = null;
+    clone.eletronicInvoiceNumber = null;
+    clone.eletronicInvoiceSerie = null;
+    clone.eletronicInvoiceModel = null;
+    clone.xmlFile = null;
+    clone.chave = null;
+    clone.invoiceKey = null;
+    clone.statusTransmissao = null;
+    clone.numeroVinculo = null;
+    clone.modeloVinculo = null;
+    clone.created = null;
+    clone.updated = null;
+    clone.deleted = null;
+    if (typeof clone.validity === 'string') clone.validity = clone.validity.split('T')[0] || clone.validity;
+    if (typeof clone.deliveryDate === 'string') clone.deliveryDate = clone.deliveryDate.split('T')[0] || clone.deliveryDate;
+    if (typeof clone.shippingDate === 'string') clone.shippingDate = clone.shippingDate.split('T')[0] || clone.shippingDate;
+    if (Array.isArray(clone.itemOfTradeCollection)) {
+      clone.itemOfTradeCollection.forEach((item) => {
+        if (!item || typeof item !== 'object') return;
+        item.id = null;
+        item.created = null;
+        item.updated = null;
+        item.deleted = null;
+      });
+    }
+    return clone;
+  }
+
+  function isFiscalCloneEditingStatusLabel(value) {
+    return normalizeText(getApiDisplayText(value) || value).indexOf('editando') !== -1;
+  }
+
+  async function resolveFiscalCloneEditingTradeStatus() {
+    const payload = await postZwebJson(INVENTORY_GET_SALE_PAGINATE_API_URL, {
+      page: 1,
+      maxResults: 80
+    });
+    const rows = getNfeApiRows(payload);
+    const editingRow = rows.find((item) => isFiscalCloneEditingStatusLabel(getNestedValue(item, [
+      'statusDescription',
+      'tradeStatus.description',
+      'status.description',
+      'tradeStatus',
+      'status'
+    ])));
+    const editingId = Number(editingRow && editingRow.id);
+    if (!Number.isFinite(editingId) || editingId <= 0) return null;
+
+    const detail = await postZwebJson(INVENTORY_GET_DETAILED_SALE_API_URL, { id: editingId });
+    const tradeStatus = detail && detail.tradeStatus && isFiscalCloneEditingStatusLabel(detail.tradeStatus.description || detail.tradeStatus)
+      ? detail.tradeStatus
+      : null;
+    const status = detail && detail.status && isFiscalCloneEditingStatusLabel(detail.status.description || detail.status)
+      ? detail.status
+      : null;
+    const resolved = tradeStatus || status || null;
+    return resolved ? JSON.parse(JSON.stringify(resolved)) : null;
+  }
+
+  async function validateFiscalCloneDavCreditLimit(payload) {
+    if (!payload || typeof payload !== 'object') return null;
+    const request = {
+      buyer: payload.buyer || null,
+      paymentModeCollection: payload.paymentMode ? [payload.paymentMode] : [],
+      tradeStatus: payload.tradeStatus || payload.status || null,
+      price: Number(payload.price) || 0
+    };
+    logFiscalCloneDav('dav-clone-credit-limit-start', {
+      buyerId: request.buyer && request.buyer.id,
+      paymentModeId: request.paymentModeCollection[0] && request.paymentModeCollection[0].id,
+      tradeStatusId: request.tradeStatus && request.tradeStatus.id,
+      price: request.price
+    });
+    const response = await postZwebJson(INVENTORY_POST_CREDIT_LIMIT_API_URL, request);
+    logFiscalCloneDav('dav-clone-credit-limit-ok', response || {});
+    return response;
+  }
+
+  async function cloneFiscalCloneDavByApi(flow) {
+    const davNumber = String(flow && flow.davDocumentNumber || '').replace(/\D+/g, '');
+    if (!davNumber) throw new Error('Numero do DAV ausente para clonagem.');
+
+    logFiscalCloneDav('dav-clone-api-lookup-start', { davDocumentNumber: davNumber });
+    const saleId = await findFiscalCloneDavSaleIdBySequence(davNumber);
+    if (!saleId) throw new Error('DAV ' + davNumber + ' nao localizado para clonagem.');
+
+    logFiscalCloneDav('dav-clone-api-detail-start', { davDocumentNumber: davNumber, saleId });
+    const detail = await postZwebJson(INVENTORY_GET_DETAILED_SALE_API_URL, { id: saleId });
+    const postPayload = buildFiscalCloneDavPostSalePayload(detail);
+    const editingTradeStatus = await resolveFiscalCloneEditingTradeStatus();
+    if (editingTradeStatus) {
+      postPayload.tradeStatus = editingTradeStatus;
+    }
+    logFiscalCloneDav('dav-clone-api-save-start', {
+      davDocumentNumber: davNumber,
+      saleId,
+      totalValue: postPayload && postPayload.price,
+      nfeId: postPayload && postPayload.nfeId,
+      eletronicInvoiceNumber: postPayload && postPayload.eletronicInvoiceNumber,
+      statusId: postPayload && postPayload.status && postPayload.status.id,
+      tradeStatusId: postPayload && postPayload.tradeStatus && postPayload.tradeStatus.id,
+      tradeStatusDescription: postPayload && postPayload.tradeStatus && postPayload.tradeStatus.description
+    });
+    await validateFiscalCloneDavCreditLimit(postPayload);
+    const response = await postZwebJson(INVENTORY_POST_SALE_API_URL, postPayload);
+    const createdId = Number(response && response.id);
+    const createdSequence = Number(response && response.sequence);
+    if (!Number.isFinite(createdId) || createdId <= 0 || !Number.isFinite(createdSequence) || createdSequence <= 0) {
+      logFiscalCloneDav('dav-clone-api-invalid-response', {
+        davDocumentNumber: davNumber,
+        sourceSaleId: saleId,
+        response
+      });
+      throw new Error('Zweb nao confirmou a criacao do DAV clonado.');
+    }
+    logFiscalCloneDav('dav-clone-api-ok', {
+      davDocumentNumber: davNumber,
+      sourceSaleId: saleId,
+      newSaleId: response && response.id,
+      newSequence: response && response.sequence
+    });
+    return response;
+  }
+
+  async function startFiscalCloneDavApiCancelAndRedirect(flow, reason) {
+    const clonedDav = await cloneFiscalCloneDavByApi(flow);
+    await cancelFiscalCloneDavNfceByApi(flow, reason);
+    setFiscalCloneDavState(null);
+    window.location.hash = '#/fiscal/pdv';
+    scheduleFeatureUiRefresh(500);
+    return clonedDav;
+  }
+
+  function findNfceRowByFiscalCloneDavFlow(flow) {
+    const requestedNumber = String(flow && flow.nfceNumber || '').replace(/\D+/g, '');
+    const total = Number(flow && flow.totalValue);
+    const formatted = Number.isFinite(total) && total > 0
+      ? total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : '';
+
+    const rows = Array.from(document.querySelectorAll('.table-row'))
+      .filter((row) => row && !row.classList.contains('header') && isVisible(row));
+
+    if (requestedNumber) {
+      const byNumber = rows.find((row) => {
+        const firstCell = getNfeRowCellText(row, 0);
+        const rowText = String(row.innerText || row.textContent || '');
+        return String(firstCell || rowText).replace(/\D+/g, '').indexOf(requestedNumber) !== -1;
+      });
+      if (byNumber) return byNumber;
+    }
+
+    if (!formatted) return null;
+
+    return rows.find((row) => {
+      const text = normalizeText(row.innerText || row.textContent || '');
+      return text.indexOf(normalizeText(formatted)) !== -1 && text.indexOf('autorizada') !== -1;
+    }) || rows.find((row) => {
+      const text = normalizeText(row.innerText || row.textContent || '');
+      return text.indexOf(normalizeText(formatted)) !== -1;
+    }) || null;
+  }
+
+  async function applyFiscalCloneNfceSearch(flow) {
+    const number = String(flow && flow.nfceNumber || '').replace(/\D+/g, '');
+    if (!number) return false;
+
+    const input = document.querySelector(PRODUCT_TOOLBAR_SEARCH_SELECTOR)
+      || document.querySelector('input#search\\.value')
+      || document.querySelector('.grid-toolbar-search')
+      || document.querySelector('input[placeholder*="Buscar"], input[placeholder*="buscar"]');
+    if (!input || !isVisible(input)) return false;
+
+    logFiscalCloneDav('nfce-search-start', { number });
+    setInputValueAndNotify(input, number);
+    input.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, cancelable: true, key: 'Enter', code: 'Enter' }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'Enter', code: 'Enter' }));
+    input.dispatchEvent(new KeyboardEvent('keypress', { bubbles: true, cancelable: true, key: 'Enter', code: 'Enter' }));
+    logFiscalCloneDav('nfce-search-filled', {
+      number,
+      inputId: input.id || '',
+      inputClass: String(input.className || '')
+    });
+    await delay(1400);
+    return true;
+  }
+
+  function isFiscalCloneDavNfceCanceled(flow) {
+    const row = findNfceRowByFiscalCloneDavFlow(flow);
+    if (!row) return false;
+    const text = normalizeText(row.innerText || row.textContent || '');
+    return text.indexOf('cancelada') !== -1;
+  }
+
+  async function openFiscalCloneDavNfceCancel(flow) {
+    logFiscalCloneDav('nfce-cancel-open-start', flow || {});
+    await applyFiscalCloneNfceSearch(flow);
+    const row = await waitForCondition(() => findNfceRowByFiscalCloneDavFlow(flow), 12000, 300);
+    if (!row) {
+      logFiscalCloneDav('nfce-cancel-row-missing', {
+        totalValue: flow && flow.totalValue,
+        bodyText: String(document.body && document.body.innerText || '').slice(0, 900)
+      });
+      return false;
+    }
+
+    logFiscalCloneDav('nfce-cancel-row-found', {
+      rowText: String(row.innerText || row.textContent || '').slice(0, 260)
+    });
+
+    const menu = await openFiscalCloneRowContextMenu(row);
+    const cancelAction = findNfeActionMenuItem(menu, ['Cancelar'], true)
+      || Array.from(document.querySelectorAll('a, button, li')).find((item) => normalizeText(extractActionMenuItemLabel(item) || item.innerText || item.textContent || '') === 'cancelar');
+    if (!cancelAction) {
+      logFiscalCloneDav('nfce-cancel-action-missing', { menuText: menu ? String(menu.innerText || menu.textContent || '').slice(0, 300) : '' });
+      return false;
+    }
+
+    logFiscalCloneDav('nfce-cancel-action-click', { text: String(cancelAction.innerText || cancelAction.textContent || '').trim() });
+    activateFiscalMenuAction(cancelAction.matches && cancelAction.matches('li') ? (cancelAction.querySelector('a, button') || cancelAction) : cancelAction, { singleClick: true });
+    focusFiscalCloneCancelReasonField(flow).catch(() => {});
+    return true;
+  }
+
+  async function focusFiscalCloneCancelReasonField(flow) {
+    const field = await waitForCondition(() => {
+      const candidates = Array.from(document.querySelectorAll('textarea, input[type="text"], input:not([type])'))
+        .filter((input) => input && isVisible(input) && !input.disabled && !input.readOnly);
+      return candidates.find((input) => {
+        const text = normalizeText([
+          input.id,
+          input.name,
+          input.placeholder,
+          input.getAttribute('aria-label'),
+          input.closest && input.closest('.form-group, .mb-3, .col, .row, label') && input.closest('.form-group, .mb-3, .col, .row, label').innerText
+        ].filter(Boolean).join(' '));
+        return text.indexOf('justific') !== -1
+          || text.indexOf('motivo') !== -1
+          || text.indexOf('cancel') !== -1;
+      }) || null;
+    }, 8000, 200);
+    if (!field) {
+      logFiscalCloneDav('nfce-cancel-reason-field-missing', flow || {});
+      return false;
+    }
+    try {
+      field.focus({ preventScroll: false });
+      if (field.select) field.select();
+    } catch (error) {
+      try { field.focus(); } catch (innerError) {}
+    }
+    logFiscalCloneDav('nfce-cancel-reason-field-focused', {
+      nfceNumber: flow && flow.nfceNumber,
+      fieldId: field.id || '',
+      fieldName: field.name || '',
+      placeholder: field.placeholder || ''
+    });
+    return true;
+  }
+
+  function startFiscalCloneDavCancelFlow(pending) {
+    const flow = pending && pending.davFlow ? pending.davFlow : buildFiscalCloneDavFlow(pending);
+    if (!flow || (!flow.davDocumentNumber && !Number.isFinite(Number(flow.totalValue)))) {
+      window.alert('Não foi possível identificar o DAV selecionado para continuar o fluxo.');
+      setFiscalCloneConfirmActionState({ busy: false, disabled: false, yesLabel: 'Sim' });
+      return false;
+    }
+    if (!flow.nfceNumber) {
+      window.alert('Nenhum cupom com o mesmo valor foi localizado para cancelamento.');
+      setFiscalCloneConfirmActionState({ busy: false, disabled: true, yesLabel: 'Sim' });
+      return false;
+    }
+    if (flow.authorized === false) {
+      window.alert('O cupom localizado ja esta ' + (flow.statusText || 'indisponivel') + ' e nao pode ser cancelado novamente.');
+      setFiscalCloneConfirmActionState({ busy: false, disabled: true, yesLabel: 'Sim' });
+      return false;
+    }
+    const reason = getFiscalCloneDavCancelReason();
+    if (!reason) {
+      setFiscalCloneDavReasonError('Informe o motivo do cancelamento.');
+      setFiscalCloneConfirmActionState({ busy: false, disabled: true, yesLabel: 'Sim' });
+      return false;
+    }
+
+    setFiscalCloneDavState(Object.assign({}, flow, {
+      step: 'api-cancel',
+      cancelReason: reason
+    }));
+    startFiscalCloneDavApiCancelAndRedirect(flow, reason).catch((error) => {
+      logFiscalCloneDav('nfce-cancel-api-error', {
+        message: error && error.message ? error.message : String(error || ''),
+        nfceNumber: flow && flow.nfceNumber
+      });
+      setFiscalCloneDavState(Object.assign({}, flow, {
+        step: 'open-nfce-cancel',
+        running: false,
+        cancelReason: reason,
+        lastError: error && error.message ? error.message : String(error || '')
+      }));
+      window.location.hash = '#/fiscal/nfce';
+      scheduleFeatureUiRefresh(500);
+    });
+    return true;
+  }
+
+  function syncFiscalCloneDavFlow() {
+    const state = getFiscalCloneDavState();
+    if (!state || state.running) return;
+    if (!isTargetNfceListRoute()) return;
+
+    if (state.step === 'waiting-user-cancel') {
+      if (!isFiscalCloneDavNfceCanceled(state)) return;
+      logFiscalCloneDav('state-nfce-canceled-detected', state);
+      setFiscalCloneDavState(null);
+      window.setTimeout(() => {
+        window.location.hash = '#/fiscal/pdv';
+      }, 1200);
+      return;
+    }
+
+    if (state.step !== 'open-nfce-cancel') return;
+
+    state.running = true;
+    setFiscalCloneDavState(state);
+    openFiscalCloneDavNfceCancel(state)
+      .then((opened) => {
+        if (opened) {
+          setFiscalCloneDavState(Object.assign({}, state, {
+            step: 'waiting-user-cancel',
+            running: false
+          }));
+        } else {
+          setFiscalCloneDavState(Object.assign({}, state, {
+            running: false,
+            lastError: 'NFC-e nao localizada para cancelamento.'
+          }));
+        }
+      })
+      .catch((error) => {
+        logFiscalCloneDav('nfce-cancel-open-error', {
+          message: error && error.message ? error.message : String(error || '')
+        });
+        setFiscalCloneDavState(Object.assign({}, state, {
+          running: false,
+          lastError: error && error.message ? error.message : String(error || '')
+        }));
+      });
+  }
+
+  function closeFiscalCloneConfirmModal() {
+    const modal = document.getElementById(FISCAL_CLONE_CONFIRM_MODAL_ID);
+    const backdrop = document.getElementById(FISCAL_CLONE_CONFIRM_BACKDROP_ID);
+    hideExtensionNativeModal(modal, backdrop);
+  }
+
+  function applyFiscalCloneConfirmModalTheme(modal) {
+    if (!modal) return;
+    const compact = window.innerWidth < 560;
+    const dialog = modal.querySelector('[data-fiscal-clone-confirm-dialog]');
+    if (dialog) {
+      dialog.style.maxWidth = compact ? 'calc(100vw - 16px)' : '460px';
+      dialog.style.margin = compact ? '8px auto' : '';
+    }
+  }
+
+  function ensureFiscalCloneConfirmModal() {
+    if (!document.body) return;
+
+    if (!document.getElementById(FISCAL_CLONE_CONFIRM_BACKDROP_ID)) {
+      const backdrop = document.createElement('div');
+      backdrop.id = FISCAL_CLONE_CONFIRM_BACKDROP_ID;
+      backdrop.className = 'modal-backdrop fade';
+      backdrop.style.cssText = [
+        'display:none',
+        'z-index:1061'
+      ].join(';');
+      backdrop.addEventListener('click', closeFiscalCloneConfirmModal);
+      document.body.appendChild(backdrop);
+    }
+
+    if (!document.getElementById(FISCAL_CLONE_CONFIRM_MODAL_ID)) {
+      const modal = document.createElement('div');
+      modal.id = FISCAL_CLONE_CONFIRM_MODAL_ID;
+      modal.className = 'modal fade';
+      modal.tabIndex = -1;
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.style.cssText = [
+        'display:none',
+        'z-index:1065'
+      ].join(';');
+      modal.innerHTML = [
+        '<div class="modal-dialog modal-dialog-centered" data-fiscal-clone-confirm-dialog>',
+        '  <div class="modal-content">',
+        '    <div class="modal-header">',
+        '      <h2 class="fw-semibold fs-6 fw-light text-primary">Deseja cancelar também o documento original?</h2>',
+        '      <button type="button" data-fiscal-clone-confirm-close class="btn-close" aria-label="Close"></button>',
+        '    </div>',
+        '    <div class="modal-body pb-5" style="padding-top:1px;">',
+        '      <div id="' + FISCAL_CLONE_CONFIRM_DETAILS_ID + '" class="rounded p-4" style="display:grid;gap:10px;font-size:13px;line-height:1.48;"></div>',
+        '    </div>',
+        '    <div class="modal-footer pt-0" style="gap:8px;flex-wrap:wrap;">',
+        '      <button type="button" data-fiscal-clone-confirm-only class="btn btn-light btn-sm" style="font-size:13px;">Não</button>',
+        '      <button type="button" data-fiscal-clone-confirm-cancel-original class="btn btn-primary btn-sm" style="font-size:13px;">Sim</button>',
+        '    </div>',
+        '  </div>',
+        '</div>'
+      ].join('');
+      document.body.appendChild(modal);
+    }
+
+    applyFiscalCloneConfirmModalTheme(document.getElementById(FISCAL_CLONE_CONFIRM_MODAL_ID));
+  }
+
+  function handleFiscalCloneConfirmModalAction(event) {
+    const target = event && event.target && event.target.closest
+      ? event.target.closest('[data-fiscal-clone-confirm-close], [data-fiscal-clone-confirm-only], [data-fiscal-clone-confirm-cancel-original]')
+      : null;
+    if (!target || !target.closest('#' + FISCAL_CLONE_CONFIRM_MODAL_ID)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const targetText = normalizeText(target.innerText || target.textContent || '');
+
+    if (target.hasAttribute('data-fiscal-clone-confirm-only')) {
+      const pending = FISCAL_CLONE_CONFIRM_PENDING;
+      FISCAL_CLONE_CONFIRM_PENDING = null;
+      closeFiscalCloneConfirmModal();
+      if (pending && pending.trigger && pending.trigger.isConnected) {
+        FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = true;
+        try {
+          if (typeof pending.trigger.click === 'function') {
+            pending.trigger.click();
+          } else {
+            clickLikeUser(pending.trigger);
+          }
+        } finally {
+          setTimeout(() => {
+            FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = false;
+          }, 120);
+        }
+      }
+      return;
+    }
+
+    if (target.hasAttribute('data-fiscal-clone-confirm-cancel-original') || targetText.indexOf('abrir cancelamento') !== -1) {
+      const pending = FISCAL_CLONE_CONFIRM_PENDING;
+      setFiscalCloneConfirmActionState({ busy: true, yesLabel: 'Aguarde...' });
+      if (pending && isTargetDavCloneBlockRoute()) {
+        if (startFiscalCloneDavCancelFlow(pending)) {
+          FISCAL_CLONE_CONFIRM_PENDING = null;
+          closeFiscalCloneConfirmModal();
+        }
+        return;
+      }
+      FISCAL_CLONE_CONFIRM_PENDING = null;
+      closeFiscalCloneConfirmModal();
+      const cancelAction = pending && (pending.cancelAction || findFiscalCancelActionNearClone(pending.trigger));
+      if (cancelAction) {
+        activateFiscalMenuAction(cancelAction, { singleClick: true });
+      } else {
+        window.alert('Não foi possível localizar a ação Cancelar para este documento.');
+      }
+      return;
+    }
+
+    FISCAL_CLONE_CONFIRM_PENDING = null;
+    closeFiscalCloneConfirmModal();
+  }
+
+  function openFiscalCloneConfirmModal(trigger) {
+    ensureFiscalCloneConfirmModal();
+    const modal = document.getElementById(FISCAL_CLONE_CONFIRM_MODAL_ID);
+    const backdrop = document.getElementById(FISCAL_CLONE_CONFIRM_BACKDROP_ID);
+    const details = document.getElementById(FISCAL_CLONE_CONFIRM_DETAILS_ID);
+    if (!modal || !backdrop || !details) return;
+    closeNfceCancellationReasonSourceMenus(trigger);
+
+    const entry = getFiscalCloneConfirmEntry(trigger);
+    const routeLabel = isTargetDavCloneBlockRoute()
+      ? 'Pedido de venda'
+      : (isTargetNfceListRoute() ? 'NFC-e' : 'NF-e');
+    FISCAL_CLONE_CONFIRM_PENDING = {
+      trigger,
+      cancelAction: findFiscalCancelActionNearClone(trigger),
+      entry,
+      at: Date.now()
+    };
+
+    if (isTargetDavCloneBlockRoute()) {
+      FISCAL_CLONE_CONFIRM_PENDING.davFlow = buildFiscalCloneDavFlow(FISCAL_CLONE_CONFIRM_PENDING);
+      renderFiscalCloneDavDetails(entry, FISCAL_CLONE_CONFIRM_PENDING.davFlow, null, 'Localizando cupom com o mesmo valor...');
+      setFiscalCloneConfirmActionState({ disabled: true, yesLabel: 'Sim' });
+      startFiscalCloneDavLookup(FISCAL_CLONE_CONFIRM_PENDING);
+    } else {
+      details.innerHTML = [
+        '<div><strong>' + escapeHtml(routeLabel) + ':</strong> ' + escapeHtml(entry.documentNumber || '-') + (entry.seriesText ? ' <span style="opacity:.72;">Série ' + escapeHtml(entry.seriesText) + '</span>' : '') + '</div>',
+        entry.customerName ? '<div><strong>Cliente:</strong> ' + escapeHtml(entry.customerName) + '</div>' : ''
+      ].filter(Boolean).join('');
+      setFiscalCloneConfirmActionState({ disabled: false, yesLabel: 'Sim' });
+    }
+
+    applyFiscalCloneConfirmModalTheme(modal);
+    showExtensionNativeModal(modal, backdrop);
+  }
+
+  function handleFiscalCloneConfirm(event) {
+    if (!event || !event.target || FISCAL_CLONE_CONFIRM_INTERNAL_CLICK) return;
+    if (event.target.closest && event.target.closest('#' + FISCAL_CLONE_CONFIRM_MODAL_ID)) return;
+    const trigger = findFiscalCloneActionTrigger(event.target);
+    if (!trigger) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    if (FISCAL_CLONE_CONFIRM_PENDING && FISCAL_CLONE_CONFIRM_PENDING.trigger === trigger && (Date.now() - FISCAL_CLONE_CONFIRM_PENDING.at) < 800) {
+      return false;
+    }
+    openFiscalCloneConfirmModal(trigger);
+    return false;
   }
 
   function ensureNfeCashSaleBoletoGuardBindings() {
@@ -6652,6 +10646,24 @@
     clearTimeout(NFE_BATCH_DOWNLOAD_STATUS_TIMER);
     NFE_BATCH_DOWNLOAD_STATUS_TIMER = 0;
     NFE_BATCH_DOWNLOAD_RUNNING = false;
+  }
+
+  function removeNfceCancellationReasonActionItems() {
+    Array.from(document.querySelectorAll('#' + NFCE_CANCEL_REASON_ACTION_ID)).forEach((item) => {
+      const parent = item.closest('li');
+      if (parent) parent.remove();
+      else item.remove();
+    });
+  }
+
+  function removeNfceCancellationReasonUi() {
+    removeNfceCancellationReasonActionItems();
+
+    const modal = document.getElementById(NFCE_CANCEL_REASON_MODAL_ID);
+    const backdrop = document.getElementById(NFCE_CANCEL_REASON_BACKDROP_ID);
+    if (modal) modal.remove();
+    if (backdrop) backdrop.remove();
+    NFCE_CANCEL_REASON_RUNNING = false;
   }
 
   function closeNfeCashSaleBoletoWarningModal() {
@@ -8164,13 +12176,151 @@
       .filter(Boolean);
   }
 
-  function syncNfeReturnHistory() {
-    if (!isFeatureEnabled('commissionReturnsEnabled') || !isTargetNfeRoute()) return;
+  function getNestedValue(root, paths) {
+    if (!root || typeof root !== 'object') return null;
+    for (let index = 0; index < paths.length; index += 1) {
+      const parts = String(paths[index] || '').split('.');
+      let current = root;
+      for (let partIndex = 0; partIndex < parts.length; partIndex += 1) {
+        if (current == null || typeof current !== 'object') {
+          current = null;
+          break;
+        }
+        current = current[parts[partIndex]];
+      }
+      if (current != null && current !== '') return current;
+    }
+    return null;
+  }
 
-    const entries = collectVisibleNfeReturnEntries();
+  function getApiDisplayText(value) {
+    if (value == null) return '';
+    if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
+    if (typeof value !== 'object') return '';
+    const candidate = getNestedValue(value, ['description', 'descricao', 'name', 'nome', 'businessName', 'fantasyName']);
+    return candidate == null ? '' : String(candidate).trim();
+  }
+
+  function getNfeApiRows(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (!payload || typeof payload !== 'object') return [];
+    const candidates = [
+      payload.data,
+      payload.result,
+      payload.items,
+      payload.content,
+      payload.data && payload.data.data,
+      payload.data && payload.data.items,
+      payload.result && payload.result.data,
+      payload.result && payload.result.items
+    ];
+    for (let index = 0; index < candidates.length; index += 1) {
+      if (Array.isArray(candidates[index])) return candidates[index];
+    }
+    return [];
+  }
+
+  function normalizeApiDocumentNumber(value) {
+    const text = String(value == null ? '' : value).replace(/\D+/g, '').trim();
+    return text || '';
+  }
+
+  function getNfeApiStatusNumber(item) {
+    const value = getNestedValue(item, ['status', 'dados.status', 'situacaoCodigo', 'statusCode']);
+    const number = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(number) ? number : null;
+  }
+
+  function collectApiNfeReturnEntries(payload) {
+    return getNfeApiRows(payload)
+      .map((item) => {
+        if (!item || typeof item !== 'object') return null;
+
+        const documentNumber = normalizeApiDocumentNumber(getNestedValue(item, [
+          'numero',
+          'number',
+          'documentNumber',
+          'sequence',
+          'dados.numero',
+          'dados.number',
+          'dados.nNF',
+          'nNF'
+        ]));
+        if (!documentNumber) return null;
+
+        const nature = getApiDisplayText(getNestedValue(item, [
+          'naturezaOperacao',
+          'natureOperation',
+          'operationNature',
+          'natureza',
+          'nature',
+          'dados.naturezaOperacao',
+          'dados.natureOperation',
+          'dados.operationNature',
+          'dados.natureza'
+        ]));
+        if (!nature || !isNfeReturnNature(nature)) return null;
+
+        const statusText = getApiDisplayText(getNestedValue(item, [
+          'statusText',
+          'statusLabel',
+          'situacao',
+          'status',
+          'dados.statusText',
+          'dados.statusLabel',
+          'dados.situacao',
+          'dados.status'
+        ]));
+        const statusNumber = getNfeApiStatusNumber(item);
+        const inactiveByNumber = statusNumber === 3 || statusNumber === 4 || statusNumber === 5;
+        const totalValue = getNestedValue(item, [
+          'total',
+          'price',
+          'valorTotal',
+          'dados.total',
+          'dados.price',
+          'dados.valorTotal',
+          'dados.totalNfe'
+        ]);
+        const total = typeof totalValue === 'number' ? totalValue : parseProductGridNumber(totalValue);
+
+        return {
+          documentNumber,
+          customer: getApiDisplayText(getNestedValue(item, [
+            'customer',
+            'client',
+            'buyer',
+            'destinatario',
+            'dados.customer',
+            'dados.client',
+            'dados.buyer',
+            'dados.destinatario'
+          ])),
+          nature,
+          issueDate: String(getNestedValue(item, [
+            'emissao',
+            'issueDate',
+            'emissionDate',
+            'dataEmissao',
+            'dados.emissao',
+            'dados.issueDate',
+            'dados.emissionDate',
+            'dados.dataEmissao'
+          ]) || '').trim(),
+          status: statusText,
+          total: Number.isFinite(total) ? total : null,
+          active: !inactiveByNumber && !isInactiveNfeStatus(statusText),
+          capturedAt: Date.now(),
+          source: 'api'
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function persistNfeReturnEntries(entries, sourceLabel) {
     if (!entries.length) return;
 
-    const signature = JSON.stringify(entries.map((entry) => [
+    const signature = String(sourceLabel || 'dom') + ':' + JSON.stringify(entries.map((entry) => [
       entry.documentNumber,
       entry.customer,
       entry.nature,
@@ -8221,6 +12371,17 @@
         chrome.storage.local.set({ [NFE_RETURN_HISTORY_STORAGE_KEY]: NFE_RETURN_HISTORY });
       } catch (error) {}
     }, 250);
+  }
+
+  function handleNfeListApiResponsePayload(payload) {
+    if (!isFeatureEnabled('commissionReturnsEnabled') || !isTargetNfeRoute()) return;
+    persistNfeReturnEntries(collectApiNfeReturnEntries(payload), 'api');
+  }
+
+  function syncNfeReturnHistory() {
+    if (!isFeatureEnabled('commissionReturnsEnabled') || !isTargetNfeRoute()) return;
+
+    persistNfeReturnEntries(collectVisibleNfeReturnEntries(), 'dom');
   }
 
   function getProductGridHeaderMap() {
@@ -8353,12 +12514,37 @@
     BATCH_RUNNING = true;
     let ok = 0;
     const failed = [];
+    let apiValidatedCodes = codes.slice();
     updateProgressBar(0, 'Iniciando lote...');
 
-    for (let i = 0; i < codes.length; i++) {
-      const code = codes[i];
-      updateBatchStatus('Processando ' + (i + 1) + '/' + codes.length + ': ' + code);
-      updateProgressBar(Math.round((i / codes.length) * 100), 'Processando ' + code + '...');
+    try {
+      updateBatchStatus('Validando produtos pela API...');
+      updateProgressBar(2, 'Validando produtos pela API...');
+      const products = await withTimeout(fetchProductsByCodes(codes), 1200, null);
+      if (!products) throw new Error('validacao por API excedeu o tempo limite');
+      const foundCodes = new Set(products.map((item) => String(item && item.sequence || '').trim()).filter(Boolean));
+      if (foundCodes.size > 0) {
+        const missingCodes = codes.filter((code) => !foundCodes.has(String(code || '').trim()));
+        missingCodes.forEach((code) => {
+          failed.push(code + ' (produto nao encontrado pela API)');
+        });
+        apiValidatedCodes = codes.filter((code) => foundCodes.has(String(code || '').trim()));
+      }
+    } catch (error) {
+      console.warn('Validacao API do lote DAV falhou; usando fluxo visual.', error);
+    }
+
+    if (!apiValidatedCodes.length) {
+      updateBatchStatus('Nenhum codigo valido para processar.');
+      updateProgressBar(100, 'Nenhum codigo valido');
+      BATCH_RUNNING = false;
+      return;
+    }
+
+    for (let i = 0; i < apiValidatedCodes.length; i++) {
+      const code = apiValidatedCodes[i];
+      updateBatchStatus('Processando ' + (i + 1) + '/' + apiValidatedCodes.length + ': ' + code);
+      updateProgressBar(Math.round((i / apiValidatedCodes.length) * 100), 'Processando ' + code + '...');
       try {
         await addSingleItemInBatch(code, quantityRaw, quantity);
         ok++;
@@ -8719,6 +12905,7 @@
 
   function markBlocked(el) {
     try {
+      if (isTargetPdvRoute()) return;
       if (isDocumentRoute()) return;
       if (!el || el.__blockedByExt) return;
       el.__blockedByExt = true;
@@ -8758,6 +12945,7 @@
 
   function hideBlockedDropdownOptions() {
     if (!isFeatureEnabled('enabled') || isDocumentRoute()) return;
+    if (isTargetPdvRoute()) return;
 
     const menuCandidates = Array.from(document.querySelectorAll('li, a, button, span, div'));
     menuCandidates.forEach(el => {
@@ -8777,6 +12965,7 @@
   // Block only in Cadastros > Estoque by stable href selector.
   function hideCadastrosUnitOption() {
     if (!isFeatureEnabled('enabled') || isDocumentRoute()) return;
+    if (isTargetPdvRoute()) return;
 
     const links = Array.from(document.querySelectorAll(CADASTROS_UNIT_SELECTOR));
     links.forEach(link => {
@@ -8907,6 +13096,7 @@
 
     blockSpecificInputs();
 
+    if (isTargetPdvRoute()) return;
     if (isDocumentRoute()) return;
 
     IDS.forEach(id => {
@@ -8973,6 +13163,13 @@
       ? event.target.closest('button, a, [role="button"], input[type="button"], input[type="submit"]')
       : null;
     if (!control || !modal.contains(control) || !isCommonFilterApplyControl(control)) return;
+    if (document.getElementById(COMMON_MULTI_TERM_FILTER_UI_ID)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      addCommonPersistentFilterFromModal(modal);
+      return false;
+    }
     armCommonMultiTermFilter(modal);
   }
 
@@ -8981,6 +13178,13 @@
     const modal = findProductFilterModal();
     if (!modal) return;
     if (!modal.contains(event.target)) return;
+    if (document.getElementById(COMMON_MULTI_TERM_FILTER_UI_ID)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      addCommonPersistentFilterFromModal(modal);
+      return false;
+    }
     armCommonMultiTermFilter(modal);
   }
 
@@ -8990,6 +13194,13 @@
     if (!modal || !modal.contains(event.target)) return;
     const valueInput = findCommonFilterValueInput(modal);
     if (!valueInput || event.target !== valueInput) return;
+    if (document.getElementById(COMMON_MULTI_TERM_FILTER_UI_ID)) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      addCommonPersistentFilterFromModal(modal);
+      return false;
+    }
     armCommonMultiTermFilter(modal);
   }
 
@@ -8997,11 +13208,43 @@
     if (!event || !event.target) return;
     if (!COMMON_MULTI_TERM_FILTER_STATE.active) return;
     if (!isNativeProductFilterClearControl(event.target)) return;
+    if (PRODUCT_FILTER_CLEAR_SYNC_LOCK === 'custom') return;
     resetCommonMultiTermFilterState();
+  }
+
+  function handleCommonPersistentFilterClick(event) {
+    if (!event || !event.target || !isFeatureEnabled('multiTermFilterEnabled')) return;
+    const target = event.target.closest
+      ? event.target.closest('[data-common-persistent-filter-add], [data-common-persistent-filter-clear], [data-common-persistent-filter-remove]')
+      : null;
+    if (!target) return;
+
+    const modal = findProductFilterModal();
+    if (!modal || !modal.contains(target)) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    if (target.hasAttribute('data-common-persistent-filter-add')) {
+      addCommonPersistentFilterFromModal(modal);
+      return;
+    }
+
+    if (target.hasAttribute('data-common-persistent-filter-clear')) {
+      clearCommonPersistentFilters();
+      return;
+    }
+
+    const filterId = target.getAttribute('data-common-persistent-filter-remove');
+    if (filterId) {
+      removeCommonPersistentFilter(filterId);
+    }
   }
 
   function shouldBlockEventTarget(target) {
     if (!target) return false;
+    if (isTargetPdvRoute()) return false;
 
     const customProductCodeGrid = target.closest && target.closest('[' + PRODUCT_CODE_RANGE_GRID_ATTR + '="true"]');
     if (customProductCodeGrid) return false;
@@ -9062,7 +13305,7 @@
       }
 
       if (!isFeatureEnabled('enabled')) return;
-      if (isTargetNfeRoute() && e && e.type === 'contextmenu') return;
+      if ((isTargetNfeRoute() || isTargetNfceListRoute()) && e && e.type === 'contextmenu') return;
 
       if (shouldBlockEventTarget(e.target)) {
         e.stopImmediatePropagation();
@@ -9072,16 +13315,223 @@
     } catch (err) {}
   }
 
+  function handleNfceCancellationReasonSelectionChange(event) {
+    if (!isTargetNfceListRoute()) return;
+    const target = event && event.target;
+    if (target && target.closest && !target.closest('.table-row, .grid-toolbar.no-print, #' + NFE_CONTEXT_MENU_ID)) return;
+    scheduleFeatureUiRefresh(60);
+  }
+
+  function logFiscalCloneDav(event, details) {
+    const entry = {
+      at: new Date().toISOString(),
+      href: String(location.href || ''),
+      event: String(event || ''),
+      details: details && typeof details === 'object' ? details : (details == null ? {} : { value: String(details) })
+    };
+
+    try {
+      const current = JSON.parse(localStorage.getItem(FISCAL_CLONE_DAV_LOG_STORAGE_KEY) || '[]');
+      const list = Array.isArray(current) ? current : [];
+      list.push(entry);
+      localStorage.setItem(FISCAL_CLONE_DAV_LOG_STORAGE_KEY, JSON.stringify(list.slice(-FISCAL_CLONE_DAV_LOG_LIMIT)));
+    } catch (error) {}
+
+    sendRuntimeMessage({ type: 'fiscal-clone-dav-log', entry }).catch(() => {});
+  }
+
+  function getDavNumberFromRow(row) {
+    if (!row) return '';
+    const looksLikeDateDigits = (digits) => /^(\d{8}|\d{6})$/.test(String(digits || ''));
+    const headerRow = Array.from(document.querySelectorAll('.table-row.header'))
+      .find((candidate) => candidate && candidate.parentElement === row.parentElement)
+      || Array.from(document.querySelectorAll('.table-row.header')).find((candidate) => isVisible(candidate))
+      || null;
+    const headers = headerRow ? Array.from(headerRow.querySelectorAll('.cell')).map((cell, index) => ({
+      index,
+      label: normalizeText(((cell.querySelector('.header-text') && cell.querySelector('.header-text').textContent) || cell.textContent || '').trim())
+    })) : [];
+    const numberHeader = headers.find((header) => ['numero', 'número', 'codigo', 'código'].some((label) => header.label === label || header.label.indexOf(label) === 0));
+    const getCellText = (index) => {
+      if (!Number.isFinite(index) || index < 0) return '';
+      const cell = row.querySelector('.cell[data-col="' + index + '"]') || row.children[index];
+      return String(cell && (cell.innerText || cell.textContent) || '').trim();
+    };
+    const explicit = numberHeader ? getCellText(numberHeader.index).replace(/\D+/g, '') : '';
+    if (/^\d+$/.test(explicit) && !looksLikeDateDigits(explicit)) return explicit;
+
+    const rowLines = String(row.innerText || row.textContent || '')
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const lineCandidate = rowLines
+      .map((line) => line.replace(/\D+/g, ''))
+      .find((digits, index) => index > 0 && /^\d{3,8}$/.test(digits) && !looksLikeDateDigits(digits));
+    if (lineCandidate) return lineCandidate;
+
+    return Array.from(row.querySelectorAll('.cell'))
+      .map((cell) => String(cell.innerText || cell.textContent || '').trim())
+      .map((text) => text.replace(/\D+/g, ''))
+      .find((digits) => /^\d{3,8}$/.test(digits) && !looksLikeDateDigits(digits)) || '';
+  }
+
+  function findDavRowForBackgroundClone(flow) {
+    const requested = String(flow && flow.davDocumentNumber || '').replace(/\D+/g, '');
+    const rows = Array.from(document.querySelectorAll('.table-row'))
+      .filter((row) => row && !row.classList.contains('header') && isVisible(row));
+
+    if (requested) {
+      const exact = rows.find((row) => getDavNumberFromRow(row) === requested);
+      if (exact) return exact;
+    }
+
+    const total = Number(flow && flow.totalValue);
+    if (Number.isFinite(total) && total > 0) {
+      const formatted = total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const byTotal = rows.find((row) => String(row.innerText || row.textContent || '').indexOf(formatted) !== -1);
+      if (byTotal) return byTotal;
+    }
+
+    return null;
+  }
+
+  function findFiscalCloneDavSaveButton() {
+    const candidates = Array.from(document.querySelectorAll('button, a, input[type="button"], input[type="submit"]'))
+      .filter((button) => button && isVisible(button) && !button.disabled && button.getAttribute('aria-disabled') !== 'true');
+    const labels = ['salvar', 'cadastrar', 'confirmar', 'gravar'];
+
+    return candidates.find((button) => {
+      const text = normalizeText(button.innerText || button.textContent || button.value || button.getAttribute('aria-label') || button.getAttribute('title') || '');
+      if (!text) return false;
+      if (text.indexOf('cancel') !== -1 || text.indexOf('excluir') !== -1 || text.indexOf('clonar') !== -1) return false;
+      return labels.some((label) => text === label || text.indexOf(label) !== -1);
+    }) || null;
+  }
+
+  function clickFiscalCloneOnce(element) {
+    if (!element) return false;
+    try {
+      if (typeof element.click === 'function') {
+        element.click();
+        return true;
+      }
+    } catch (error) {}
+    try {
+      element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async function openFiscalCloneDavCloneAction(flow) {
+    logFiscalCloneDav('dav-background-clone-start', {
+      davDocumentNumber: flow && flow.davDocumentNumber,
+      totalValue: flow && flow.totalValue,
+      returnHash: flow && flow.returnHash
+    });
+
+    if (flow && flow.returnHash && window.location.hash !== flow.returnHash) {
+      window.location.hash = flow.returnHash;
+      await delay(900);
+    }
+
+    const row = await waitForCondition(() => findDavRowForBackgroundClone(flow), 12000, 300);
+    if (!row) {
+      logFiscalCloneDav('dav-background-row-missing', {
+        davDocumentNumber: flow && flow.davDocumentNumber,
+        totalValue: flow && flow.totalValue,
+        bodyText: String(document.body && document.body.innerText || '').slice(0, 900)
+      });
+      return false;
+    }
+
+    const resolvedDavNumber = getDavNumberFromRow(row);
+    logFiscalCloneDav('dav-background-row-found', {
+      resolvedDavNumber,
+      rowText: String(row.innerText || row.textContent || '').slice(0, 260)
+    });
+
+    const menu = await openFiscalCloneRowContextMenu(row);
+    if (!menu && /\/edit\//i.test(window.location.hash || '')) {
+      logFiscalCloneDav('dav-background-opened-edit-instead-menu', {
+        currentHash: window.location.hash,
+        davDocumentNumber: flow && flow.davDocumentNumber
+      });
+      return {
+        ok: false,
+        terminal: true,
+        message: 'A automacao abriu o DAV em edicao em vez do menu de acoes.'
+      };
+    }
+    const cloneAction = findNfeActionMenuItem(menu, ['Clonar', 'Clonar DAV', 'Clonar pedido', 'Clonar pedido de venda', 'Clonar orçamento'], true)
+      || Array.from(document.querySelectorAll('a, button, li')).find((item) => isCloneActionLabel(extractActionMenuItemLabel(item) || item.innerText || item.textContent || ''));
+    if (!cloneAction) {
+      logFiscalCloneDav('dav-background-clone-action-missing', { menuText: menu ? String(menu.innerText || menu.textContent || '').slice(0, 300) : '' });
+      return {
+        ok: false,
+        terminal: true,
+        message: 'Acao Clonar nao localizada no menu do DAV.'
+      };
+    }
+
+    logFiscalCloneDav('dav-background-clone-click', { text: String(cloneAction.innerText || cloneAction.textContent || '').trim() });
+    activateFiscalMenuAction(cloneAction.matches && cloneAction.matches('li') ? (cloneAction.querySelector('a, button') || cloneAction) : cloneAction, { singleClick: true });
+
+    const saveButton = await waitForCondition(() => {
+      const button = findFiscalCloneDavSaveButton();
+      return button || null;
+    }, 25000, 300);
+    if (!saveButton) {
+      logFiscalCloneDav('dav-save-button-missing', {
+        currentHash: window.location.hash,
+        bodyText: String(document.body && document.body.innerText || '').slice(0, 900)
+      });
+      return {
+        ok: false,
+        terminal: true,
+        message: 'Botao Salvar do DAV clonado nao localizado.'
+      };
+    }
+
+    logFiscalCloneDav('dav-save-button-click', { text: String(saveButton.innerText || saveButton.textContent || saveButton.value || '').trim() });
+    clickFiscalCloneOnce(saveButton);
+    await delay(3500);
+    logFiscalCloneDav('dav-save-finished', { currentHash: window.location.hash });
+    return { ok: true };
+  }
+
   document.addEventListener('dblclick', blockInteractions, true);
   document.addEventListener('mousedown', rememberNfeContextMenuAnchorFromMouse, true);
   document.addEventListener('contextmenu', rememberNfeContextMenuAnchor, true);
+  document.addEventListener('contextmenu', handleNfceCancellationReasonSelectionChange, true);
   document.addEventListener('contextmenu', blockInteractions, true);
+  document.addEventListener('click', handleFiscalCloneConfirmModalAction, true);
+  document.addEventListener('pointerdown', handleFiscalCloneConfirm, true);
+  document.addEventListener('click', handleFiscalCloneConfirm, true);
+  document.addEventListener('pointerdown', handleCloneActionBlock, true);
+  document.addEventListener('click', handleCloneActionBlock, true);
   document.addEventListener('pointerdown', armXmlDownloadFlow, true);
   document.addEventListener('pointerdown', handleNfeCashSaleBoletoGuard, true);
   document.addEventListener('pointerdown', handleClientIdentificationSaveSync, true);
+  document.addEventListener('pointerdown', handleDocumentNegativeStockGuardModalBlock, true);
+  document.addEventListener('mousedown', handleDocumentNegativeStockGuardModalBlock, true);
+  document.addEventListener('mouseup', handleDocumentNegativeStockGuardModalBlock, true);
+  document.addEventListener('click', handleDocumentNegativeStockGuardModalBlock, true);
+  document.addEventListener('contextmenu', handleDocumentNegativeStockGuardModalBlock, true);
+  document.addEventListener('wheel', handleDocumentNegativeStockGuardModalBlock, { capture: true, passive: false });
+  document.addEventListener('keydown', handleDocumentNegativeStockGuardModalBlock, true);
+  document.addEventListener('focusin', handleDocumentNegativeStockGuardModalBlock, true);
   document.addEventListener('click', armXmlDownloadFlow, true);
   document.addEventListener('click', handleNfeCashSaleBoletoGuard, true);
   document.addEventListener('click', handleClientIdentificationSaveSync, true);
+  document.addEventListener('click', handleDocumentNegativeStockGuardInteraction, true);
+  document.addEventListener('click', handleNfceCancellationReasonSelectionChange, true);
+  document.addEventListener('change', handleNfceCancellationReasonSelectionChange, true);
+  document.addEventListener('change', handleDocumentNegativeStockGuardInteraction, true);
+  document.addEventListener('click', handlePdvCashCounterResetClick, true);
+  document.addEventListener('dblclick', handlePdvCashCounterDoubleClick, true);
+  document.addEventListener('click', handleCommonPersistentFilterClick, true);
   document.addEventListener('click', handleProductNativeFilterClearSync, true);
   document.addEventListener('click', handleCommonMultiTermFilterApply, true);
   document.addEventListener('click', handleCommonMultiTermFilterClear, true);
@@ -9110,10 +13560,66 @@
   document.addEventListener('click', handleDavQuantityAutoClearOptionClick, true);
   document.addEventListener('pointerup', handleBatchToggleActivation, true);
   document.addEventListener('keydown', handleBatchToggleActivation, true);
+  try {
+    const runtime = getRuntimeApi();
+    if (runtime && runtime.onMessage && typeof runtime.onMessage.addListener === 'function') {
+      runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (!message || (
+          message.type !== 'document-negative-stock-disable-config-page'
+          && message.type !== 'document-negative-stock-disabled-notification'
+          && message.type !== 'fiscal-clone-dav-run-background-clone'
+        )) return;
+        if (message.type === 'fiscal-clone-dav-run-background-clone') {
+          openFiscalCloneDavCloneAction(message.flow || {})
+            .then((result) => {
+              if (result && typeof result === 'object') {
+                sendResponse(result);
+                return;
+              }
+              sendResponse({ ok: !!result });
+            })
+            .catch((error) => sendResponse({
+              ok: false,
+              terminal: true,
+              message: error && error.message ? error.message : String(error || '')
+            }));
+          return true;
+        }
+        if (message.type === 'document-negative-stock-disabled-notification') {
+          showDocumentNegativeStockNativeToastClone(message.notification);
+          sendResponse({ ok: true });
+          return;
+        }
+        disableDocumentNegativeStockGuardFromConfigPageRequest(sendResponse);
+        return true;
+      });
+    }
+  } catch (error) {}
   window.addEventListener('message', handleXmlBridgeMessage);
+  window.addEventListener(XML_BRIDGE_SOURCE, handleXmlBridgeMessage);
+  window.addEventListener('beforeunload', handleDocumentNegativeStockGuardBeforeUnload);
+  window.addEventListener('focus', function() {
+    runDocumentNegativeStockGuardHeartbeat();
+    checkDocumentNegativeStockServerState(true);
+  });
+  window.addEventListener('pageshow', function() {
+    runDocumentNegativeStockGuardHeartbeat();
+    checkDocumentNegativeStockServerState(true);
+  });
+  document.addEventListener('visibilitychange', function() {
+    runDocumentNegativeStockGuardHeartbeat();
+    if (!document.hidden) checkDocumentNegativeStockServerState(true);
+  }, true);
+  window.addEventListener('storage', function(event) {
+    if (!event || event.key === DOCUMENT_NEGATIVE_STOCK_GUARD_STORAGE_KEY || event.key === DOCUMENT_NEGATIVE_STOCK_CONFIGURATION_STORAGE_KEY || event.key === DOCUMENT_NEGATIVE_STOCK_FORCE_DISABLE_STORAGE_KEY) {
+      runDocumentNegativeStockGuardHeartbeat();
+    }
+  });
   window.addEventListener('hashchange', function() {
     resetProductAdminGuardState();
     if (shouldUsePageBridge()) ensurePageBridge();
+    runDocumentNegativeStockGuardHeartbeat();
+    window.setTimeout(() => checkDocumentNegativeStockServerState(true), 900);
     scheduleFeatureUiRefresh(40);
   });
   window.addEventListener('resize', function() {
@@ -9139,12 +13645,17 @@
 
     syncClientIdentificationUnlock();
     syncProductAdminGuardInputs();
+    ensureSupplierBusinessNameEditor();
+    syncDocumentNegativeStockGuard();
 
     syncNfceCardBrandOptions();
+    syncPdvCashCounterUi();
+    syncFiscalCloneDavFlow();
     syncProductCloneProtection();
     ensureLowStockHighlightStyle();
     positionNfeContextMenuPopup();
     syncNfeActionMenuItems();
+    syncCloneActionBlockItems();
     syncNfeReturnHistory();
     syncCommissionReportModal();
 
@@ -9157,6 +13668,12 @@
       removeNfeActionCustomizeUi();
       removeNfeBatchDownloadUi();
       restoreNfeActionMenuItems();
+    }
+
+    if (isTargetNfceListRoute()) {
+      ensureNfceCancellationReasonActionItems();
+    } else {
+      removeNfceCancellationReasonUi();
     }
 
     if (isTargetDavRoute()) {
@@ -9173,6 +13690,7 @@
       renderProductCodeRangePanel();
       syncCommonMultiTermFilterRows();
       syncProductFilterColumnOptions();
+      ensureCommonFilterPersistenceUi();
       syncProductLowStockHighlight();
     } else {
       removeProductPreviewButton();
@@ -9180,6 +13698,8 @@
       if (replicateSection) replicateSection.remove();
       removeProductStyleCustomizeUi();
       resetCommonMultiTermFilterState();
+      const persistencePanel = document.getElementById(COMMON_MULTI_TERM_FILTER_UI_ID);
+      if (persistencePanel) persistencePanel.remove();
       restoreProductFilterColumnOptions();
       clearProductLowStockHighlight();
     }
@@ -9187,6 +13707,8 @@
 
   function init() {
     if (shouldUsePageBridge()) ensurePageBridge();
+    startDocumentNegativeStockGuardHeartbeat();
+    window.setTimeout(() => checkDocumentNegativeStockServerState(true), 1500);
     resetProductAdminGuardState();
     DAV_ITEM_CODE_CACHE = readDavItemCodeCache();
     try {
@@ -9254,6 +13776,7 @@
       if (changes[ACTION_MENU_PREFS_STORAGE_KEY]) {
         ACTION_MENU_PREFS = changes[ACTION_MENU_PREFS_STORAGE_KEY].newValue || {};
         syncNfeActionMenuItems();
+        syncCloneActionBlockItems();
         if (isTargetNfeRoute() && isFeatureEnabled('actionMenuCustomizeEnabled')) {
           ensureNfeActionCustomizeButton();
         }
