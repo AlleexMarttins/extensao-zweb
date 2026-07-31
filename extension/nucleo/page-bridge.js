@@ -3,6 +3,8 @@
 
   const CONTENT_SOURCE = 'zweb-xml-content-script';
   const BRIDGE_SOURCE = 'zweb-xml-page-bridge';
+  const EXTENSION_MODAL_BRIDGE_SOURCE = 'zweb-extension-modal-bridge';
+  const EXTENSION_MODAL_BRIDGE_VERSION = '20260701-1';
   const ARM_TTL_MS = 15000;
   const POLL_INTERVAL_MS = 300;
   const PRODUCT_PAGINATE_URL_FRAGMENT = 'inventory.get-product-paginate';
@@ -42,7 +44,7 @@
   const PERSON_EDIT_ROUTE_FRAGMENTS = ['/register/client/edit/', '/register/supplier/edit/'];
   const SUPPLIER_EDIT_ROUTE_FRAGMENT = '/register/supplier/edit/';
   const SUPPLIER_BUSINESS_NAME_SELECTOR = '[data-zweb-supplier-business-name-field="true"], #person\\.businessName, #zweb-supplier-business-name';
-  const BRIDGE_VERSION = '20260612-2';
+  const BRIDGE_VERSION = '20260701-1';
 
   if (window.__zwebXmlPageBridgeInstalled === BRIDGE_VERSION) return;
   window.__zwebXmlPageBridgeInstalled = BRIDGE_VERSION;
@@ -90,6 +92,33 @@
     } catch (error) {}
   }
 
+  function installExtensionModalBridge() {
+    if (!document.documentElement) return;
+    if (document.documentElement.dataset.zwebExtensionModalBridgeInstalled === EXTENSION_MODAL_BRIDGE_VERSION) return;
+    document.documentElement.dataset.zwebExtensionModalBridgeInstalled = EXTENSION_MODAL_BRIDGE_VERSION;
+
+    window.addEventListener('click', function(event) {
+      const target = event && event.target && event.target.closest
+        ? event.target.closest('[data-nfe-boleto-warning-close], [data-nfe-boleto-warning-cancel], [data-nfe-boleto-warning-continue], [data-commission-confirm-close], [data-commission-confirm-no], [data-commission-confirm-yes]')
+        : null;
+      if (!target) return;
+
+      let type = '';
+      if (target.hasAttribute('data-nfe-boleto-warning-close')) type = 'nfe-warning-close';
+      else if (target.hasAttribute('data-nfe-boleto-warning-cancel')) type = 'nfe-warning-cancel';
+      else if (target.hasAttribute('data-nfe-boleto-warning-continue')) type = 'nfe-warning-continue';
+      else if (target.hasAttribute('data-commission-confirm-close')) type = 'commission-confirm-close';
+      else if (target.hasAttribute('data-commission-confirm-no')) type = 'commission-confirm-no';
+      else if (target.hasAttribute('data-commission-confirm-yes')) type = 'commission-confirm-yes';
+      if (!type) return;
+
+      window.postMessage({
+        source: EXTENSION_MODAL_BRIDGE_SOURCE,
+        type: type
+      }, '*');
+    }, true);
+  }
+
   function normalizeText(value) {
     return String(value || '')
       .normalize('NFD')
@@ -97,6 +126,11 @@
       .replace(/\s+/g, ' ')
       .trim()
       .toLowerCase();
+  }
+
+  installExtensionModalBridge();
+  if (!document.documentElement) {
+    document.addEventListener('DOMContentLoaded', installExtensionModalBridge, { once: true });
   }
 
   function isHashFeatureEnabled() {

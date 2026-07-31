@@ -110,6 +110,10 @@ Permissões principais:
 - `contextMenus`
 - `scripting`
 
+## Documentação técnica
+
+- [Endpoints e escopo de acesso](docs/endpoints.md)
+
 ## QA local com Playwright
 
 Comandos principais:
@@ -166,9 +170,3 @@ tools/playwright/
   start-session.cjs
   stop-session.ps1
 ```
-
-## Observações
-
-- Artefatos locais de Playwright, screenshots e credenciais auxiliares ficam fora do Git por `.gitignore`.
-- O nome visível da extensão no navegador continua `Assistente Zweb`.
-- O runtime principal da extensão está em `extension/`.

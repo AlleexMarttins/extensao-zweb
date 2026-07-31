@@ -115,9 +115,12 @@
   const NFE_BOLETO_WARNING_DETAILS_ID = 'zweb-nfe-boleto-warning-details';
   const NFE_BOLETO_WARNING_BOUND_ATTR = 'data-zweb-nfe-boleto-warning-bound';
   const EXTENSION_MODAL_BRIDGE_SOURCE = 'zweb-extension-modal-bridge';
-  const EXTENSION_MODAL_BRIDGE_VERSION = '20260415-1';
+  const EXTENSION_MODAL_BRIDGE_VERSION = '20260701-1';
   const NFE_BATCH_DOWNLOAD_XML_ACTION_ID = 'zweb-nfe-batch-download-xml-action';
   const NFE_BATCH_DOWNLOAD_PDF_ACTION_ID = 'zweb-nfe-batch-download-pdf-action';
+  const NFE_CLONE_CANCEL_ACTION_ID = 'zweb-nfe-clone-cancel-action';
+  const NFE_TRANSMIT_ACTION_ID = 'zweb-nfe-transmit-action';
+  const NFE_TRANSMIT_NOTICE_ID = 'zweb-nfe-transmit-native-notice';
   const NFE_BATCH_DOWNLOAD_STATUS_WRAP_ID = 'zweb-nfe-batch-download-status-wrap';
   const NFE_BATCH_DOWNLOAD_STATUS_ID = 'zweb-nfe-batch-download-status';
   const NFE_BATCH_DOWNLOAD_HIDDEN_NATIVE_ATTR = 'data-zweb-batch-hidden-native';
@@ -130,9 +133,12 @@
   const FISCAL_CLONE_CONFIRM_DETAILS_ID = 'zweb-fiscal-clone-confirm-details';
   const FISCAL_CLONE_CONFIRM_REASON_ID = 'zweb-fiscal-clone-confirm-reason';
   const FISCAL_CLONE_CONFIRM_REASON_ERROR_ID = 'zweb-fiscal-clone-confirm-reason-error';
+  const FISCAL_CLONE_CANCEL_REASON_MIN_LENGTH = 15;
   const FISCAL_CLONE_DAV_LOG_STORAGE_KEY = 'zwebFiscalCloneDavDebugLog';
   const FISCAL_CLONE_DAV_STATE_STORAGE_KEY = 'zwebFiscalCloneDavFlowState';
+  const FISCAL_CLONE_DAV_CACHE_STORAGE_KEY = 'zwebFiscalCloneDavCache';
   const FISCAL_CLONE_DAV_LOG_LIMIT = 180;
+  const FISCAL_CLONE_DAV_CACHE_TTL_MS = 10 * 60 * 1000;
   const FISCAL_CANCEL_NFE_API_URL = 'https://api.zweb.com.br/rpc/v1/fiscal.cancel-nfe';
   const INVENTORY_GET_SALE_PAGINATE_API_URL = 'https://api.zweb.com.br/rpc/v2/inventory.get-sale-paginate';
   const INVENTORY_GET_DETAILED_SALE_API_URL = 'https://api.zweb.com.br/rpc/v2/inventory.get-detailed-sale';
@@ -159,10 +165,14 @@
   const SUPPLIER_BUSINESS_NAME_FALLBACK_ATTR = 'data-zweb-supplier-business-name-fallback';
   const SUPPLIER_BUSINESS_NAME_LOADING_ATTR = 'data-zweb-business-name-loading';
   const DOCUMENT_NEGATIVE_STOCK_GUARD_STORAGE_KEY = 'zwebDocumentNegativeStockGuardExpiresAt';
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_OWNER_STORAGE_KEY = 'zwebDocumentNegativeStockGuardOwner';
+  const DOCUMENT_NEGATIVE_STOCK_GUARD_BROWSER_ID_STORAGE_KEY = 'zwebDocumentNegativeStockGuardBrowserId';
   const DOCUMENT_NEGATIVE_STOCK_CONFIGURATION_STORAGE_KEY = 'zwebDocumentNegativeStockConfigurationPayload';
   const DOCUMENT_NEGATIVE_STOCK_FORCE_DISABLE_STORAGE_KEY = 'zwebDocumentNegativeStockForceDisablePending';
   const DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_ID = 'zweb-document-negative-stock-native-toast-clone';
   const DOCUMENT_NEGATIVE_STOCK_NATIVE_TOAST_STYLE_ID = 'zweb-document-negative-stock-native-toast-style';
+  const DOCUMENT_NEGATIVE_STOCK_REMOTE_LOCK_STYLE_ID = 'zweb-document-negative-stock-remote-lock-style';
+  const DOCUMENT_NEGATIVE_STOCK_REMOTE_LOCK_ATTR = 'data-zweb-negative-stock-remote-lock';
   const DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID = 'zweb-document-negative-stock-guard-modal';
   const DOCUMENT_NEGATIVE_STOCK_GUARD_BACKDROP_ID = 'zweb-document-negative-stock-guard-backdrop';
   const DOCUMENT_NEGATIVE_STOCK_GUARD_REMAINING_ID = 'zweb-document-negative-stock-guard-remaining';
@@ -196,6 +206,9 @@
   const FISCAL_GET_CHECKOUT_CURRENT_USER_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-checkout-current-user';
   const FISCAL_GET_CHECKOUT_CURRENT_MOVIMENTATION_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-checkout-current-movimentation';
   const NFE_GET_DETAILED_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-detailed-nfe';
+  const NFE_POST_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.post-nfe';
+  const NFE_PUT_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.put-nfe';
+  const NFE_TRANSMIT_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.transmit-nfe';
   const NFE_GET_DANFE_URL_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.get-danfe-url';
   const NFE_PUT_XML_API_URL = 'https://api.zweb.com.br/rpc/v2/fiscal.put-xml';
   const NFE_DOCUMENT_MODEL = 55;
@@ -207,7 +220,7 @@
   const XML_BRIDGE_SCRIPT_ID = 'zweb-xml-download-page-bridge';
   const XML_CONTENT_SOURCE = 'zweb-xml-content-script';
   const XML_BRIDGE_SOURCE = 'zweb-xml-page-bridge';
-  const XML_BRIDGE_VERSION = '20260612-2';
+  const XML_BRIDGE_VERSION = '20260701-1';
   const KNOWN_NFE_ACTION_ITEMS = [
     'Enviar XML por e-mail',
     'Cancelar',
@@ -244,6 +257,10 @@
         batchEnabled: true,
         xmlDownloadEnabled: true,
         actionMenuCustomizeEnabled: true,
+        nfeCloneAssistEnabled: true,
+        nfeCloneBlockEnabled: false,
+        nfceCloneAssistEnabled: true,
+        nfceCloneBlockEnabled: true,
         nfeCashSaleBoletoGuardEnabled: true,
         commissionReturnCheckPromptEnabled: true
       };
@@ -273,6 +290,7 @@
   let LAST_NFE_RETURN_SIGNATURE = '';
   let NFE_RETURN_SYNC_TIMER = 0;
   let FEATURE_UI_REFRESH_TIMER = 0;
+  let FISCAL_CLONE_DAV_CACHE = null;
   let PRODUCT_CODE_RANGE_STATE = {
     active: false,
     enabled: false,
@@ -321,6 +339,7 @@
   let NFE_BATCH_DOWNLOAD_INTERNAL_CLICK = false;
   let NFCE_CANCEL_REASON_RUNNING = false;
   let FISCAL_CLONE_CONFIRM_PENDING = null;
+  let FISCAL_CLONE_AFTER_CANCEL_PENDING = null;
   let FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = false;
   let DOCUMENT_NEGATIVE_STOCK_GUARD_STATE = {
     expiresAt: 0,
@@ -328,7 +347,8 @@
     warningShownFor: 0,
     disabling: false,
     apiDisabling: false,
-    closingModal: false
+    closingModal: false,
+    lastUserToggleAt: 0
   };
   let DOCUMENT_NEGATIVE_STOCK_GUARD_HEARTBEAT_TIMER = 0;
   let DOCUMENT_NEGATIVE_STOCK_GUARD_SERVER_CHECK_RUNNING = false;
@@ -422,7 +442,8 @@
   }
 
   function isCloneActionBlockRoute() {
-    // Clonar voltou a ser liberado em DAV/NF-e para o fluxo assistido de cancelamento.
+    if (isTargetNfeRoute()) return isFeatureEnabled('nfeCloneBlockEnabled');
+    if (isTargetNfceListRoute()) return isFeatureEnabled('nfceCloneBlockEnabled');
     return false;
   }
 
@@ -483,6 +504,23 @@
   function isTargetNfceListRoute() {
     const href = (location.href || '').toLowerCase();
     return href.indexOf(TARGET_NFCE_ROUTE) !== -1;
+  }
+
+  function hasVisibleFiscalAccess() {
+    if (isTargetNfeRoute() || isTargetNfceRoute() || isTargetPdvRoute()) {
+      return true;
+    }
+
+    const candidates = Array.from(document.querySelectorAll('a, button, span, div'));
+    return candidates.some((node) => {
+      if (!node || !node.isConnected || !isVisible(node)) return false;
+      const href = String(node.getAttribute && (node.getAttribute('href') || node.getAttribute('data-href')) || '').toLowerCase();
+      if (href.indexOf('#/fiscal') !== -1 || href.indexOf('/fiscal') !== -1) {
+        return true;
+      }
+      const text = normalizeText(node.innerText || node.textContent || '');
+      return text === 'fiscal';
+    });
   }
 
   function isTargetClientEditRoute() {
@@ -3584,6 +3622,7 @@
         responseText: data.responseText || '',
         status: data.status || 0
       });
+      handleFiscalCloneAfterCancelLog(data);
       return;
     }
 
@@ -3713,15 +3752,95 @@
     return totalSeconds === 1 ? '1 segundo' : totalSeconds + ' segundos';
   }
 
+  function createDocumentNegativeStockBrowserId() {
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+      }
+    } catch (error) {}
+    return 'browser-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
+
+  function getDocumentNegativeStockBrowserId() {
+    try {
+      if (!window.localStorage) return '';
+      let value = String(window.localStorage.getItem(DOCUMENT_NEGATIVE_STOCK_GUARD_BROWSER_ID_STORAGE_KEY) || '').trim();
+      if (!value) {
+        value = createDocumentNegativeStockBrowserId();
+        window.localStorage.setItem(DOCUMENT_NEGATIVE_STOCK_GUARD_BROWSER_ID_STORAGE_KEY, value);
+      }
+      return value;
+    } catch (error) {
+      return '';
+    }
+  }
+
+  function readDocumentNegativeStockGuardOwner() {
+    try {
+      const owner = parseJson(window.localStorage && window.localStorage.getItem(DOCUMENT_NEGATIVE_STOCK_GUARD_OWNER_STORAGE_KEY));
+      if (!owner || typeof owner !== 'object') return null;
+      const browserId = String(owner.browserId || '').trim();
+      const expiresAt = Number(owner.expiresAt) || 0;
+      if (!browserId || !expiresAt) return null;
+      return {
+        browserId,
+        openedAt: Number(owner.openedAt) || 0,
+        expiresAt
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function writeDocumentNegativeStockGuardOwner(expiresAt) {
+    const value = Number(expiresAt) || 0;
+    const browserId = getDocumentNegativeStockBrowserId();
+    if (!value || !browserId) return null;
+
+    const previous = readDocumentNegativeStockGuardOwner();
+    const owner = {
+      browserId,
+      openedAt: previous && previous.browserId === browserId && previous.openedAt ? previous.openedAt : Date.now(),
+      expiresAt: value
+    };
+
+    try {
+      window.localStorage && window.localStorage.setItem(DOCUMENT_NEGATIVE_STOCK_GUARD_OWNER_STORAGE_KEY, JSON.stringify(owner));
+    } catch (error) {}
+    return owner;
+  }
+
+  function clearDocumentNegativeStockGuardOwner() {
+    try {
+      window.localStorage && window.localStorage.removeItem(DOCUMENT_NEGATIVE_STOCK_GUARD_OWNER_STORAGE_KEY);
+    } catch (error) {}
+  }
+
+  function isDocumentNegativeStockGuardLocalOwner() {
+    const owner = readDocumentNegativeStockGuardOwner();
+    const browserId = getDocumentNegativeStockBrowserId();
+    return !!(owner && browserId && owner.browserId === browserId);
+  }
+
+  function claimDocumentNegativeStockGuardLocalOwner(expiresAt) {
+    const value = Number(expiresAt) || 0;
+    if (!value || value <= Date.now()) return false;
+    writeDocumentNegativeStockGuardOwner(value);
+    writeDocumentNegativeStockGuardExpiresAt(value);
+    return true;
+  }
+
   function scheduleDocumentNegativeStockBackgroundDisable(expiresAt) {
     const value = Number(expiresAt) || 0;
     if (!value || value <= Date.now()) return;
+    if (!isDocumentNegativeStockGuardLocalOwner()) return;
 
     try {
       sendRuntimeMessage({
         type: 'document-negative-stock-schedule-disable',
         token: getZwebToken(),
-        expiresAt: value
+        expiresAt: value,
+        ownerBrowserId: getDocumentNegativeStockBrowserId()
       }).catch(() => {});
     } catch (error) {}
   }
@@ -3978,6 +4097,11 @@
 
   function ensureDocumentNegativeStockGuardStartedFromStoredConfiguration() {
     if (!isDocumentNegativeStockStoredConfigurationEnabled()) return false;
+    if (!isDocumentNegativeStockGuardLocalOwner()) {
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockBackgroundDisable();
+      return false;
+    }
 
     const nowAt = Date.now();
     const expiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
@@ -4012,15 +4136,24 @@
       if (emitter.isAllowedNegativeStock === true) {
         const detectedAt = Date.now();
         const currentExpiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
-        if (!currentExpiresAt || currentExpiresAt <= detectedAt) {
+        if (isDocumentNegativeStockGuardLocalOwner() && currentExpiresAt > detectedAt) {
+          DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt = currentExpiresAt;
+        } else if (isDocumentNegativeStockGuardLocalOwner() && !currentExpiresAt) {
           writeDocumentNegativeStockGuardExpiresAt(detectedAt + getDocumentNegativeStockGuardDurationMs());
           DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = 0;
+        } else if (isDocumentNegativeStockGuardLocalOwner()) {
+          syncDocumentNegativeStockGuard();
+          return;
+        } else if (!isDocumentNegativeStockGuardLocalOwner()) {
+          writeDocumentNegativeStockGuardExpiresAt(0);
+          clearDocumentNegativeStockBackgroundDisable();
         }
         syncDocumentNegativeStockGuard();
         return;
       }
 
       updateDocumentNegativeStockStoredConfigurationEnabled(false);
+      clearDocumentNegativeStockGuardOwner();
     } catch (error) {
       // Sem token ou sem resposta da Zweb: o heartbeat tenta novamente no proximo ciclo.
     } finally {
@@ -4035,14 +4168,22 @@
     if (data.enabled === true) {
       const nowAt = Date.now();
       const currentExpiresAt = readDocumentNegativeStockGuardExpiresAt();
-      if (!currentExpiresAt || currentExpiresAt <= nowAt) {
-        writeDocumentNegativeStockGuardExpiresAt(nowAt + getDocumentNegativeStockGuardDurationMs());
+      const recentlyToggledHere = DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.lastUserToggleAt
+        && nowAt - DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.lastUserToggleAt < 6000;
+      if (recentlyToggledHere || isDocumentNegativeStockGuardLocalOwner()) {
+        if (!currentExpiresAt || currentExpiresAt <= nowAt) {
+          claimDocumentNegativeStockGuardLocalOwner(nowAt + getDocumentNegativeStockGuardDurationMs());
+        }
+      } else {
+        writeDocumentNegativeStockGuardExpiresAt(0);
+        clearDocumentNegativeStockBackgroundDisable();
       }
       scheduleDocumentNegativeStockGuard(250);
       return;
     }
 
     clearDocumentNegativeStockBackgroundDisable();
+    clearDocumentNegativeStockGuardOwner();
     resetDocumentNegativeStockGuard(true);
   }
 
@@ -4094,6 +4235,28 @@
     if (ariaChecked === 'false') return false;
 
     return !!(controls.row && controls.row.querySelector('.z-switch-checked, .v-selection-control--dirty[aria-checked="true"]'));
+  }
+
+  function ensureDocumentNegativeStockRemoteLockStyle() {
+    const style = document.getElementById(DOCUMENT_NEGATIVE_STOCK_REMOTE_LOCK_STYLE_ID);
+    if (style) style.remove();
+  }
+
+  function isDocumentNegativeStockRemoteLocked(controls) {
+    return false;
+  }
+
+  function applyDocumentNegativeStockRemoteLock(controls) {
+    const current = controls || getDocumentNegativeStockGuardControls();
+    const row = current && current.row;
+    ensureDocumentNegativeStockRemoteLockStyle();
+    if (row) {
+      row.removeAttribute(DOCUMENT_NEGATIVE_STOCK_REMOTE_LOCK_ATTR);
+      row.removeAttribute('title');
+    }
+    if (current && current.input) current.input.removeAttribute('aria-disabled');
+
+    return false;
   }
 
   function clickDocumentNegativeStockGuardSwitch(controls) {
@@ -4171,7 +4334,7 @@
   function focusDocumentNegativeStockGuardModal() {
     const modal = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID);
     if (!modal) return;
-    const keepButton = modal.querySelector('[data-document-negative-stock-keep]');
+    const keepButton = modal.querySelector('[data-document-negative-stock-keep]:not([disabled])');
     const focusTarget = keepButton || modal;
     try {
       focusTarget.focus({ preventScroll: true });
@@ -4208,6 +4371,7 @@
 
   function handleDocumentNegativeStockGuardBeforeUnload(event) {
     if (!isDocumentNegativeStockGuardModalActive()) return;
+    if (!isDocumentNegativeStockGuardLocalOwner()) return;
     const message = 'A liberação de estoque está pendente. Use Manter ou aguarde a desativação automática.';
     event.preventDefault();
     event.returnValue = message;
@@ -4222,11 +4386,22 @@
     DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.apiDisabling = false;
     DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.closingModal = false;
     closeDocumentNegativeStockGuardModal();
-    if (clearStorage) writeDocumentNegativeStockGuardExpiresAt(0);
+    if (clearStorage) {
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockGuardOwner();
+    }
   }
 
   async function disableDocumentNegativeStockGuardByApi(trigger) {
     if (DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.apiDisabling) return;
+    const isManualTrigger = trigger === 'manual-current' || trigger === 'manual-hidden';
+    if (!isManualTrigger && !isDocumentNegativeStockGuardLocalOwner()) {
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockBackgroundDisable();
+      applyDocumentNegativeStockRemoteLock();
+      closeDocumentNegativeStockGuardModal();
+      return;
+    }
     writeDocumentNegativeStockForceDisablePending(true);
 
     const payload = await getDocumentNegativeStockConfigurationPayloadForDisable();
@@ -4337,8 +4512,8 @@
         '    </div>',
         '    <div class="modal-body pb-4" style="padding-top:8px;">',
         '      <div data-document-negative-stock-details class="rounded p-4" style="display:grid;gap:8px;font-size:13px;line-height:1.5;">',
-        '        <div>O estoque está <strong style="color:#dc3545;">aberto</strong> a cinco minutos, deseja fecha-lo?</div>',
-        '        <div style="opacity:.78;">Fechamento automático em <strong id="' + DOCUMENT_NEGATIVE_STOCK_GUARD_REMAINING_ID + '">15 segundos</strong>. Para manter por mais <strong data-document-negative-stock-keep-duration>5 minutos</strong>, pressione <strong>Manter</strong>.</div>',
+        '        <div data-document-negative-stock-primary-text>O estoque está <strong style="color:#dc3545;">aberto</strong> a cinco minutos, deseja fecha-lo?</div>',
+        '        <div data-document-negative-stock-secondary-text style="opacity:.78;">Fechamento automático em <strong id="' + DOCUMENT_NEGATIVE_STOCK_GUARD_REMAINING_ID + '">15 segundos</strong>. Para manter por mais <strong data-document-negative-stock-keep-duration>5 minutos</strong>, pressione <strong>Manter</strong>.</div>',
       '      </div>',
         '    </div>',
         '    <div class="modal-footer pt-0">',
@@ -4355,6 +4530,11 @@
         if (!target) return;
         event.preventDefault();
         event.stopPropagation();
+        if (!isDocumentNegativeStockGuardLocalOwner()) {
+          event.stopImmediatePropagation();
+          updateDocumentNegativeStockGuardModalMode(false);
+          return;
+        }
         if (target.hasAttribute('data-document-negative-stock-keep')) {
           keepDocumentNegativeStockGuardEnabled();
           return;
@@ -4367,6 +4547,48 @@
     applyDocumentNegativeStockGuardModalTheme(document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID));
   }
 
+  function updateDocumentNegativeStockGuardModalMode(isOwner) {
+    const modal = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID);
+    if (!modal) return;
+
+    const primary = modal.querySelector('[data-document-negative-stock-primary-text]');
+    const secondary = modal.querySelector('[data-document-negative-stock-secondary-text]');
+    const disableButton = modal.querySelector('[data-document-negative-stock-disable]');
+    const keepButton = modal.querySelector('[data-document-negative-stock-keep]');
+    const keepDuration = modal.querySelector('[data-document-negative-stock-keep-duration]');
+
+    if (isOwner) {
+      if (primary) primary.innerHTML = 'O estoque está <strong style="color:#dc3545;">aberto</strong> a cinco minutos, deseja fecha-lo?';
+      if (secondary) {
+        secondary.innerHTML = 'Fechamento automático em <strong id="' + DOCUMENT_NEGATIVE_STOCK_GUARD_REMAINING_ID + '">15 segundos</strong>. Para manter por mais <strong data-document-negative-stock-keep-duration>5 minutos</strong>, pressione <strong>Manter</strong>.';
+      }
+      const nextKeepDuration = modal.querySelector('[data-document-negative-stock-keep-duration]');
+      if (nextKeepDuration) nextKeepDuration.textContent = formatDocumentNegativeStockDurationLabel(getDocumentNegativeStockGuardDurationMs());
+      [disableButton, keepButton].forEach((button) => {
+        if (!button) return;
+        button.disabled = false;
+        button.removeAttribute('aria-disabled');
+        button.style.opacity = '';
+        button.style.cursor = '';
+      });
+      updateDocumentNegativeStockGuardModalRemaining();
+      return;
+    }
+
+    if (primary) primary.innerHTML = 'O estoque está <strong style="color:#dc3545;">aberto</strong> por outro navegador.';
+    if (secondary) {
+      secondary.innerHTML = 'Este aviso é apenas informativo nesta máquina. Somente o navegador que abriu o estoque pode manter, fechar ou disparar o fechamento automático.';
+    }
+    if (keepDuration) keepDuration.textContent = formatDocumentNegativeStockDurationLabel(getDocumentNegativeStockGuardDurationMs());
+    [disableButton, keepButton].forEach((button) => {
+      if (!button) return;
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+      button.style.opacity = '.55';
+      button.style.cursor = 'not-allowed';
+    });
+  }
+
   function updateDocumentNegativeStockGuardModalRemaining() {
     const remaining = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_REMAINING_ID);
     if (!remaining) return;
@@ -4376,11 +4598,16 @@
 
   function showDocumentNegativeStockGuardWarning() {
     if (DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.apiDisabling || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.closingModal) return;
+    if (!isDocumentNegativeStockGuardLocalOwner()) {
+      closeDocumentNegativeStockGuardModal();
+      return;
+    }
     ensureDocumentNegativeStockGuardModal();
     const modal = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_MODAL_ID);
     const backdrop = document.getElementById(DOCUMENT_NEGATIVE_STOCK_GUARD_BACKDROP_ID);
     if (!modal || !backdrop) return;
 
+    updateDocumentNegativeStockGuardModalMode(true);
     const keepDuration = modal.querySelector('[data-document-negative-stock-keep-duration]');
     if (keepDuration) {
       keepDuration.textContent = formatDocumentNegativeStockDurationLabel(getDocumentNegativeStockGuardDurationMs());
@@ -4401,6 +4628,13 @@
   }
 
   function keepDocumentNegativeStockGuardEnabled() {
+    if (!isDocumentNegativeStockGuardLocalOwner()) {
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockBackgroundDisable();
+      applyDocumentNegativeStockRemoteLock();
+      closeDocumentNegativeStockGuardModal();
+      return;
+    }
     const controls = getDocumentNegativeStockGuardControls();
     if (isTargetDocumentConfigurationRoute() && !isDocumentNegativeStockGuardSwitchOn(controls)) {
       resetDocumentNegativeStockGuard(true);
@@ -4410,7 +4644,7 @@
     const expiresAt = Date.now() + getDocumentNegativeStockGuardDurationMs();
     DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.warningShownFor = 0;
     DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling = false;
-    writeDocumentNegativeStockGuardExpiresAt(expiresAt);
+    claimDocumentNegativeStockGuardLocalOwner(expiresAt);
     closeDocumentNegativeStockGuardModal();
     scheduleDocumentNegativeStockGuard(Math.max(250, expiresAt - Date.now() - getDocumentNegativeStockGuardWarningMs()));
   }
@@ -4457,6 +4691,14 @@
   function disableDocumentNegativeStockGuardFromConfigPageRequest(sendResponse) {
     if (!isTargetDocumentConfigurationRoute()) {
       sendResponse({ ok: false, found: false, reason: 'wrong_route', href: location.href });
+      return;
+    }
+
+    if (!isDocumentNegativeStockGuardLocalOwner()) {
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockBackgroundDisable();
+      applyDocumentNegativeStockRemoteLock();
+      sendResponse({ ok: false, found: true, reason: 'remote_locked', href: location.href });
       return;
     }
 
@@ -4507,6 +4749,16 @@
   }
 
   function verifyDocumentNegativeStockGuardDisabled(attempt, persistWithApi, trigger) {
+    const isManualTrigger = trigger === 'manual-current' || trigger === 'manual-hidden';
+    if (!isManualTrigger && !isDocumentNegativeStockGuardLocalOwner()) {
+      DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.disabling = false;
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockBackgroundDisable();
+      applyDocumentNegativeStockRemoteLock();
+      closeDocumentNegativeStockGuardModal();
+      return;
+    }
+
     const controls = getDocumentNegativeStockGuardControls();
     if (!controls || !isDocumentNegativeStockGuardSwitchOn(controls)) {
       if (persistWithApi && readDocumentNegativeStockConfigurationPayload()) {
@@ -4531,6 +4783,15 @@
   }
 
   function disableDocumentNegativeStockGuardSwitch(trigger) {
+    const isManualTrigger = trigger === 'manual-current' || trigger === 'manual-hidden';
+    if (!isManualTrigger && !isDocumentNegativeStockGuardLocalOwner()) {
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockBackgroundDisable();
+      applyDocumentNegativeStockRemoteLock();
+      closeDocumentNegativeStockGuardModal();
+      return;
+    }
+
     const controls = getDocumentNegativeStockGuardControls();
     if (!isTargetDocumentConfigurationRoute() || !controls) {
       disableDocumentNegativeStockGuardByApi(trigger);
@@ -4553,6 +4814,14 @@
 
   function syncDocumentNegativeStockGuardByTimer() {
     const nowAt = Date.now();
+    if (!isDocumentNegativeStockGuardLocalOwner()) {
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockBackgroundDisable();
+      applyDocumentNegativeStockRemoteLock();
+      closeDocumentNegativeStockGuardModal();
+      return false;
+    }
+
     let expiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
     if (!expiresAt) {
       if (!ensureDocumentNegativeStockGuardStartedFromStoredConfiguration()) {
@@ -4599,14 +4868,34 @@
       return;
     }
 
+    applyDocumentNegativeStockRemoteLock(controls);
+
     if (!isDocumentNegativeStockGuardSwitchOn(controls)) {
       writeDocumentNegativeStockForceDisablePending(false);
       if (isDocumentNegativeStockStoredConfigurationEnabled()) {
-        disableDocumentNegativeStockGuardByApi();
+        disableDocumentNegativeStockGuardByApi('manual-current');
         return;
       }
       updateDocumentNegativeStockStoredConfigurationEnabled(false);
+      clearDocumentNegativeStockGuardOwner();
       resetDocumentNegativeStockGuard(true);
+      return;
+    }
+
+    const nowAt = Date.now();
+    const recentlyToggledHere = DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.lastUserToggleAt
+      && nowAt - DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.lastUserToggleAt < 6000;
+    if (!isDocumentNegativeStockGuardLocalOwner() && recentlyToggledHere) {
+      claimDocumentNegativeStockGuardLocalOwner(nowAt + getDocumentNegativeStockGuardDurationMs());
+      applyDocumentNegativeStockRemoteLock(controls);
+    }
+
+    if (!isDocumentNegativeStockGuardLocalOwner()) {
+      writeDocumentNegativeStockGuardExpiresAt(0);
+      clearDocumentNegativeStockBackgroundDisable();
+      applyDocumentNegativeStockRemoteLock(controls);
+      closeDocumentNegativeStockGuardModal();
+      scheduleDocumentNegativeStockGuard(5000);
       return;
     }
 
@@ -4621,7 +4910,6 @@
       return;
     }
 
-    const nowAt = Date.now();
     const durationMs = getDocumentNegativeStockGuardDurationMs();
     const warningMs = getDocumentNegativeStockGuardWarningMs();
     let expiresAt = readDocumentNegativeStockGuardExpiresAt() || DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.expiresAt || 0;
@@ -4657,6 +4945,10 @@
     const row = findDocumentNegativeStockGuardRow();
     if (!target || !row || !row.contains(target)) return;
 
+    const controls = getDocumentNegativeStockGuardControls();
+    applyDocumentNegativeStockRemoteLock(controls);
+
+    DOCUMENT_NEGATIVE_STOCK_GUARD_STATE.lastUserToggleAt = Date.now();
     window.setTimeout(syncDocumentNegativeStockGuard, 120);
     window.setTimeout(syncDocumentNegativeStockGuard, 900);
   }
@@ -4681,34 +4973,21 @@
     if (!document.documentElement) return;
     if (document.documentElement.dataset.zwebExtensionModalBridgeInstalled === EXTENSION_MODAL_BRIDGE_VERSION) return;
 
+    // Normally installed by the MAIN-world content script declared in the
+    // manifest. Reload the same external file as a CSP-safe fallback.
+    const runtime = getRuntimeApi();
+    const parent = document.head || document.documentElement;
+    if (!runtime || typeof runtime.getURL !== 'function' || !parent) return;
+
+    const existing = document.getElementById(XML_BRIDGE_SCRIPT_ID);
+    if (existing) existing.remove();
+
     const script = document.createElement('script');
-    script.textContent = '(' + function(bridgeSource, bridgeVersion) {
-      if (document.documentElement.dataset.zwebExtensionModalBridgeInstalled === bridgeVersion) return;
-      document.documentElement.dataset.zwebExtensionModalBridgeInstalled = bridgeVersion;
-
-      window.addEventListener('click', function(event) {
-        const target = event && event.target && event.target.closest
-          ? event.target.closest('[data-nfe-boleto-warning-close], [data-nfe-boleto-warning-cancel], [data-nfe-boleto-warning-continue], [data-commission-confirm-close], [data-commission-confirm-no], [data-commission-confirm-yes]')
-          : null;
-        if (!target) return;
-
-        let type = '';
-        if (target.hasAttribute('data-nfe-boleto-warning-close')) type = 'nfe-warning-close';
-        else if (target.hasAttribute('data-nfe-boleto-warning-cancel')) type = 'nfe-warning-cancel';
-        else if (target.hasAttribute('data-nfe-boleto-warning-continue')) type = 'nfe-warning-continue';
-        else if (target.hasAttribute('data-commission-confirm-close')) type = 'commission-confirm-close';
-        else if (target.hasAttribute('data-commission-confirm-no')) type = 'commission-confirm-no';
-        else if (target.hasAttribute('data-commission-confirm-yes')) type = 'commission-confirm-yes';
-        if (!type) return;
-
-        window.postMessage({
-          source: bridgeSource,
-          type: type
-        }, '*');
-      }, true);
-    } + ')(' + JSON.stringify(EXTENSION_MODAL_BRIDGE_SOURCE) + ',' + JSON.stringify(EXTENSION_MODAL_BRIDGE_VERSION) + ');';
-    (document.head || document.documentElement).appendChild(script);
-    script.remove();
+    script.id = XML_BRIDGE_SCRIPT_ID;
+    script.dataset.bridgeVersion = XML_BRIDGE_VERSION;
+    script.src = runtime.getURL('nucleo/page-bridge.js') + '?v=' + encodeURIComponent(XML_BRIDGE_VERSION);
+    script.async = false;
+    parent.appendChild(script);
   }
 
   function ensureExtensionModalBridgeListener() {
@@ -8974,6 +9253,346 @@
     }
   }
 
+  function createNfePanelActionListItem(id, label, dataAttribute) {
+    const listItem = document.createElement('li');
+    listItem.className = 'has-submenu';
+    listItem.innerHTML = [
+      '<a id="' + id + '" role="button" class="dropdown-item flex-container" ' + dataAttribute + '="true">',
+      '  <span class="label-item">' + escapeHtml(label) + '</span>',
+      '</a>'
+    ].join('');
+    return listItem;
+  }
+
+  function insertNfePanelActionAfter(menu, listItem, referenceAction) {
+    const referenceItem = referenceAction && referenceAction.closest ? (referenceAction.closest('li') || referenceAction) : null;
+    if (referenceItem && referenceItem.parentElement === menu) {
+      referenceItem.insertAdjacentElement('afterend', listItem);
+      return;
+    }
+    menu.appendChild(listItem);
+  }
+
+  function getNfePanelActionEntry(action) {
+    const contextEntry = getFiscalCloneConfirmEntry(action);
+    if (contextEntry && (contextEntry.id || contextEntry.documentNumber)) return contextEntry;
+
+    const recent = getRecentNfceCancellationReasonContextEntry();
+    if (recent && (recent.id || recent.documentNumber)) return recent;
+
+    const selected = getSelectedNfeRows();
+    if (selected.length) return selected[selected.length - 1];
+
+    const activeRow = findActiveNfeActionRow();
+    return activeRow ? buildNfeRowSelectionEntry(activeRow, getNfeHeaderMap()) : null;
+  }
+
+  function getNfeTransmitPayloadFromDetail(detail) {
+    const data = unwrapZwebPayload(detail);
+    if (!data || typeof data !== 'object') {
+      throw new Error('A Zweb não retornou os detalhes da NF-e para transmissão.');
+    }
+    const payload = data.dados && typeof data.dados === 'object' ? data.dados : data;
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('A Zweb não retornou os dados da NF-e para transmissão.');
+    }
+    const cloned = JSON.parse(JSON.stringify(payload));
+    if (!cloned.id && data.id) cloned.id = data.id;
+    return cloned;
+  }
+
+  async function resolveNfeTransmitCurrentUserId() {
+    try {
+      const payload = await postZwebJson(FISCAL_GET_CHECKOUT_CURRENT_USER_API_URL, { active: true });
+      const data = unwrapZwebPayload(payload);
+      const candidate = getNestedValue(data, [
+        'id',
+        'user.id',
+        'profile.id',
+        'seller.id',
+        'checkout.user.id',
+        'checkout.seller.id'
+      ]);
+      const id = Number(candidate);
+      return Number.isFinite(id) && id > 0 ? id : null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async function normalizeNfeTransmitPayloadSeller(payload) {
+    if (!payload || typeof payload !== 'object') return payload;
+    if (payload.seller && typeof payload.seller === 'object' && !payload.seller.id) {
+      const userId = await resolveNfeTransmitCurrentUserId();
+      if (userId) payload.seller.id = userId;
+    }
+    return payload;
+  }
+
+  function normalizeNfeTransmitPhoneFields(target, depth, parentKey) {
+    if (!target || typeof target !== 'object' || depth > 8) return;
+    Object.keys(target).forEach((key) => {
+      const value = target[key];
+      const isPhoneContainer = /^(fone|phone|telefone|celular)$/i.test(String(parentKey || ''));
+      const isPhoneKey = /^(fone|phone|telefone|celular)$/i.test(String(key || ''));
+      const isPhoneNumberKey = isPhoneContainer && /^(number|numero|número)$/i.test(String(key || ''));
+      if ((isPhoneKey || isPhoneNumberKey) && typeof value === 'string') {
+        const digits = value.replace(/\D+/g, '');
+        if (digits) target[key] = digits;
+        return;
+      }
+      if (value && typeof value === 'object') {
+        normalizeNfeTransmitPhoneFields(value, depth + 1, key);
+      }
+    });
+  }
+
+  function getNfeTransmitResponseMessage(response) {
+    const data = unwrapZwebPayload(response) || response || {};
+    return String(
+      data.success_message
+      || data.warning_message
+      || data.message
+      || data.errorMessage
+      || data.error_message
+      || ''
+    ).trim();
+  }
+
+  function getNfeTransmitDanfeUrl(response) {
+    const data = unwrapZwebPayload(response) || response || {};
+    return String(
+      data['danfe-url']
+      || data.danfeUrl
+      || data.danfeURL
+      || data.url
+      || ''
+    ).trim();
+  }
+
+  function showNfeTransmitNativeNotice(message, kind) {
+    if (!document.body) return null;
+    const theme = getExtensionOverlayTheme(document.body);
+    let notice = document.getElementById(NFE_TRANSMIT_NOTICE_ID);
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = NFE_TRANSMIT_NOTICE_ID;
+      notice.setAttribute('role', 'status');
+      notice.style.cssText = [
+        'position:fixed',
+        'left:50%',
+        'top:50%',
+        'transform:translate(-50%, -46%) scale(.985)',
+        'z-index:2147483646',
+        'min-width:min(420px, calc(100vw - 32px))',
+        'max-width:min(520px, calc(100vw - 32px))',
+        'opacity:0',
+        'transition:opacity .18s ease, transform .18s ease',
+        'pointer-events:none'
+      ].join(';');
+      notice.innerHTML = [
+        '<div data-zweb-nfe-transmit-card>',
+        '  <div data-zweb-nfe-transmit-icon></div>',
+        '  <div style="display:grid;gap:4px;min-width:0;">',
+        '    <div data-zweb-nfe-transmit-title style="font-weight:600;font-size:14px;"></div>',
+        '    <div data-zweb-nfe-transmit-message style="font-size:13px;line-height:1.45;opacity:.86;"></div>',
+        '  </div>',
+        '</div>'
+      ].join('');
+      document.body.appendChild(notice);
+    }
+
+    const isError = kind === 'error';
+    const isSuccess = kind === 'success';
+    const title = isError ? 'Falha ao transmitir NF-e' : (isSuccess ? 'NF-e transmitida' : 'Transmitindo NF-e');
+    const iconText = isError ? '!' : (isSuccess ? '✓' : '↻');
+    const accent = isError ? '#dc3545' : (isSuccess ? '#198754' : '#0d6efd');
+    const card = notice.querySelector('[data-zweb-nfe-transmit-card]');
+    const icon = notice.querySelector('[data-zweb-nfe-transmit-icon]');
+    const titleNode = notice.querySelector('[data-zweb-nfe-transmit-title]');
+    const messageNode = notice.querySelector('[data-zweb-nfe-transmit-message]');
+
+    if (card) {
+      card.style.cssText = [
+        'display:grid',
+        'grid-template-columns:34px minmax(0, 1fr)',
+        'gap:12px',
+        'align-items:center',
+        'padding:16px 18px',
+        'border-radius:12px',
+        'border:' + theme.cardBorder,
+        'background:' + theme.cardBackground,
+        'color:' + theme.bodyColor,
+        'box-shadow:' + (theme.isDark ? '0 22px 52px rgba(0,0,0,.45)' : '0 22px 52px rgba(12,30,55,.18)')
+      ].join(';');
+    }
+    if (icon) {
+      icon.textContent = iconText;
+      icon.style.cssText = [
+        'width:34px',
+        'height:34px',
+        'display:grid',
+        'place-items:center',
+        'border-radius:50%',
+        'font-weight:700',
+        'font-size:' + (isSuccess ? '18px' : '17px'),
+        'color:#fff',
+        'background:' + accent,
+        !isError && !isSuccess ? 'animation:zweb-nfe-transmit-spin .9s linear infinite' : ''
+      ].filter(Boolean).join(';');
+    }
+    if (!document.getElementById('zweb-nfe-transmit-notice-style')) {
+      const style = document.createElement('style');
+      style.id = 'zweb-nfe-transmit-notice-style';
+      style.textContent = [
+        '@keyframes zweb-nfe-transmit-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}'
+      ].join('');
+      document.documentElement.appendChild(style);
+    }
+    if (titleNode) titleNode.textContent = title;
+    if (messageNode) messageNode.textContent = message || title;
+
+    notice.style.display = 'block';
+    requestAnimationFrame(() => {
+      notice.style.opacity = '1';
+      notice.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+    return notice;
+  }
+
+  function hideNfeTransmitNativeNotice(delayMs) {
+    const notice = document.getElementById(NFE_TRANSMIT_NOTICE_ID);
+    if (!notice) return;
+    window.setTimeout(() => {
+      notice.style.opacity = '0';
+      notice.style.transform = 'translate(-50%, -46%) scale(.985)';
+      window.setTimeout(() => {
+        if (notice && notice.parentElement) notice.remove();
+      }, 220);
+    }, Number(delayMs) || 0);
+  }
+
+  async function transmitNfeByApiFromAction(action) {
+    const entry = getNfePanelActionEntry(action);
+    if (!entry || (!entry.id && !entry.documentNumber)) {
+      throw new Error('Não foi possível identificar a NF-e desta linha para transmissão.');
+    }
+
+    showNfeTransmitNativeNotice('Transmitindo NF-e ' + (entry.documentNumber || entry.id) + '...', '');
+    const detail = await fetchNfeBatchDetail(entry);
+    normalizeNfeTransmitPhoneFields(detail, 0);
+    await postZwebJson(NFE_PUT_API_URL, detail);
+    const payload = await normalizeNfeTransmitPayloadSeller(getNfeTransmitPayloadFromDetail(detail));
+    normalizeNfeTransmitPhoneFields(payload, 0);
+    const response = await postZwebJson(NFE_TRANSMIT_API_URL, payload);
+    const responseData = unwrapZwebPayload(response) || response || {};
+    const message = getNfeTransmitResponseMessage(response);
+    const danfeUrl = getNfeTransmitDanfeUrl(response);
+
+    if (responseData.errorMessage || responseData.error_message || /erro|rejei|falha/i.test(message)) {
+      throw new Error(message || String(responseData.errorMessage || responseData.error_message));
+    }
+
+    showNfeTransmitNativeNotice(message || 'NF-e transmitida com sucesso.', 'success');
+    if (danfeUrl && /^https?:\/\//i.test(danfeUrl)) {
+      window.open(danfeUrl, '_blank');
+    }
+    window.setTimeout(() => {
+      window.location.reload();
+    }, 1100);
+    return response;
+  }
+
+  function handleNfePanelQuickAction(event) {
+    const target = event && event.target && event.target.closest
+      ? event.target.closest('[data-zweb-nfe-clone-cancel-action], [data-zweb-nfe-transmit-action]')
+      : null;
+    if (!target || !isTargetNfeRoute()) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    if (event.type === 'pointerdown') {
+      return false;
+    }
+
+    if (target.hasAttribute('data-zweb-nfe-clone-cancel-action')) {
+      const nativeCloneAction = findNfeActionMenuItem(target.closest('ul, .dropdown-menu, .z-dropdown-menu'), ['Clonar', 'Clonar NF-e'], true);
+      const pending = {
+        trigger: nativeCloneAction || target,
+        cancelAction: findFiscalCancelActionNearClone(target),
+        entry: getNfePanelActionEntry(target),
+        at: Date.now()
+      };
+      startFiscalCloneNfeCancelThenClone(pending, pending.cancelAction).catch(() => {});
+      return false;
+    }
+
+    if (target.hasAttribute('data-zweb-nfe-transmit-action')) {
+      transmitNfeByApiFromAction(target)
+        .catch((error) => {
+          showNfeTransmitNativeNotice(error && error.message ? error.message : 'Falha ao transmitir NF-e.', 'error');
+          hideNfeTransmitNativeNotice(5200);
+        });
+      return false;
+    }
+
+    return false;
+  }
+
+  function clearNfeCloneConfirmStateIfCancelAction(target) {
+    if (!target || !target.closest || !isTargetNfeRoute()) return;
+    const action = target.closest('a, button, li, .dropdown-item, .has-submenu, .menu-item');
+    if (!action) return;
+    const label = normalizeText(extractActionMenuItemLabel(action) || action.innerText || action.textContent || '');
+    if (label !== 'cancelar') return;
+    FISCAL_CLONE_CONFIRM_PENDING = null;
+    const modal = document.getElementById(FISCAL_CLONE_CONFIRM_MODAL_ID);
+    if (modal && modal.style.display !== 'none') {
+      closeFiscalCloneConfirmModal();
+    }
+  }
+
+  function ensureNfePanelQuickActionItems() {
+    if (!isTargetNfeRoute()) return;
+
+    getOpenNfeActionMenus().forEach((menu) => {
+      const nativeCloneAction = findNfeActionMenuItem(menu, ['Clonar', 'Clonar NF-e'], true);
+      if (nativeCloneAction && !menu.querySelector('#' + NFE_CLONE_CANCEL_ACTION_ID)) {
+        const listItem = createNfePanelActionListItem(
+          NFE_CLONE_CANCEL_ACTION_ID,
+          'Clonar e cancelar NF-e',
+          'data-zweb-nfe-clone-cancel-action'
+        );
+        insertNfePanelActionAfter(menu, listItem, nativeCloneAction);
+      }
+
+      if (nativeCloneAction) {
+        const nativeCloneItem = nativeCloneAction.closest('li') || nativeCloneAction;
+        if (isCloneActionBlockRoute()) {
+          nativeCloneItem.style.display = 'none';
+          nativeCloneItem.setAttribute(CLONE_ACTION_BLOCK_ATTR, 'true');
+        } else {
+          nativeCloneItem.removeAttribute(CLONE_ACTION_BLOCK_ATTR);
+          nativeCloneItem.style.display = '';
+        }
+      }
+
+      const cloneCancelAction = menu.querySelector('#' + NFE_CLONE_CANCEL_ACTION_ID);
+      if (!menu.querySelector('#' + NFE_TRANSMIT_ACTION_ID)) {
+        const listItem = createNfePanelActionListItem(
+          NFE_TRANSMIT_ACTION_ID,
+          'Transmitir NF-e',
+          'data-zweb-nfe-transmit-action'
+        );
+        insertNfePanelActionAfter(menu, listItem, cloneCancelAction || nativeCloneAction);
+      }
+
+      syncActionMenuSeparators(menu);
+    });
+  }
+
   function ensureNfeBatchDownloadActionItems() {
     if (!isTargetNfeRoute() || !isFeatureEnabled('nfeBatchDownloadEnabled')) {
       removeNfeBatchDownloadUi();
@@ -9561,8 +10180,18 @@
     return isTargetNfeRoute() || isTargetNfceListRoute() || isTargetDavCloneBlockRoute();
   }
 
+  function isFiscalCloneAssistEnabledForCurrentRoute() {
+    if (isTargetDavCloneBlockRoute()) return true;
+    if (isCloneActionBlockRoute()) return false;
+    if (isTargetNfeRoute()) return false;
+    if (isTargetNfceListRoute()) return isFeatureEnabled('nfceCloneAssistEnabled');
+    return true;
+  }
+
   function findFiscalCloneActionTrigger(target) {
     if (!target || !target.closest || !isFiscalCloneConfirmRoute()) return null;
+    if (!isFiscalCloneAssistEnabledForCurrentRoute()) return null;
+    if (isTargetDavCloneBlockRoute() && !hasVisibleFiscalAccess()) return null;
 
     let el = target;
     for (let i = 0; i < 7 && el; i += 1, el = el.parentElement) {
@@ -9671,6 +10300,253 @@
     }));
   }
 
+  function runPendingNativeClone(pending) {
+    if (!pending || !pending.trigger || !pending.trigger.isConnected) return false;
+    FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = true;
+    try {
+      if (typeof pending.trigger.click === 'function') {
+        pending.trigger.click();
+      } else {
+        clickLikeUser(pending.trigger);
+      }
+    } finally {
+      setTimeout(() => {
+        FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = false;
+      }, 120);
+    }
+    return true;
+  }
+
+  async function runPendingNativeCloneAfterCancel(pending) {
+    if (runPendingNativeClone(pending)) return true;
+
+    const row = pending && pending.entry && pending.entry.row;
+    if (!row || !row.isConnected) return false;
+
+    const menu = await openFiscalCloneRowContextMenu(row);
+    const cloneAction = findNfeActionMenuItem(menu, ['Clonar', 'Clonar NF-e'], true)
+      || Array.from(document.querySelectorAll('a, button, li')).find((item) => {
+        return isCloneActionLabel(normalizeText(extractActionMenuItemLabel(item) || item.innerText || item.textContent || ''));
+      });
+    if (!cloneAction) return false;
+
+    FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = true;
+    try {
+      activateFiscalMenuAction(cloneAction.matches && cloneAction.matches('li') ? (cloneAction.querySelector('a, button') || cloneAction) : cloneAction, { singleClick: true });
+    } finally {
+      setTimeout(() => {
+        FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = false;
+      }, 120);
+    }
+    return true;
+  }
+
+  function getFiscalCloneLocalDateText() {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+  }
+
+  function isFiscalCloneRootNumberKey(key) {
+    return /^(numero|number|documentNumber|documento|nfeNumber|nfNumber)$/i.test(String(key || ''));
+  }
+
+  function isFiscalCloneRootStatusKey(key) {
+    return /^(status|situacao|situation|statusCode|statusText|cStat|xMotivo)$/i.test(String(key || ''));
+  }
+
+  function isFiscalCloneAuthorizationMetadataKey(key) {
+    return /(chave|accessKey|protocolo|protocol|recibo|receipt|xml|danfe|sefaz|autoriz|authoriz|transmiss|transmit|cancel|evento|event|inutil|cstat|xmotivo|qrcode|qrCode|digest|assinatura|signature)/i.test(String(key || ''));
+  }
+
+  function isFiscalCloneSystemMetadataKey(key) {
+    return /^(createdAt|updatedAt|deletedAt|created_at|updated_at|deleted_at|createdBy|updatedBy|version|hash)$/i.test(String(key || ''));
+  }
+
+  function isFiscalCloneDateKeyForNewDraft(key) {
+    return /(emissao|emission|issueDate|issuedAt|dataEmissao|saida|exitDate|dataSaida)/i.test(String(key || ''));
+  }
+
+  function shouldClearFiscalCloneChildId(parentKey) {
+    return /(item|itens|items|produtoNfe|produtosNfe|duplicata|duplicatas|parcela|parcelas|pagamento|pagamentos|payment|payments|volume|volumes|transporte|transport|fatura|cobranca|cobran)/i.test(String(parentKey || ''));
+  }
+
+  function sanitizeFiscalCloneNfeDraftObject(target, depth, parentKey) {
+    if (!target || typeof target !== 'object' || depth > 8) return;
+    const today = getFiscalCloneLocalDateText();
+
+    Object.keys(target).forEach((key) => {
+      const value = target[key];
+      const keyText = String(key || '');
+
+      if (keyText === 'id') {
+        if (depth === 0 || shouldClearFiscalCloneChildId(parentKey)) {
+          target[key] = null;
+        }
+        return;
+      }
+
+      if (depth <= 1 && isFiscalCloneRootNumberKey(keyText)) {
+        target[key] = null;
+        return;
+      }
+
+      if (depth <= 1 && isFiscalCloneRootStatusKey(keyText)) {
+        target[key] = null;
+        return;
+      }
+
+      if (isFiscalCloneSystemMetadataKey(keyText) || isFiscalCloneAuthorizationMetadataKey(keyText)) {
+        target[key] = null;
+        return;
+      }
+
+      if (isFiscalCloneDateKeyForNewDraft(keyText) && (typeof value === 'string' || typeof value === 'number' || value == null)) {
+        target[key] = today;
+        return;
+      }
+
+      if (value && typeof value === 'object') {
+        sanitizeFiscalCloneNfeDraftObject(value, depth + 1, keyText);
+      }
+    });
+  }
+
+  function buildFiscalCloneNfeDraftPayload(detail) {
+    const source = unwrapZwebPayload(detail);
+    if (!source || typeof source !== 'object') {
+      throw new Error('A Zweb não retornou os detalhes da NF-e original.');
+    }
+
+    const payload = JSON.parse(JSON.stringify(source));
+    sanitizeFiscalCloneNfeDraftObject(payload, 0, '');
+
+    if (payload && typeof payload === 'object') {
+      if (!payload.modelo && !payload.model) payload.modelo = NFE_DOCUMENT_MODEL;
+      if (payload.dados && typeof payload.dados === 'object') {
+        payload.dados.id = null;
+        if (!payload.dados.modelo && !payload.dados.model) payload.dados.modelo = NFE_DOCUMENT_MODEL;
+      }
+    }
+
+    return payload;
+  }
+
+  async function prepareFiscalCloneNfeAfterCancelPayload(pending) {
+    const entry = pending && pending.entry;
+    const detail = await fetchNfeBatchDetail(entry || {});
+    return buildFiscalCloneNfeDraftPayload(detail);
+  }
+
+  function extractFiscalCloneNfeCreatedId(response) {
+    const payload = unwrapZwebPayload(response);
+    const candidates = [
+      payload && payload.id,
+      payload && payload.dados && payload.dados.id,
+      response && response.id,
+      response && response.data && response.data.id,
+      response && response.result && response.result.id
+    ];
+    for (let index = 0; index < candidates.length; index += 1) {
+      const number = Number(candidates[index]);
+      if (Number.isFinite(number) && number > 0) return number;
+    }
+    return null;
+  }
+
+  async function createFiscalCloneNfeAfterCancel(pending) {
+    const clonePayload = pending && pending.clonePayload;
+    if (!clonePayload || typeof clonePayload !== 'object') {
+      throw new Error('Payload do clone da NF-e não foi preparado antes do cancelamento.');
+    }
+
+    const response = await postZwebJson(NFE_POST_API_URL, clonePayload);
+    const createdId = extractFiscalCloneNfeCreatedId(response);
+    logFiscalCloneDav('nfe-clone-after-cancel-api-ok', {
+      documentNumber: pending && pending.entry && pending.entry.documentNumber,
+      createdId
+    });
+    if (createdId) {
+      window.location.hash = '#/fiscal/nfe/edit/' + createdId;
+    } else {
+      window.location.hash = '#/fiscal/nfe';
+      scheduleFeatureUiRefresh(300);
+    }
+    return response;
+  }
+
+  async function startFiscalCloneNfeCancelThenClone(pending, cancelAction) {
+    if (!cancelAction) {
+      FISCAL_CLONE_AFTER_CANCEL_PENDING = null;
+      setFiscalCloneConfirmActionState({ busy: false, disabled: false, yesLabel: 'Clonar e cancelar original' });
+      window.alert('Não foi possível localizar a ação Cancelar para este documento.');
+      return false;
+    }
+
+    try {
+      setFiscalCloneConfirmActionState({ busy: true, disabled: true, yesLabel: 'Preparando clone...' });
+      const clonePayload = await prepareFiscalCloneNfeAfterCancelPayload(pending);
+      FISCAL_CLONE_AFTER_CANCEL_PENDING = Object.assign({}, pending || {}, {
+        clonePayload,
+        waitingCancelAt: Date.now()
+      });
+      FISCAL_CLONE_CONFIRM_PENDING = null;
+      closeFiscalCloneConfirmModal();
+      activateFiscalMenuAction(cancelAction, { singleClick: true });
+      return true;
+    } catch (error) {
+      FISCAL_CLONE_AFTER_CANCEL_PENDING = null;
+      logFiscalCloneDav('nfe-clone-before-cancel-prepare-error', {
+        message: error && error.message ? error.message : String(error || ''),
+        documentNumber: pending && pending.entry && pending.entry.documentNumber
+      });
+      setFiscalCloneConfirmActionState({ busy: false, disabled: false, yesLabel: 'Clonar e cancelar original' });
+      window.alert('Não foi possível preparar o clone da NF-e. O cancelamento não foi iniciado. Erro: ' + (error && error.message ? error.message : String(error || '')));
+      return false;
+    }
+  }
+
+  function isFiscalCloneNfeCancelRequest(data) {
+    if (!FISCAL_CLONE_AFTER_CANCEL_PENDING) return false;
+    if (!data || data.type !== 'fiscal-cancel-request-log') return false;
+    if (String(data.url || '').indexOf('fiscal.cancel-nfe') === -1) return false;
+    const request = parseJson(data.requestBody || '{}') || {};
+    const model = String(request.modelo || request.model || '').replace(/\D+/g, '');
+    return !model || model === String(NFE_DOCUMENT_MODEL);
+  }
+
+  function handleFiscalCloneAfterCancelLog(data) {
+    if (!isFiscalCloneNfeCancelRequest(data)) return;
+
+    const pending = FISCAL_CLONE_AFTER_CANCEL_PENDING;
+    const status = Number(data && data.status);
+    const response = parseJson(data && data.responseText || '{}') || {};
+    const ok = Number.isFinite(status) && status >= 200 && status < 300 && !response.error_message && !response.error;
+    if (!ok) {
+      FISCAL_CLONE_AFTER_CANCEL_PENDING = null;
+      logFiscalCloneDav('nfe-clone-after-cancel-skipped', {
+        reason: 'cancel_failed',
+        status: Number.isFinite(status) ? status : 0,
+        documentNumber: pending && pending.entry && pending.entry.documentNumber
+      });
+      return;
+    }
+
+    FISCAL_CLONE_AFTER_CANCEL_PENDING = null;
+    setTimeout(() => {
+      createFiscalCloneNfeAfterCancel(pending)
+        .catch((error) => {
+          logFiscalCloneDav('nfe-clone-after-cancel-error', {
+            message: error && error.message ? error.message : String(error || ''),
+            documentNumber: pending && pending.entry && pending.entry.documentNumber
+          });
+          window.alert('NF-e cancelada, mas houve falha ao criar o clone automaticamente: ' + (error && error.message ? error.message : String(error || '')));
+        });
+    }, 350);
+  }
+
   function getFiscalCloneConfirmEntry(trigger) {
     if (isTargetDavCloneBlockRoute()) {
       const row = findNfeContextMenuRow(trigger) || findActiveNfeActionRow();
@@ -9721,12 +10597,66 @@
     return null;
   }
 
+  function getFiscalCloneDavSaleIdFromNode(node) {
+    if (!node || typeof node !== 'object') return null;
+    const urlPattern = /(?:^|[\/#])document\/davs\/sale\/edit\/(\d+)(?:$|[/?#])/i;
+    const looseEditPattern = /(?:^|[\/#])sale\/edit\/(\d+)(?:$|[/?#])/i;
+    const candidateTexts = [];
+
+    const pushText = (value) => {
+      const text = String(value || '').trim();
+      if (text) candidateTexts.push(text);
+    };
+
+    if (node.dataset && typeof node.dataset === 'object') {
+      Object.keys(node.dataset).forEach((key) => {
+        pushText(node.dataset[key]);
+      });
+    }
+
+    if (node.attributes && typeof node.attributes.length === 'number') {
+      for (let index = 0; index < node.attributes.length; index += 1) {
+        const attribute = node.attributes[index];
+        if (!attribute) continue;
+        pushText(attribute.value);
+      }
+    }
+
+    for (let index = 0; index < candidateTexts.length; index += 1) {
+      const text = candidateTexts[index];
+      const urlMatch = text.match(urlPattern) || text.match(looseEditPattern);
+      if (urlMatch && Number(urlMatch[1]) > 0) {
+        return Number(urlMatch[1]);
+      }
+    }
+
+    return null;
+  }
+
+  function getFiscalCloneDavSaleIdFromRow(row) {
+    if (!row) return null;
+    const direct = getFiscalCloneDavSaleIdFromNode(row);
+    if (Number.isFinite(direct) && direct > 0) return direct;
+
+    const descendants = row.querySelectorAll('*');
+    for (let index = 0; index < descendants.length; index += 1) {
+      const resolved = getFiscalCloneDavSaleIdFromNode(descendants[index]);
+      if (Number.isFinite(resolved) && resolved > 0) {
+        return resolved;
+      }
+    }
+
+    return null;
+  }
+
   function buildFiscalCloneDavFlow(pending) {
     const entry = pending && pending.entry;
     const row = entry && entry.row || findNfeContextMenuRow(pending && pending.trigger) || findActiveNfeActionRow();
     const davNumber = getDavNumberFromRow(row) || (entry && entry.documentNumber) || '';
     const totalValue = getFiscalCloneDavTotalValue(row);
+    const davSaleId = getFiscalCloneDavSaleIdFromRow(row) || Number(entry && entry.id) || null;
     return {
+      davSaleId,
       davDocumentNumber: davNumber,
       totalValue,
       returnHash: window.location.hash || '#/document/davs/sale',
@@ -9892,6 +10822,19 @@
     return String(input && input.value || '').trim();
   }
 
+  function getFiscalCloneDavReasonValidationError(reason, match) {
+    if (!match) return 'Nenhum cupom com o mesmo valor foi localizado para cancelamento.';
+    if (match.authorized === false) {
+      return 'O cupom localizado ja esta ' + (match.statusText || 'indisponivel') + ' e nao pode ser cancelado novamente.';
+    }
+    const normalized = String(reason || '').trim();
+    if (!normalized) return 'Informe o motivo do cancelamento.';
+    if (normalized.length < FISCAL_CLONE_CANCEL_REASON_MIN_LENGTH) {
+      return 'O motivo deve ter pelo menos ' + FISCAL_CLONE_CANCEL_REASON_MIN_LENGTH + ' caracteres.';
+    }
+    return '';
+  }
+
   function setFiscalCloneDavReasonError(message) {
     const error = document.getElementById(FISCAL_CLONE_CONFIRM_REASON_ERROR_ID);
     if (!error) return;
@@ -9904,9 +10847,10 @@
     if (!pending || !isTargetDavCloneBlockRoute()) return;
     const match = pending.davNfceMatch || null;
     const reason = getFiscalCloneDavCancelReason();
-    const disabled = !match || !match.authorized || !reason;
+    const validationError = getFiscalCloneDavReasonValidationError(reason, match);
+    const disabled = !!validationError;
     setFiscalCloneConfirmActionState({ disabled, yesLabel: 'Sim' });
-    if (reason) setFiscalCloneDavReasonError('');
+    setFiscalCloneDavReasonError(reason ? validationError : '');
   }
 
   function renderFiscalCloneDavDetails(entry, flow, match, statusText) {
@@ -10015,6 +10959,48 @@
     }
   }
 
+  function readFiscalCloneDavCache() {
+    if (FISCAL_CLONE_DAV_CACHE && typeof FISCAL_CLONE_DAV_CACHE === 'object') {
+      return FISCAL_CLONE_DAV_CACHE;
+    }
+    try {
+      const raw = sessionStorage.getItem(FISCAL_CLONE_DAV_CACHE_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      FISCAL_CLONE_DAV_CACHE = parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+      FISCAL_CLONE_DAV_CACHE = {};
+    }
+    return FISCAL_CLONE_DAV_CACHE;
+  }
+
+  function writeFiscalCloneDavCache(cache) {
+    FISCAL_CLONE_DAV_CACHE = cache && typeof cache === 'object' ? cache : {};
+    try {
+      sessionStorage.setItem(FISCAL_CLONE_DAV_CACHE_STORAGE_KEY, JSON.stringify(FISCAL_CLONE_DAV_CACHE));
+    } catch (error) {}
+  }
+
+  function getFiscalCloneDavCacheEntry(key) {
+    const cache = readFiscalCloneDavCache();
+    const entry = cache && cache[key];
+    if (!entry || typeof entry !== 'object') return null;
+    if (Date.now() - Number(entry.cachedAt || 0) > FISCAL_CLONE_DAV_CACHE_TTL_MS) {
+      delete cache[key];
+      writeFiscalCloneDavCache(cache);
+      return null;
+    }
+    return entry.value;
+  }
+
+  function setFiscalCloneDavCacheEntry(key, value) {
+    const cache = readFiscalCloneDavCache();
+    cache[key] = {
+      cachedAt: Date.now(),
+      value
+    };
+    writeFiscalCloneDavCache(cache);
+  }
+
   function startFiscalCloneDavBackgroundClone(flow) {
     logFiscalCloneDav('background-start-request', flow || {});
     return sendRuntimeMessage({
@@ -10036,6 +11022,9 @@
     const justification = String(reason || '').trim();
     if (!justification) {
       throw new Error('Motivo do cancelamento nao informado.');
+    }
+    if (justification.length < FISCAL_CLONE_CANCEL_REASON_MIN_LENGTH) {
+      throw new Error('O motivo deve ter pelo menos ' + FISCAL_CLONE_CANCEL_REASON_MIN_LENGTH + ' caracteres.');
     }
 
     const request = {
@@ -10061,15 +11050,37 @@
   async function findFiscalCloneDavSaleIdBySequence(sequence) {
     const requested = String(sequence || '').replace(/\D+/g, '');
     if (!requested) return null;
+    const cachedId = Number(getFiscalCloneDavCacheEntry('saleId:' + requested));
+    if (Number.isFinite(cachedId) && cachedId > 0) {
+      return cachedId;
+    }
 
-    const payload = await postZwebJson(INVENTORY_GET_SALE_PAGINATE_API_URL, {
-      page: 1,
-      maxResults: 80
-    });
-    const rows = getNfeApiRows(payload);
-    const match = rows.find((item) => String(getNestedValue(item, ['sequence', 'numero', 'number', 'id']) || '').replace(/\D+/g, '') === requested);
-    const id = Number(match && match.id);
-    return Number.isFinite(id) && id > 0 ? id : null;
+    const deadline = Date.now() + 65000;
+    let attempt = 0;
+    while (Date.now() < deadline) {
+      attempt += 1;
+      for (let page = 1; page <= 6; page += 1) {
+        const payload = await postZwebJson(INVENTORY_GET_SALE_PAGINATE_API_URL, {
+          page,
+          maxResults: 100
+        });
+        const rows = getNfeApiRows(payload);
+        const match = rows.find((item) => String(getNestedValue(item, ['sequence', 'numero', 'number', 'id']) || '').replace(/\D+/g, '') === requested);
+        const id = Number(match && match.id);
+        if (Number.isFinite(id) && id > 0) {
+          setFiscalCloneDavCacheEntry('saleId:' + requested, id);
+          return id;
+        }
+        if (!Array.isArray(rows) || rows.length < 100) break;
+      }
+      if (Date.now() >= deadline) break;
+      logFiscalCloneDav('dav-clone-sale-id-retry', {
+        davDocumentNumber: requested,
+        attempt
+      });
+      await delay(2500);
+    }
+    return null;
   }
 
   function buildFiscalCloneDavPostSalePayload(detail) {
@@ -10110,6 +11121,10 @@
   }
 
   async function resolveFiscalCloneEditingTradeStatus() {
+    const cached = getFiscalCloneDavCacheEntry('editingTradeStatus');
+    if (cached && typeof cached === 'object' && Number(cached.id) > 0) {
+      return JSON.parse(JSON.stringify(cached));
+    }
     const payload = await postZwebJson(INVENTORY_GET_SALE_PAGINATE_API_URL, {
       page: 1,
       maxResults: 80
@@ -10133,6 +11148,9 @@
       ? detail.status
       : null;
     const resolved = tradeStatus || status || null;
+    if (resolved) {
+      setFiscalCloneDavCacheEntry('editingTradeStatus', resolved);
+    }
     return resolved ? JSON.parse(JSON.stringify(resolved)) : null;
   }
 
@@ -10157,11 +11175,22 @@
 
   async function cloneFiscalCloneDavByApi(flow) {
     const davNumber = String(flow && flow.davDocumentNumber || '').replace(/\D+/g, '');
-    if (!davNumber) throw new Error('Numero do DAV ausente para clonagem.');
+    const directSaleId = Number(flow && flow.davSaleId);
+    if (!davNumber && (!Number.isFinite(directSaleId) || directSaleId <= 0)) {
+      throw new Error('Numero do DAV ausente para clonagem.');
+    }
 
-    logFiscalCloneDav('dav-clone-api-lookup-start', { davDocumentNumber: davNumber });
-    const saleId = await findFiscalCloneDavSaleIdBySequence(davNumber);
+    logFiscalCloneDav('dav-clone-api-lookup-start', {
+      davDocumentNumber: davNumber,
+      davSaleId: directSaleId
+    });
+    const saleId = Number.isFinite(directSaleId) && directSaleId > 0
+      ? directSaleId
+      : await findFiscalCloneDavSaleIdBySequence(davNumber);
     if (!saleId) throw new Error('DAV ' + davNumber + ' nao localizado para clonagem.');
+    if (davNumber) {
+      setFiscalCloneDavCacheEntry('saleId:' + davNumber, saleId);
+    }
 
     logFiscalCloneDav('dav-clone-api-detail-start', { davDocumentNumber: davNumber, saleId });
     const detail = await postZwebJson(INVENTORY_GET_DETAILED_SALE_API_URL, { id: saleId });
@@ -10206,7 +11235,7 @@
     await cancelFiscalCloneDavNfceByApi(flow, reason);
     setFiscalCloneDavState(null);
     window.location.hash = '#/fiscal/pdv';
-    scheduleFeatureUiRefresh(500);
+    scheduleFeatureUiRefresh(80);
     return clonedDav;
   }
 
@@ -10355,8 +11384,9 @@
       return false;
     }
     const reason = getFiscalCloneDavCancelReason();
-    if (!reason) {
-      setFiscalCloneDavReasonError('Informe o motivo do cancelamento.');
+    const validationError = getFiscalCloneDavReasonValidationError(reason, flow);
+    if (validationError) {
+      setFiscalCloneDavReasonError(validationError);
       setFiscalCloneConfirmActionState({ busy: false, disabled: true, yesLabel: 'Sim' });
       return false;
     }
@@ -10493,6 +11523,12 @@
   }
 
   function handleFiscalCloneConfirmModalAction(event) {
+    if (isTargetNfeRoute()) {
+      FISCAL_CLONE_CONFIRM_PENDING = null;
+      closeFiscalCloneConfirmModal();
+      return;
+    }
+
     const target = event && event.target && event.target.closest
       ? event.target.closest('[data-fiscal-clone-confirm-close], [data-fiscal-clone-confirm-only], [data-fiscal-clone-confirm-cancel-original]')
       : null;
@@ -10508,20 +11544,7 @@
       const pending = FISCAL_CLONE_CONFIRM_PENDING;
       FISCAL_CLONE_CONFIRM_PENDING = null;
       closeFiscalCloneConfirmModal();
-      if (pending && pending.trigger && pending.trigger.isConnected) {
-        FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = true;
-        try {
-          if (typeof pending.trigger.click === 'function') {
-            pending.trigger.click();
-          } else {
-            clickLikeUser(pending.trigger);
-          }
-        } finally {
-          setTimeout(() => {
-            FISCAL_CLONE_CONFIRM_INTERNAL_CLICK = false;
-          }, 120);
-        }
-      }
+      runPendingNativeClone(pending);
       return;
     }
 
@@ -10535,11 +11558,19 @@
         }
         return;
       }
+      const cancelAction = pending && (pending.cancelAction || findFiscalCancelActionNearClone(pending.trigger));
+      if (isTargetNfeRoute()) {
+        startFiscalCloneNfeCancelThenClone(pending, cancelAction).catch(() => {});
+        return;
+      }
       FISCAL_CLONE_CONFIRM_PENDING = null;
       closeFiscalCloneConfirmModal();
-      const cancelAction = pending && (pending.cancelAction || findFiscalCancelActionNearClone(pending.trigger));
+
+      const cloned = runPendingNativeClone(pending);
       if (cancelAction) {
         activateFiscalMenuAction(cancelAction, { singleClick: true });
+      } else if (!cloned) {
+        window.alert('Não foi possível localizar a ação Clonar para este documento.');
       } else {
         window.alert('Não foi possível localizar a ação Cancelar para este documento.');
       }
@@ -10579,7 +11610,10 @@
         '<div><strong>' + escapeHtml(routeLabel) + ':</strong> ' + escapeHtml(entry.documentNumber || '-') + (entry.seriesText ? ' <span style="opacity:.72;">Série ' + escapeHtml(entry.seriesText) + '</span>' : '') + '</div>',
         entry.customerName ? '<div><strong>Cliente:</strong> ' + escapeHtml(entry.customerName) + '</div>' : ''
       ].filter(Boolean).join('');
-      setFiscalCloneConfirmActionState({ disabled: false, yesLabel: 'Sim' });
+      setFiscalCloneConfirmActionState({
+        disabled: false,
+        yesLabel: isTargetNfeRoute() ? 'Clonar e cancelar original' : 'Sim'
+      });
     }
 
     applyFiscalCloneConfirmModalTheme(modal);
@@ -10587,6 +11621,11 @@
   }
 
   function handleFiscalCloneConfirm(event) {
+    if (isTargetNfeRoute()) {
+      clearNfeCloneConfirmStateIfCancelAction(event && event.target);
+      return;
+    }
+
     if (!event || !event.target || FISCAL_CLONE_CONFIRM_INTERNAL_CLICK) return;
     if (event.target.closest && event.target.closest('#' + FISCAL_CLONE_CONFIRM_MODAL_ID)) return;
     const trigger = findFiscalCloneActionTrigger(event.target);
@@ -12144,7 +13183,7 @@
         const natureCell = cells[headerMap.natureIndex];
         if (!documentCell || !natureCell) return null;
 
-        const documentNumber = String(documentCell.textContent || '').replace(/\D+/g, '').trim();
+        const documentNumber = normalizeApiDocumentNumber(documentCell.textContent || '');
         const nature = String(natureCell.textContent || '').trim();
         if (!documentNumber || !isNfeReturnNature(nature)) return null;
 
@@ -12221,8 +13260,9 @@
   }
 
   function normalizeApiDocumentNumber(value) {
-    const text = String(value == null ? '' : value).replace(/\D+/g, '').trim();
-    return text || '';
+    const digits = String(value == null ? '' : value).replace(/\D+/g, '');
+    if (!digits) return '';
+    return digits.replace(/^0+(?=\d)/, '');
   }
 
   function getNfeApiStatusNumber(item) {
@@ -13507,6 +14547,8 @@
   document.addEventListener('contextmenu', handleNfceCancellationReasonSelectionChange, true);
   document.addEventListener('contextmenu', blockInteractions, true);
   document.addEventListener('click', handleFiscalCloneConfirmModalAction, true);
+  document.addEventListener('pointerdown', handleNfePanelQuickAction, true);
+  document.addEventListener('click', handleNfePanelQuickAction, true);
   document.addEventListener('pointerdown', handleFiscalCloneConfirm, true);
   document.addEventListener('click', handleFiscalCloneConfirm, true);
   document.addEventListener('pointerdown', handleCloneActionBlock, true);
@@ -13611,7 +14653,7 @@
     if (!document.hidden) checkDocumentNegativeStockServerState(true);
   }, true);
   window.addEventListener('storage', function(event) {
-    if (!event || event.key === DOCUMENT_NEGATIVE_STOCK_GUARD_STORAGE_KEY || event.key === DOCUMENT_NEGATIVE_STOCK_CONFIGURATION_STORAGE_KEY || event.key === DOCUMENT_NEGATIVE_STOCK_FORCE_DISABLE_STORAGE_KEY) {
+    if (!event || event.key === DOCUMENT_NEGATIVE_STOCK_GUARD_STORAGE_KEY || event.key === DOCUMENT_NEGATIVE_STOCK_GUARD_OWNER_STORAGE_KEY || event.key === DOCUMENT_NEGATIVE_STOCK_CONFIGURATION_STORAGE_KEY || event.key === DOCUMENT_NEGATIVE_STOCK_FORCE_DISABLE_STORAGE_KEY) {
       runDocumentNegativeStockGuardHeartbeat();
     }
   });
@@ -13662,6 +14704,7 @@
     if (isTargetNfeRoute()) {
       ensureNfeActionCustomizeButton();
       ensureNfeBatchDownloadActionItems();
+      ensureNfePanelQuickActionItems();
       ensureNfeCashSaleBoletoGuardBindings();
     } else {
       removeNfeCashSaleBoletoWarningUi();

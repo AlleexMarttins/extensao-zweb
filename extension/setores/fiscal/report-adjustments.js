@@ -52,6 +52,12 @@
     return negative ? '-' + formatted : formatted;
   }
 
+  function normalizeDocumentNumber(value) {
+    const digits = String(value == null ? '' : value).replace(/\D+/g, '');
+    if (!digits) return '';
+    return digits.replace(/^0+(?=\d)/, '');
+  }
+
   function ensureStyle() {
     let style = document.getElementById(STYLE_ID);
     if (!style) {
@@ -198,7 +204,7 @@
     return bodyRows.map((row) => {
       const cells = Array.from(row.querySelectorAll('td'));
       if (cells.length < 6) return null;
-      const documentNumber = String(cells[1].textContent || '').replace(/\D+/g, '').trim();
+      const documentNumber = normalizeDocumentNumber(cells[1].textContent || '');
       const total = parseCurrency(cells[4].textContent || '');
       const commission = parseCurrency(cells[5].textContent || '');
       return {
@@ -296,11 +302,17 @@
 
     rememberAllOriginalValues(tables);
     restoreReport();
+    const normalizedHistoryMap = Object.keys(historyMap || {}).reduce((acc, key) => {
+      const entry = historyMap[key];
+      const documentNumber = normalizeDocumentNumber(entry && entry.documentNumber || key);
+      if (documentNumber) acc[documentNumber] = entry;
+      return acc;
+    }, {});
     let adjustedCount = 0;
     tables.forEach((table) => {
       const freshRows = readRows(table);
       freshRows.forEach((entry) => {
-        const historyEntry = historyMap && historyMap[entry.documentNumber];
+        const historyEntry = normalizedHistoryMap[entry.documentNumber];
         const shouldAdjust = !!(historyEntry && historyEntry.active);
         if (!shouldAdjust) return;
 

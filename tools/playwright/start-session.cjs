@@ -8,6 +8,17 @@ const profilePath = path.join(workspaceRoot, '.codex-playwright-profile');
 const sessionPath = path.join(workspaceRoot, '.codex-playwright-session.json');
 const stopPath = path.join(workspaceRoot, '.codex-playwright-stop');
 const debugPort = 9222;
+const chromeCandidates = [
+  process.env.PLAYWRIGHT_CHROME_PATH,
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+].filter(Boolean);
+
+function getInstalledBrowserExecutable() {
+  return chromeCandidates.find((candidate) => fs.existsSync(candidate)) || null;
+}
 
 async function waitForExtensionId(context) {
   let [worker] = context.serviceWorkers();
@@ -27,6 +38,8 @@ async function main() {
 
   const context = await chromium.launchPersistentContext(profilePath, {
     headless: false,
+    executablePath: getInstalledBrowserExecutable() || undefined,
+    ignoreDefaultArgs: ['--disable-extensions'],
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,

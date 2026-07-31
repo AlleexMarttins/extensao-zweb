@@ -730,18 +730,20 @@ function scheduleDocumentNegativeStockGuardTimeout(expiresAt) {
 async function scheduleDocumentNegativeStockScheduledDisable(message, sender) {
   const expiresAt = Number(message && message.expiresAt) || 0;
   const token = String(message && message.token || '').trim();
+  const ownerBrowserId = String(message && message.ownerBrowserId || '').trim();
   const sourceWindowId = isNumber(message && message.sourceWindowId)
     ? message.sourceWindowId
     : (sender && sender.tab && isNumber(sender.tab.windowId) ? sender.tab.windowId : null);
   const sourceTabId = isNumber(message && message.sourceTabId)
     ? message.sourceTabId
     : (sender && sender.tab && isNumber(sender.tab.id) ? sender.tab.id : null);
-  if (!token || !Number.isFinite(expiresAt) || expiresAt <= 0) {
+  if (!token || !ownerBrowserId || !Number.isFinite(expiresAt) || expiresAt <= 0) {
     throw new Error('Agendamento invalido para a trava de estoque.');
   }
 
   const state = {
     token,
+    ownerBrowserId,
     expiresAt,
     createdAt: Date.now(),
     sourceWindowId,
@@ -771,9 +773,14 @@ async function readDocumentNegativeStockScheduledDisable() {
   if (!state || typeof state !== 'object') return null;
   const expiresAt = Number(state.expiresAt) || 0;
   const token = String(state.token || '').trim();
+  const ownerBrowserId = String(state.ownerBrowserId || '').trim();
   const sourceWindowId = isNumber(state.sourceWindowId) ? state.sourceWindowId : null;
   const sourceTabId = isNumber(state.sourceTabId) ? state.sourceTabId : null;
-  return token && expiresAt > 0 ? { token, expiresAt, createdAt: Number(state.createdAt) || 0, sourceWindowId, sourceTabId } : null;
+  if (!token || !ownerBrowserId || expiresAt <= 0) {
+    await removeStorageLocal(DOCUMENT_NEGATIVE_STOCK_GUARD_BACKGROUND_STORAGE_KEY);
+    return null;
+  }
+  return { token, ownerBrowserId, expiresAt, createdAt: Number(state.createdAt) || 0, sourceWindowId, sourceTabId };
 }
 
 async function runDocumentNegativeStockScheduledDisable() {
