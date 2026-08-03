@@ -5,6 +5,7 @@
   const FEATURE_DEFAULTS = FEATURE_CATALOG.getDefaults();
   const FEATURE_KEY = 'commissionReturnsEnabled';
   const HISTORY_STORAGE_KEY = 'nfeReturnHistory';
+  const HISTORY_META_KEY = '__zwebMeta';
   const STYLE_ID = 'zweb-commission-report-adjustments-style';
   const SUMMARY_ID = 'zweb-commission-report-adjustments-summary';
   const ACTIONS_ID = 'zweb-commission-report-adjustments-actions';
@@ -56,6 +57,26 @@
     const digits = String(value == null ? '' : value).replace(/\D+/g, '');
     if (!digits) return '';
     return digits.replace(/^0+(?=\d)/, '');
+  }
+
+  function getHistoryMeta(historyMap) {
+    return historyMap && historyMap[HISTORY_META_KEY] && typeof historyMap[HISTORY_META_KEY] === 'object'
+      ? historyMap[HISTORY_META_KEY]
+      : null;
+  }
+
+  function formatHistoryUpdatedAt(value) {
+    const timestamp = Number(value);
+    if (!Number.isFinite(timestamp) || timestamp <= 0) return '';
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   function ensureStyle() {
@@ -303,11 +324,13 @@
     rememberAllOriginalValues(tables);
     restoreReport();
     const normalizedHistoryMap = Object.keys(historyMap || {}).reduce((acc, key) => {
+      if (key === HISTORY_META_KEY) return acc;
       const entry = historyMap[key];
       const documentNumber = normalizeDocumentNumber(entry && entry.documentNumber || key);
       if (documentNumber) acc[documentNumber] = entry;
       return acc;
     }, {});
+    const historyMeta = getHistoryMeta(historyMap);
     let adjustedCount = 0;
     tables.forEach((table) => {
       const freshRows = readRows(table);
@@ -334,10 +357,15 @@
     });
 
     if (adjustedCount) {
+      const updatedAt = formatHistoryUpdatedAt(historyMeta && historyMeta.updatedAt);
       upsertSummary(
         adjustedCount + ' devoluç' + (adjustedCount === 1 ? 'ão ajustada' : 'ões ajustadas') +
         ' com base no histórico da NF-e. Os valores foram convertidos para negativo no relatório.'
       );
+      if (updatedAt) {
+        const summary = document.getElementById(SUMMARY_ID);
+        if (summary) summary.textContent += ' Hist\u00f3rico atualizado em ' + updatedAt + '.';
+      }
     } else {
       upsertSummary('');
     }

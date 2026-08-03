@@ -36,7 +36,7 @@ Hosts declarados no `manifest.json`:
 
 | Endpoint | Metodo | Origem | Acionamento | Finalidade | Frequencia |
 | --- | --- | --- | --- | --- | --- |
-| `/rpc/v2/fiscal.get-nfe-paginate` | `POST` | `content.js` | Manual ou leitura de tela | Consultar listagem de NF-e para acoes assistidas, validacao de devolucoes e relatorio de comissoes. | Sob demanda. |
+| `/rpc/v2/fiscal.get-nfe-paginate` | `POST` | `content.js` | Manual ou leitura de tela | Consultar listagem de NF-e para acoes assistidas, validacao de devolucoes e relatorio de comissoes. Ao confirmar a geracao do relatorio de comissoes, a extensao atualiza manualmente a foto de devolucoes de NF-e antes de liberar o botao nativo. | Sob demanda, somente por acao do usuario ou resposta da propria tela. |
 | `/rpc/v2/fiscal.get-detailed-nfe` | `POST` | `content.js` | Manual | Obter dados completos da NF-e para clone, cancelamento assistido e transmissao. | Sob demanda. |
 | `/rpc/v2/fiscal.post-nfe` | `POST` | `content.js` | Manual | Criar clone de NF-e em fluxo assistido. | Sob demanda. |
 | `/rpc/v2/fiscal.put-nfe` | `POST` | `content.js` | Manual | Salvar payload normalizado da NF-e antes de transmissao assistida. | Sob demanda. |

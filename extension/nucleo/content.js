@@ -214,7 +214,10 @@
   const NFE_DOCUMENT_MODEL = 55;
   const PRODUCT_PAGINATE_PAGE_SIZE = 200;
   const NFE_RETURN_HISTORY_STORAGE_KEY = 'nfeReturnHistory';
+  const NFE_RETURN_HISTORY_META_KEY = '__zwebMeta';
   const NFE_RETURN_HISTORY_MAX_ITEMS = 4000;
+  const NFE_RETURN_HISTORY_API_PAGE_SIZE = 200;
+  const NFE_RETURN_HISTORY_API_MAX_PAGES = 20;
   const NFCE_BLOCKED_CARD_BRANDS = ['MASTERCARD', 'ELO', 'VISA'];
   const NFCE_BLOCKED_CARD_BRAND_ATTR = 'data-zweb-nfce-card-brand-hidden';
   const XML_BRIDGE_SCRIPT_ID = 'zweb-xml-download-page-bridge';
@@ -12147,6 +12150,74 @@
     closeCommissionReportConfirmModal();
   }
 
+  function setCommissionReportConfirmUiState(options) {
+    const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
+    if (!modal) return;
+    const opts = options && typeof options === 'object' ? options : {};
+    const message = modal.querySelector('[data-commission-confirm-message]');
+    const noButton = modal.querySelector('[data-commission-confirm-no]');
+    const yesButton = modal.querySelector('[data-commission-confirm-yes]');
+    const closeButton = modal.querySelector('[data-commission-confirm-close]');
+    if (message && typeof opts.message === 'string') {
+      message.textContent = opts.message;
+    }
+    [noButton, yesButton, closeButton].forEach((button) => {
+      if (!button) return;
+      if (opts.busy) {
+        button.setAttribute('disabled', 'true');
+        button.setAttribute('aria-disabled', 'true');
+      } else {
+        button.removeAttribute('disabled');
+        button.removeAttribute('aria-disabled');
+      }
+    });
+    if (yesButton) {
+      yesButton.textContent = opts.busy ? 'Conferindo...' : 'Sim';
+    }
+  }
+
+  function triggerCommissionReportGenerate(pendingButton) {
+    if (!pendingButton || !pendingButton.isConnected) return;
+    COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = true;
+    try {
+      if (typeof pendingButton.click === 'function') {
+        pendingButton.click();
+      } else {
+        clickLikeUser(pendingButton);
+      }
+    } finally {
+      setTimeout(() => {
+        COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = false;
+      }, 80);
+    }
+  }
+
+  async function handleCommissionReportConfirmYes() {
+    const pendingButton = COMMISSION_REPORT_PENDING_GENERATE_BUTTON;
+    if (!pendingButton || !pendingButton.isConnected) {
+      clearCommissionReportConfirmState();
+      return;
+    }
+
+    setCommissionReportConfirmUiState({
+      busy: true,
+      message: 'Conferindo devoluções de NF-e antes de gerar o relatório...'
+    });
+
+    try {
+      await refreshNfeReturnHistoryForCommissionReport();
+    } catch (error) {
+      setCommissionReportConfirmUiState({
+        busy: false,
+        message: 'Não consegui atualizar as devoluções agora. Abra Fiscal > NF-e e tente gerar novamente para evitar relatório com histórico antigo.'
+      });
+      return;
+    }
+
+    clearCommissionReportConfirmState();
+    triggerCommissionReportGenerate(pendingButton);
+  }
+
   function handleCommissionReportConfirmModalAction(event) {
     const modal = document.getElementById(COMMISSION_REPORT_CONFIRM_MODAL_ID);
     if (!modal || getComputedStyle(modal).display === 'none') return;
@@ -12158,21 +12229,7 @@
     event.stopPropagation();
     event.stopImmediatePropagation();
     if (target.hasAttribute('data-commission-confirm-yes')) {
-      const pendingButton = COMMISSION_REPORT_PENDING_GENERATE_BUTTON;
-      clearCommissionReportConfirmState();
-      if (!pendingButton || !pendingButton.isConnected) return;
-      COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = true;
-      try {
-        if (typeof pendingButton.click === 'function') {
-          pendingButton.click();
-        } else {
-          clickLikeUser(pendingButton);
-        }
-      } finally {
-        setTimeout(() => {
-          COMMISSION_REPORT_INTERNAL_GENERATE_CLICK = false;
-        }, 80);
-      }
+      handleCommissionReportConfirmYes();
       return;
     }
     if (target.hasAttribute('data-commission-confirm-no')) {
@@ -13123,15 +13180,21 @@
   }
 
   function trimNfeReturnHistory(historyMap) {
+    const meta = historyMap && historyMap[NFE_RETURN_HISTORY_META_KEY] && typeof historyMap[NFE_RETURN_HISTORY_META_KEY] === 'object'
+      ? historyMap[NFE_RETURN_HISTORY_META_KEY]
+      : null;
     const entries = Object.values(historyMap || {})
       .filter(Boolean)
+      .filter((entry) => entry && entry.documentNumber)
       .sort((a, b) => Number(b && b.capturedAt || 0) - Number(a && a.capturedAt || 0))
       .slice(0, NFE_RETURN_HISTORY_MAX_ITEMS);
-    return entries.reduce((acc, entry) => {
+    const trimmed = entries.reduce((acc, entry) => {
       if (!entry || !entry.documentNumber) return acc;
       acc[entry.documentNumber] = entry;
       return acc;
     }, {});
+    if (meta) trimmed[NFE_RETURN_HISTORY_META_KEY] = meta;
+    return trimmed;
   }
 
   function isNfeReturnNature(text) {
@@ -13357,10 +13420,25 @@
       .filter(Boolean);
   }
 
-  function persistNfeReturnEntries(entries, sourceLabel) {
-    if (!entries.length) return;
+  function getNfeReturnHistoryMeta(historyMap) {
+    return historyMap && historyMap[NFE_RETURN_HISTORY_META_KEY] && typeof historyMap[NFE_RETURN_HISTORY_META_KEY] === 'object'
+      ? historyMap[NFE_RETURN_HISTORY_META_KEY]
+      : null;
+  }
 
-    const signature = String(sourceLabel || 'dom') + ':' + JSON.stringify(entries.map((entry) => [
+  function buildNfeReturnHistoryMeta(entries, sourceLabel) {
+    return {
+      version: 2,
+      updatedAt: Date.now(),
+      source: String(sourceLabel || 'dom'),
+      count: Array.isArray(entries) ? entries.length : 0
+    };
+  }
+
+  function persistNfeReturnEntries(entries, sourceLabel, options) {
+    const safeEntries = Array.isArray(entries) ? entries : [];
+    const opts = options && typeof options === 'object' ? options : {};
+    const signature = String(sourceLabel || 'dom') + ':' + JSON.stringify(safeEntries.map((entry) => [
       entry.documentNumber,
       entry.customer,
       entry.nature,
@@ -13369,16 +13447,16 @@
       entry.total,
       entry.active
     ]));
-    if (signature === LAST_NFE_RETURN_SIGNATURE) return;
+    if (!safeEntries.length && !opts.forceMeta) return Promise.resolve(false);
+    if (signature === LAST_NFE_RETURN_SIGNATURE && !opts.forceMeta) return Promise.resolve(false);
     LAST_NFE_RETURN_SIGNATURE = signature;
 
-    if (NFE_RETURN_SYNC_TIMER) clearTimeout(NFE_RETURN_SYNC_TIMER);
-    NFE_RETURN_SYNC_TIMER = setTimeout(() => {
+    const persistNow = () => new Promise((resolve) => {
       NFE_RETURN_SYNC_TIMER = 0;
-      const nextHistory = Object.assign({}, NFE_RETURN_HISTORY);
+      const nextHistory = opts.replace ? {} : Object.assign({}, NFE_RETURN_HISTORY);
       let changed = false;
 
-      entries.forEach((entry) => {
+      safeEntries.forEach((entry) => {
         const previous = nextHistory[entry.documentNumber];
         const comparablePrevious = previous
           ? JSON.stringify([
@@ -13405,17 +13483,67 @@
         }
       });
 
-      if (!changed) return;
+      const previousMeta = getNfeReturnHistoryMeta(nextHistory);
+      const nextMeta = buildNfeReturnHistoryMeta(safeEntries, sourceLabel);
+      if (opts.forceMeta || JSON.stringify(previousMeta || null) !== JSON.stringify(nextMeta)) {
+        nextHistory[NFE_RETURN_HISTORY_META_KEY] = nextMeta;
+        changed = true;
+      }
+
+      if (!changed) {
+        resolve(false);
+        return;
+      }
       NFE_RETURN_HISTORY = trimNfeReturnHistory(nextHistory);
       try {
-        chrome.storage.local.set({ [NFE_RETURN_HISTORY_STORAGE_KEY]: NFE_RETURN_HISTORY });
-      } catch (error) {}
+        chrome.storage.local.set({ [NFE_RETURN_HISTORY_STORAGE_KEY]: NFE_RETURN_HISTORY }, () => resolve(true));
+      } catch (error) {
+        resolve(false);
+      }
+    });
+
+    if (NFE_RETURN_SYNC_TIMER) clearTimeout(NFE_RETURN_SYNC_TIMER);
+    if (opts.immediate) {
+      return persistNow();
+    }
+
+    NFE_RETURN_SYNC_TIMER = setTimeout(() => {
+      persistNow();
     }, 250);
+    return Promise.resolve(true);
   }
 
   function handleNfeListApiResponsePayload(payload) {
     if (!isFeatureEnabled('commissionReturnsEnabled') || !isTargetNfeRoute()) return;
     persistNfeReturnEntries(collectApiNfeReturnEntries(payload), 'api');
+  }
+
+  async function refreshNfeReturnHistoryForCommissionReport() {
+    if (!isFeatureEnabled('commissionReturnsEnabled')) return [];
+
+    const byDocument = {};
+    for (let page = 1; page <= NFE_RETURN_HISTORY_API_MAX_PAGES; page += 1) {
+      const payload = await postZwebJson(FISCAL_GET_NFE_PAGINATE_API_URL, {
+        modelos: ['55'],
+        siniefN12: true,
+        page,
+        maxResults: NFE_RETURN_HISTORY_API_PAGE_SIZE,
+        sort: { key: 'emission', order: 'DESC' }
+      });
+      const rows = getNfeApiRows(payload);
+      collectApiNfeReturnEntries(payload).forEach((entry) => {
+        if (entry && entry.documentNumber) byDocument[entry.documentNumber] = entry;
+      });
+      if (rows.length < NFE_RETURN_HISTORY_API_PAGE_SIZE) break;
+    }
+
+    const entries = Object.values(byDocument);
+    await persistNfeReturnEntries(entries, 'commission-report-api', {
+      immediate: true,
+      forceMeta: true,
+      replace: true
+    });
+    return entries;
   }
 
   function syncNfeReturnHistory() {

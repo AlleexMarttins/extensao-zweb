@@ -49,7 +49,7 @@ O projeto concentra ajustes de fluxo e interface que a Zweb não entrega nativam
 ### Documentos
 
 - `Ajustar Comissões`: usa o histórico de devoluções da NF-e para inverter valores no relatório HTML de comissões.
-- `Conferir Devoluções`: antes de gerar o relatório de comissões, pergunta se as devoluções já foram conferidas; se a resposta for `Não`, redireciona para `Fiscal > NF-e`.
+- `Conferir Devoluções`: antes de gerar o relatório de comissões, atualiza a foto de devoluções de NF-e; se a resposta for `Não`, redireciona para `Fiscal > NF-e`.
 - exportação do relatório ajustado para PDF
 
 ## Como instalar
@@ -73,7 +73,7 @@ O projeto concentra ajustes de fluxo e interface que a Zweb não entrega nativam
 - `Fiscal > Configurações > Notas fiscais`: gerencia os parâmetros de `Cálculo de Valores`.
 - `Fiscal > Compras`: usa o cálculo no popup de importação do XML.
 - `Documentos > Relatórios > Comissões`: gere em HTML para aplicar o ajuste de devoluções e, depois, exporte o PDF ajustado.
-- `Documentos > Relatórios > Comissões`: o botão `Gerar relatório` pode exigir a confirmação de que as devoluções já foram checadas.
+- `Documentos > Relatórios > Comissões`: o botão `Gerar relatório` pode atualizar as devoluções antes de liberar a geração.
 
 ## Menu da extensão
 
