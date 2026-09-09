@@ -852,56 +852,6 @@
     return options.join('');
   }
 
-  function syncImportPopupRowActions(context, appliedRows) {
-    if (!context || context.mode !== 'import-popup' || !context.tableBody) return;
-
-    const domRows = Array.from(context.tableBody.querySelectorAll('tr'));
-    domRows.forEach((tr, index) => {
-      const row = appliedRows[index] || null;
-      const pencil = tr.querySelector('td:nth-child(3) .btn-select-action');
-      tr.setAttribute('data-zweb-row-key', row ? row.key : '');
-
-      if (!pencil) return;
-      if (!pencil.hasAttribute('data-zweb-original-title')) {
-        pencil.setAttribute('data-zweb-original-title', pencil.getAttribute('title') || '');
-      }
-
-      if (!row || !isFeatureEnabled('stockPriceSimulationEnabled') || !row.sourceCode || !Number.isFinite(row.suggestedUnit)) {
-        pencil.removeAttribute('data-zweb-action');
-        pencil.removeAttribute('data-zweb-simulate-source');
-        pencil.removeAttribute('data-row-key');
-        pencil.removeAttribute('data-code');
-        pencil.removeAttribute('data-description');
-        pencil.removeAttribute('data-target-price');
-        pencil.classList.remove('zweb-inline-sim-pencil');
-        pencil.setAttribute('title', pencil.getAttribute('data-zweb-original-title') || '');
-        return;
-      }
-
-      const targetPrice = normalizeSuggestedPrice(row.suggestedUnit);
-      if (!Number.isFinite(targetPrice)) {
-        pencil.removeAttribute('data-zweb-action');
-        pencil.removeAttribute('data-zweb-simulate-source');
-        pencil.removeAttribute('data-row-key');
-        pencil.removeAttribute('data-code');
-        pencil.removeAttribute('data-description');
-        pencil.removeAttribute('data-target-price');
-        pencil.classList.remove('zweb-inline-sim-pencil');
-        pencil.setAttribute('title', pencil.getAttribute('data-zweb-original-title') || '');
-        return;
-      }
-
-      pencil.setAttribute('data-zweb-action', 'simulate-stock-price');
-      pencil.setAttribute('data-zweb-simulate-source', 'import-popup-pencil');
-      pencil.setAttribute('data-row-key', row.key);
-      pencil.setAttribute('data-code', row.sourceCode);
-      pencil.setAttribute('data-description', row.description);
-      pencil.setAttribute('data-target-price', String(targetPrice));
-      pencil.setAttribute('title', 'Editar produto e aplicar preco sugerido');
-      pencil.classList.add('zweb-inline-sim-pencil');
-    });
-  }
-
   function buildTable(appliedRows, activeProfile, contextMode) {
     const hasAnyIpi = appliedRows.some((row) => row.hasIpi);
     const rowsMarkup = appliedRows.map((row) => {
@@ -958,7 +908,7 @@
     const xmlSig = parsedXmlItems.map((item) => [item.itemNumber, item.code, item.description, item.quantity, item.unitCost, item.ipiPercent, item.ipiAmount, item.unitIpi].join(':')).join('|');
     const overrideSig = Object.keys(rowOverrides).sort().map((key) => key + ':' + rowOverrides[key]).join('|');
     const rowSig = appliedRows.map((row) => [row.key, row.sourceCode, row.stockDisplay, row.appliedProfile ? row.appliedProfile.id : '', row.ipiPercent, row.ipiAmount, row.unitIpi, row.unitCostWithIpi, row.suggestedUnit, row.suggestedTotal].join(':')).join('|');
-    return [context && context.mode, themeMode, isFeatureEnabled(FEATURE_KEY), isFeatureEnabled('stockPriceSimulationEnabled'), selectedProfileId, activeProfile ? activeProfile.id : '', panelCollapsed, freightValue, freightTouched, freightSyncPending, profileSig, xmlSig, overrideSig, rowSig].join('||');
+    return [context && context.mode, themeMode, isFeatureEnabled(FEATURE_KEY), selectedProfileId, activeProfile ? activeProfile.id : '', panelCollapsed, freightValue, freightTouched, freightSyncPending, profileSig, xmlSig, overrideSig, rowSig].join('||');
   }
 
   function renderRoot(root, context) {
@@ -970,7 +920,6 @@
     const signature = computeSignature(context, activeProfile, appliedRows, themeMode);
     if (signature === lastSignature) {
       root.className = (panelCollapsed ? 'is-collapsed ' : '') + (context && context.mode === 'import-popup' ? 'is-import-popup ' : 'is-purchase ') + 'is-' + themeMode;
-      syncImportPopupRowActions(context, appliedRows);
       return;
     }
     lastSignature = signature;
@@ -999,7 +948,6 @@
     }
     root.className = (panelCollapsed ? 'is-collapsed ' : '') + (context && context.mode === 'import-popup' ? 'is-import-popup ' : 'is-purchase ') + 'is-' + themeMode;
     root.innerHTML = '<div class="cardx"><div class="head"><div class="head-main"><button type="button" class="collapse-btn" data-zweb-action="collapse" aria-expanded="' + escapeHtml(String(!panelCollapsed)) + '" aria-label="' + (panelCollapsed ? 'Expandir painel' : 'Recolher painel') + '"><span class="chev" aria-hidden="true">&#9662;</span></button><div class="head-copy"><h3 class="title">C\u00e1lculo de Valores</h3><p class="subtitle">' + escapeHtml(subtitle) + '</p></div></div><div class="controls"><div class="control"><label for="' + ROOT_ID + '-profile">Par\u00e2metro padr\u00e3o</label><select id="' + ROOT_ID + '-profile">' + profileOptions + '</select></div><div class="control control-freight"><label for="' + ROOT_ID + '-freight">Frete R$</label><input id="' + ROOT_ID + '-freight" class="control-input" type="text" inputmode="decimal" value="' + escapeHtml(formatMoneyInput(freightValue)) + '"><span class="control-help">' + escapeHtml(freightHelp) + '</span></div><button type="button" class="refresh" data-zweb-action="refresh">Atualizar leitura</button></div></div><div class="body"><div class="note">' + escapeHtml(copy.note) + '</div>' + bodyMarkup + '</div></div>';
-    syncImportPopupRowActions(context, appliedRows);
   }
 
   function removeRoot() {
@@ -1065,8 +1013,13 @@
     if (observer && observedNode === node) return;
     if (observer) observer.disconnect();
     observedNode = node;
-    observer = new MutationObserver(() => scheduleEnsureUi());
+    observer = new MutationObserver(handlePurchaseValueSyncMutation);
     observer.observe(node, { childList: true, subtree: true });
+  }
+
+  function handlePurchaseValueSyncMutation() {
+    ensureObserver();
+    scheduleEnsureUi();
   }
 
   function initStorageListener() {
@@ -1109,8 +1062,4 @@
     scheduleEnsureUi();
   });
 
-  window.setInterval(() => {
-    ensureObserver();
-    scheduleEnsureUi();
-  }, 1500);
 })();

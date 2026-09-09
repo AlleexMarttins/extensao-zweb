@@ -29,6 +29,8 @@
 
   const FEATURE_STATE = Object.assign({}, FEATURE_DEFAULTS);
   let lastSentKey = null;
+  let zwebObserver = null;
+  let zwebScanTimer = 0;
 
   function applyFeatureState(nextState) {
     const normalized = globalThis.ZWEB_FEATURES && typeof globalThis.ZWEB_FEATURES.normalizeState === 'function'
@@ -323,7 +325,7 @@
   }
 
   function scanZweb() {
-    if (!isFeatureEnabled('noteAssistantEnabled')) return;
+    if (!isFeatureEnabled('noteAssistantEnabled') || !isZwebNfeNewRoute()) return;
     collectZwebAccessKeyInputs().forEach((input) => {
       bindZwebInput(input);
       checkZwebInput(input, false);
@@ -448,22 +450,43 @@
     logInfo('Reset: estado limpo para nova tentativa.');
   }
 
-  function initZweb() {
-    logInfo('Assistente de Nota: script ativo na Zweb.');
-    const observer = new MutationObserver(scanZweb);
-    observer.observe(document.documentElement || document.body, {
+  function queueZwebScan() {
+    if (zwebScanTimer) return;
+    zwebScanTimer = window.setTimeout(() => {
+      zwebScanTimer = 0;
+      scanZweb();
+    }, 80);
+  }
+
+  function refreshZwebWatcher() {
+    if (zwebObserver) zwebObserver.disconnect();
+    zwebObserver = null;
+    if (zwebScanTimer) {
+      window.clearTimeout(zwebScanTimer);
+      zwebScanTimer = 0;
+    }
+    if (!isFeatureEnabled('noteAssistantEnabled')) return;
+    if (!isZwebNfeNewRoute()) return;
+
+    const target = document.getElementById('z_app_content_container') || document.body;
+    if (!target) return;
+    zwebObserver = new MutationObserver(queueZwebScan);
+    zwebObserver.observe(target, {
       childList: true,
       subtree: true,
     });
+    scanZweb();
+  }
 
+  function initZweb() {
+    logInfo('Assistente de Nota: script ativo na Zweb.');
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', scanZweb);
+      document.addEventListener('DOMContentLoaded', refreshZwebWatcher);
     } else {
-      scanZweb();
+      refreshZwebWatcher();
     }
 
-    window.addEventListener('hashchange', scanZweb);
-    setInterval(scanZweb, 1200);
+    window.addEventListener('hashchange', refreshZwebWatcher);
   }
 
   function initFsist() {
@@ -513,6 +536,7 @@
     try {
       chrome.storage.local.get(FEATURE_DEFAULTS, (stored) => {
         applyFeatureState(stored);
+        if (isZwebHost()) refreshZwebWatcher();
       });
     } catch (error) {}
 
@@ -534,6 +558,7 @@
         if (!isFeatureEnabled('noteAssistantEnabled')) {
           lastSentKey = null;
         }
+        if (isZwebHost()) refreshZwebWatcher();
       });
     } catch (error) {}
   }
@@ -553,6 +578,7 @@
       if (!message || message.type !== 'note-assistant-retry') return;
       if (!isZwebHost()) return;
       resetState();
+      refreshZwebWatcher();
       scanZweb();
     });
   } catch (error) {}

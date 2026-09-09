@@ -44,7 +44,21 @@
   const PERSON_EDIT_ROUTE_FRAGMENTS = ['/register/client/edit/', '/register/supplier/edit/'];
   const SUPPLIER_EDIT_ROUTE_FRAGMENT = '/register/supplier/edit/';
   const SUPPLIER_BUSINESS_NAME_SELECTOR = '[data-zweb-supplier-business-name-field="true"], #person\\.businessName, #zweb-supplier-business-name';
-  const BRIDGE_VERSION = '20260701-1';
+  const REFERENCE_CACHE_MUTATIONS = [
+    { operation: 'finance.post-category', cacheKey: 'categories' },
+    { operation: 'finance.put-category', cacheKey: 'categories' },
+    { operation: 'finance.delete-category', cacheKey: 'categories' },
+    { operation: 'inventory.post-payment_mode', cacheKey: 'paymentModes' },
+    { operation: 'inventory.put-payment_mode', cacheKey: 'paymentModes' },
+    { operation: 'inventory.delete-payment_mode', cacheKey: 'paymentModes' },
+    { operation: 'person.post-person', cacheKey: 'recipients' },
+    { operation: 'person.put-person', cacheKey: 'recipients' },
+    { operation: 'person.delete-person', cacheKey: 'recipients' },
+    { operation: 'inventory.post-trade-status', cacheKey: 'salesStatuses' },
+    { operation: 'inventory.put-trade-status', cacheKey: 'salesStatuses' },
+    { operation: 'inventory.delete-trade-status', cacheKey: 'salesStatuses' }
+  ];
+  const BRIDGE_VERSION = '20260817-1';
 
   if (window.__zwebXmlPageBridgeInstalled === BRIDGE_VERSION) return;
   window.__zwebXmlPageBridgeInstalled = BRIDGE_VERSION;
@@ -90,6 +104,21 @@
     try {
       window.dispatchEvent(new CustomEvent(BRIDGE_SOURCE, { detail: message }));
     } catch (error) {}
+  }
+
+  function getReferenceCacheKeysForRequest(url) {
+    const requestUrl = String(url || '').toLowerCase();
+    if (!requestUrl) return [];
+    return [...new Set(REFERENCE_CACHE_MUTATIONS
+      .filter(({ operation }) => requestUrl.indexOf(operation) !== -1)
+      .map(({ cacheKey }) => cacheKey))];
+  }
+
+  function postReferenceCacheInvalidation(url, status) {
+    if (!Number.isFinite(status) || status < 200 || status >= 300) return;
+    const cacheKeys = getReferenceCacheKeysForRequest(url);
+    if (!cacheKeys.length) return;
+    postBridgeMessage('reference-cache-change', { cacheKeys });
   }
 
   function installExtensionModalBridge() {
@@ -258,6 +287,47 @@
       if (!isTargetNfeItemSearchInput(input)) return;
       applyNfeItemHashNormalization(input);
     });
+  }
+
+  let nfeItemHashSyncScheduled = false;
+
+  function scheduleVisibleNfeItemHashSync() {
+    if (nfeItemHashSyncScheduled) return;
+    nfeItemHashSyncScheduled = true;
+
+    const run = () => {
+      nfeItemHashSyncScheduled = false;
+      syncVisibleNfeItemHashInputs();
+    };
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(run);
+      return;
+    }
+
+    setTimeout(run, 0);
+  }
+
+  function nodeMayContainNfeItemSearchInput(node) {
+    if (!node || node.nodeType !== 1) return false;
+    if (node.matches && node.matches('input.multiselect__input')) return true;
+    return !!(node.querySelector && node.querySelector('input.multiselect__input'));
+  }
+
+  function handleNfeItemHashMutations(mutations) {
+    const addedItemSearchInput = mutations.some((mutation) =>
+      Array.from(mutation.addedNodes || []).some(nodeMayContainNfeItemSearchInput)
+    );
+
+    if (addedItemSearchInput) scheduleVisibleNfeItemHashSync();
+  }
+
+  function observeNfeItemHashInputs() {
+    if (typeof MutationObserver !== 'function' || !document.documentElement) return;
+
+    const observer = new MutationObserver(handleNfeItemHashMutations);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    scheduleVisibleNfeItemHashSync();
   }
 
   function safeParseJson(text) {
@@ -1405,6 +1475,12 @@
     this.__zwebBridgeRequestBody = body;
     maybePostDocumentNegativeStockConfigurationRequest(this.__zwebBridgeUrl, body);
 
+    if (getReferenceCacheKeysForRequest(this.__zwebBridgeUrl).length) {
+      this.addEventListener('loadend', () => {
+        postReferenceCacheInvalidation(this.__zwebBridgeUrl, this.status);
+      }, true);
+    }
+
     if (isNfceTransmitRequest(this.__zwebBridgeUrl)) {
       this.addEventListener('loadend', () => {
         postPdvNfceTransmitResult(this.__zwebBridgeUrl, this.__zwebBridgeRequestBody, getRawXhrResponseText(this), this.status);
@@ -1451,6 +1527,7 @@
       if (normalizedBody !== nextInit.body) {
         nextInit.body = normalizedBody;
         const response = await nativeFetch(nextInput, nextInit);
+        postReferenceCacheInvalidation(nextUrl, response.status);
         if (isNfceTransmitRequest(nextUrl)) {
           let responseText = '';
           try {
@@ -1488,6 +1565,7 @@
           if (rewrittenBody !== bodyText) {
             const rewrittenRequest = new Request(requestInput, { body: rewrittenBody });
             const response = await nativeFetch(rewrittenRequest);
+            postReferenceCacheInvalidation(nextUrl, response.status);
             if (isNfceTransmitRequest(nextUrl)) {
               let responseText = '';
               try {
@@ -1508,6 +1586,7 @@
           }
 
           const response = await nativeFetch(requestInput, init);
+          postReferenceCacheInvalidation(nextUrl, response.status);
           if (isNfceTransmitRequest(nextUrl)) {
             let responseText = '';
             try {
@@ -1529,6 +1608,7 @@
       }
 
       const response = await nativeFetch(nextInput, init);
+      postReferenceCacheInvalidation(nextUrl, response.status);
       if (isNfceTransmitRequest(nextUrl)) {
         let responseText = '';
         try {
@@ -1577,7 +1657,7 @@
 
   document.addEventListener('input', handleNfeItemHashInput, true);
   document.addEventListener('change', handleNfeItemHashInput, true);
-  window.setInterval(() => {
-    syncVisibleNfeItemHashInputs();
-  }, 120);
+  document.addEventListener('focusin', handleNfeItemHashInput, true);
+  window.addEventListener('hashchange', scheduleVisibleNfeItemHashSync);
+  observeNfeItemHashInputs();
 })();

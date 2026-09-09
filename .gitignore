@@ -39,3 +39,13 @@ tools/playwright/*.jpg
 tools/playwright/*.png
 extension.rar
 credentials-zweb.txt
+config/secret_key
+config/field_encryption_key
+.manual-*
+.codex-chrome-extension-test/
+.claude/
+
+tmp/
+output/
+tools/*.msi
+*.apk

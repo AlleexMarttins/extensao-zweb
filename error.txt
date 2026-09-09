@@ -1,0 +1,2002 @@
+...
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442
+443
+444
+445
+446
+447
+448
+449
+450
+451
+452
+453
+454
+455
+456
+457
+458
+459
+460
+461
+462
+463
+464
+465
+466
+467
+468
+469
+470
+471
+472
+473
+474
+475
+476
+477
+478
+479
+480
+481
+482
+483
+484
+485
+486
+487
+488
+489
+490
+491
+492
+493
+494
+495
+496
+497
+498
+499
+500
+501
+502
+503
+504
+505
+506
+507
+508
+509
+510
+511
+512
+513
+514
+515
+516
+517
+518
+519
+520
+521
+522
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533
+534
+535
+536
+537
+538
+539
+540
+541
+542
+543
+544
+545
+546
+547
+548
+549
+550
+551
+552
+553
+554
+555
+556
+557
+558
+559
+560
+561
+562
+563
+564
+565
+566
+567
+568
+569
+570
+571
+572
+573
+574
+575
+576
+577
+578
+579
+580
+581
+582
+583
+584
+585
+586
+587
+588
+589
+590
+591
+592
+593
+594
+595
+596
+597
+598
+599
+600
+601
+602
+603
+604
+605
+606
+607
+608
+609
+610
+611
+612
+613
+614
+615
+616
+617
+618
+619
+620
+621
+622
+623
+624
+625
+626
+627
+628
+629
+630
+631
+632
+633
+634
+635
+636
+637
+638
+639
+640
+641
+642
+643
+644
+645
+646
+647
+648
+649
+650
+651
+652
+653
+654
+655
+656
+657
+658
+659
+660
+661
+662
+663
+664
+665
+666
+667
+668
+669
+670
+671
+672
+673
+674
+675
+676
+677
+678
+679
+680
+681
+682
+683
+684
+685
+686
+687
+688
+689
+690
+691
+692
+693
+694
+695
+696
+697
+698
+699
+700
+701
+702
+703
+704
+705
+706
+707
+708
+709
+710
+711
+712
+713
+714
+715
+716
+717
+718
+719
+720
+721
+722
+723
+724
+725
+726
+727
+728
+729
+730
+731
+732
+733
+734
+735
+736
+737
+738
+739
+740
+741
+742
+743
+744
+745
+746
+747
+748
+749
+750
+751
+752
+753
+754
+755
+756
+757
+758
+759
+760
+761
+762
+763
+764
+765
+766
+767
+768
+769
+770
+771
+772
+773
+774
+775
+776
+777
+778
+779
+780
+781
+782
+783
+784
+785
+786
+787
+788
+789
+790
+791
+792
+793
+794
+795
+796
+797
+798
+799
+800
+801
+802
+803
+804
+805
+806
+807
+808
+809
+810
+811
+812
+813
+814
+815
+816
+817
+818
+819
+820
+821
+822
+823
+824
+825
+826
+827
+828
+829
+830
+831
+832
+833
+834
+835
+836
+837
+838
+839
+840
+841
+842
+843
+844
+845
+846
+847
+848
+849
+850
+851
+852
+853
+854
+855
+856
+857
+858
+859
+860
+861
+862
+863
+864
+865
+866
+867
+868
+869
+870
+871
+872
+873
+874
+875
+876
+877
+878
+879
+880
+881
+882
+883
+884
+885
+886
+887
+888
+889
+890
+891
+892
+893
+894
+895
+896
+897
+898
+899
+900
+901
+902
+903
+904
+905
+906
+907
+908
+909
+910
+911
+912
+913
+914
+915
+916
+917
+918
+919
+920
+921
+922
+923
+924
+925
+926
+927
+928
+929
+930
+931
+932
+933
+934
+935
+936
+937
+938
+939
+940
+941
+942
+943
+944
+945
+946
+947
+948
+949
+950
+951
+952
+953
+954
+955
+956
+957
+958
+959
+960
+961
+962
+963
+964
+965
+966
+967
+968
+969
+970
+971
+972
+973
+974
+975
+976
+977
+978
+979
+980
+981
+982
+983
+984
+985
+986
+987
+988
+989
+990
+991
+992
+993
+994
+995
+996
+997
+998
+999
+1000
+1001
+1002
+1003
+1004
+1005
+1006
+1007
+1008
+1009
+1010
+1011
+1012
+1013
+1014
+1015
+1016
+1017
+1018
+1019
+1020
+1021
+1022
+1023
+1024
+1025
+1026
+1027
+1028
+1029
+1030
+1031
+1032
+1033
+1034
+1035
+1036
+1037
+1038
+1039
+1040
+1041
+1042
+1043
+1044
+1045
+1046
+1047
+1048
+1049
+1050
+1051
+1052
+1053
+1054
+1055
+1056
+1057
+1058
+1059
+1060
+1061
+1062
+1063
+1064
+1065
+1066
+1067
+1068
+1069
+1070
+1071
+1072
+1073
+1074
+1075
+1076
+1077
+1078
+1079
+1080
+1081
+1082
+1083
+1084
+1085
+1086
+1087
+1088
+1089
+1090
+1091
+1092
+1093
+1094
+1095
+1096
+1097
+1098
+1099
+1100
+1101
+1102
+1103
+1104
+1105
+1106
+1107
+1108
+1109
+1110
+1111
+1112
+1113
+1114
+1115
+1116
+1117
+1118
+1119
+1120
+1121
+1122
+1123
+1124
+1125
+1126
+1127
+1128
+1129
+1130
+1131
+1132
+1133
+1134
+1135
+1136
+1137
+1138
+1139
+1140
+1141
+1142
+1143
+1144
+1145
+1146
+1147
+1148
+1149
+1150
+1151
+1152
+1153
+1154
+1155
+1156
+1157
+1158
+1159
+1160
+1161
+1162
+1163
+1164
+1165
+1166
+1167
+1168
+1169
+1170
+1171
+1172
+1173
+1174
+1175
+1176
+1177
+1178
+1179
+1180
+1181
+1182
+1183
+1184
+1185
+1186
+1187
+1188
+1189
+1190
+1191
+1192
+1193
+1194
+1195
+1196
+1197
+1198
+1199
+1200
+1201
+1202
+1203
+1204
+1205
+1206
+1207
+1208
+1209
+1210
+1211
+1212
+1213
+1214
+1215
+1216
+1217
+1218
+1219
+1220
+1221
+1222
+1223
+1224
+1225
+1226
+1227
+1228
+1229
+1230
+1231
+1232
+...
+<233 linhas não apresentadas>
+  let EXTENSION_MODAL_BRIDGE_MESSAGE_BOUND = false;
+  let LAST_NFE_CONTEXT_MENU_ANCHOR = null;
+  let NFE_RETURN_HISTORY = {};
+  let PDV_CASH_COUNTER_STATE = null;
+  let LAST_NFE_RETURN_SIGNATURE = '';
+  let NFE_RETURN_SYNC_TIMER = 0;
+  let FEATURE_UI_REFRESH_TIMER = 0;
+  let PRODUCT_CODE_RANGE_STATE = {
+    active: false,
+    enabled: false,
+    loading: false,
+    startCode: '',
+    endCode: '',
+    items: [],
+    error: '',
+    selectedSequence: '',
+    selectedCellIndex: 0
+  };
+  let LAST_PRODUCT_CODE_RANGE_SIGNATURE = '';
+  let LAST_PRODUCT_CODE_RANGE_CLICK = {
+    sequence: '',
+    cellIndex: -1,
+    at: 0
+  };
+  let PRODUCT_FILTER_CLEAR_SYNC_LOCK = '';
+  let COMMON_MULTI_TERM_FILTER_STATE = {
+    active: false,
+    pending: false,
+    rawValue: '',
+    primaryTerm: '',
+    terms: [],
+    columnTitle: '',
+    columnKey: '',
+    gridSignatureBefore: '',
+    armedAt: 0
+  };
+  let PRODUCT_CODE_RANGE_MODAL_VISIBILITY_TIMER = 0;
+  let PRODUCT_CODE_RANGE_SNACKBAR_HIDE_TIMER = 0;
+  let PRODUCT_CODE_RANGE_SNACKBAR_ENTER_TIMER = 0;
+  let PRODUCT_CODE_RANGE_SNACKBAR_SHOW_TIMER = 0;
+  let PRODUCT_CODE_RANGE_SNACKBAR_SHOWN_AT = 0;
+  let PRODUCT_REPLICATE_SUPPLIER_RESULTS = [];
+  let PRODUCT_REPLICATE_SUPPLIER_SELECTED = null;
+  let PRODUCT_REPLICATE_SUPPLIER_LOADING = false;
+  let PRODUCT_REPLICATE_SUPPLIER_RUNNING = false;
+  let PRODUCT_REPLICATE_SUPPLIER_SEARCH_TIMER = 0;
+  let LAST_PRODUCT_PAGINATE_REQUEST_PAYLOAD = null;
+  let PRODUCT_REPLICATE_SUPPLIER_REPORT = null;
+  let NFE_BATCH_DOWNLOAD_RUNNING = false;
+  let NFE_BATCH_DOWNLOAD_STATUS_TIMER = 0;
+  let NFE_BATCH_DOWNLOAD_INTERNAL_CLICK = false;
+  let NFCE_CANCEL_REASON_RUNNING = false;
+  let DOCUMENT_NEGATIVE_STOCK_GUARD_STATE = {
+    expiresAt: 0,
+    timer: 0,
+    warningShownFor: 0,
+    disabling: false,
+    apiDisabling: false,
+    closingModal: false
+  };
+  let DOCUMENT_NEGATIVE_STOCK_GUARD_HEARTBEAT_TIMER = 0;
+  let DOCUMENT_NEGATIVE_STOCK_GUARD_SERVER_CHECK_RUNNING = false;
+  let DOCUMENT_NEGATIVE_STOCK_GUARD_LAST_SERVER_CHECK_AT = 0;
+  const ITEM_SEARCH_NORMALIZE_TIMERS = new WeakMap();
+  const PRODUCT_LOW_STOCK_ATTR = 'data-zweb-low-stock-highlight';
+  const PRODUCT_ROW_STYLE_ATTR = 'data-zweb-product-style-managed';
+  const PRODUCT_LOW_STOCK_STYLE_ID = 'zweb-low-stock-style';
+  const PRODUCT_LOW_STOCK_LIGHT_COLOR = '#c43d3d';
+  const PRODUCT_LOW_STOCK_DARK_COLOR = '#ef9a9a';
+  const PRODUCT_STYLE_PREFS_DEFAULTS = {
+    fontFamily: '',
+    fontSizePx: '',
+    useNormalColor: false,
+    normalColor: '#181c32',
+    lowStockColor: PRODUCT_LOW_STOCK_LIGHT_COLOR
+  };
+  let PRODUCT_STYLE_PREFS = Object.assign({}, PRODUCT_STYLE_PREFS_DEFAULTS);
+  const PRODUCT_FONT_OPTIONS = [
+    { value: '', label: 'Padrao da Zweb' },
+    { value: '"Segoe UI",Tahoma,Geneva,Verdana,sans-serif', label: 'Segoe UI' },
+    { value: 'Arial,sans-serif', label: 'Arial' },
+    { value: 'Tahoma,sans-serif', label: 'Tahoma' },
+    { value: 'Verdana,sans-serif', label: 'Verdana' },
+    { value: 'Georgia,serif', label: 'Georgia' },
+    { value: 'Consolas,"Courier New",monospace', label: 'Consolas' }
+  ];
+
+  function isFeatureEnabled(key) {
+    return FEATURE_STATE[key] !== false;
+  }
+
+  function applyFeatureState(nextState) {
+    const normalized = globalThis.ZWEB_FEATURES && typeof globalThis.ZWEB_FEATURES.normalizeState === 'function'
+      ? globalThis.ZWEB_FEATURES.normalizeState(nextState)
+      : Object.assign({}, FEATURE_DEFAULTS, nextState || {});
+
+    Object.keys(FEATURE_DEFAULTS).forEach((key) => {
+      FEATURE_STATE[key] = normalized[key] !== false;
+    });
+
+    syncPageBridgeFeatureFlags();
+  }
+
+  function syncPageBridgeFeatureFlags() {
+    const root = document.documentElement;
+    if (!root || !root.dataset) return;
+    root.dataset.zwebItemSearchHashEnabled = isFeatureEnabled('itemSearchHashEnabled') ? 'true' : 'false';
+  }
+
+  function isDocumentRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf('/document/') !== -1;
+  }
+
+  function getRuntimeApi() {
+    if (typeof chrome === 'undefined' || !chrome || !chrome.runtime) return null;
+    return chrome.runtime;
+  }
+
+  function sendRuntimeMessage(message) {
+    const runtime = getRuntimeApi();
+    if (!runtime || typeof runtime.sendMessage !== 'function') {
+      return Promise.reject(new Error('Runtime indisponivel.'));
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        runtime.sendMessage(message, (response) => {
+          const error = chrome.runtime && chrome.runtime.lastError;
+          if (error) {
+            reject(new Error(error.message));
+            return;
+          }
+          resolve(response);
+        });
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+  }
+
+  function isTargetDavRoute() {
+    const href = (location.href || '').toLowerCase();
+    return TARGET_DAVS_ROUTES.some(route => href.indexOf(route) !== -1);
+  }
+
+  function isTargetProductRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_PRODUCT_ROUTE) !== -1 && href.indexOf(TARGET_PRODUCT_NEW_ROUTE) === -1;
+  }
+
+  function isTargetProductEditRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(PRODUCT_EDIT_ROUTE.toLowerCase()) !== -1;
+  }
+
+  function isSignInRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_SIGN_IN_ROUTE) !== -1;
+  }
+
+  function isTargetDocumentConfigurationRoute() {
+    return getNormalizedHashRoute() === TARGET_DOCUMENT_CONFIGURATION_ROUTE;
+  }
+
+  function getNormalizedHashRoute() {
+    const hash = String(location.hash || '').toLowerCase();
+    const route = hash.replace(/^#/, '').split('?')[0].split('&')[0].replace(/\/+$/, '');
+    return route || '';
+  }
+
+  function isTargetPurchaseRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_PURCHASE_ROUTE) !== -1;
+  }
+
+  function isTargetNfeListRoute() {
+    return getNormalizedHashRoute() === TARGET_NFE_ROUTE;
+  }
+
+  function isTargetNfeRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_NFE_ROUTE) !== -1;
+  }
+
+  function isTargetNfeNewRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_NFE_NEW_ROUTE) !== -1;
+  }
+
+  function isTargetNfceRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_NFCE_ROUTE) !== -1 || href.indexOf(TARGET_NFCE_PDV_ROUTE) !== -1;
+  }
+
+  function isTargetPdvRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_NFCE_PDV_ROUTE) !== -1;
+  }
+
+  function isTargetNfceListRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_NFCE_ROUTE) !== -1;
+  }
+
+  function isTargetClientEditRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_CLIENT_EDIT_ROUTE) !== -1;
+  }
+
+  function isTargetSupplierEditRoute() {
+    const href = (location.href || '').toLowerCase();
+    return href.indexOf(TARGET_SUPPLIER_EDIT_ROUTE) !== -1;
+  }
+
+  function isTarpZEAWYtiB6bJ16NuLbGCc6CZ6jJdKfb63() {
+    return isTargetClientEditRoute() || isTargetSupplierEditRoute();
+  }
+
+  function getPersonBusinessNameEditRouteId() {
+    const href = String(location.href || '');
+    const match = href.match(/\/register\/(?:client|supplier)\/edit\/([^/?#&]+)/i);
+    if (!match) return null;
+    const value = decodeURIComponent(match[1] || '').trim();
+    return /^\d+$/.test(value) ? Number(value) : value || null;
+  }
+
+  function shouldPreserveBlockedDropdownOption(normalizedText, element) {
+    if (!normalizedText) return false;
+    if (!isTargetNfceRoute()) return false;
+    if (normalizedText !== 'kit') return false;
+
+    const container = element && element.closest
+      ? element.closest('button, a, .btn, .dropdown-item, .menu-item, .multiselect__element, li, div')
+      : null;
+    const containerText = normalizeText(container && container.innerText || '');
+    return containerText.indexOf('importar kit') !== -1;
+  }
+
+  function getBlockedDropdownNavigationScope(element) {
+    if (!element || !element.closest) return null;
+    return element.closest(
+      '#z_app_header_menu, ' +
+      '#z_app_sidebar_menu, ' +
+      '#kt_app_sidebar_menu, ' +
+      '.app-sidebar-menu, ' +
+      '.app-header-menu'
+    );
+  }
+
+  function shouldPreserveForceHideText(normalizedText) {
+    if (!normalizedText) return false;
+    if (!isTargetNfeRoute()) return false;
+    return FORCE_HIDE_TEXTS.some(t => normalizedText.indexOf(normalizeText(t)) !== -1);
+  }
+
+  function shouldBlockSpecificInput(input) {
+    if (!input) return false;
+    if (!isTargetDavRoute()) return false;
+
+    const byId = input.id && BLOCK_INPUT_IDS.includes(input.id);
+    const bySelector = BLOCK_INPUT_SELECTORS.some(selector => input.matches && input.matches(selector));
+    return byId || bySelector;
+  }
+
+  function isProductEditRoute() {
+    return String(location.href || '').toLowerCase().indexOf(PRODUCT_EDIT_ROUTE) !== -1;
+  }
+
+  function isProductAdminGuardInput(input) {
+    if (!input || !isProductEditRoute()) return false;
+    return !!(input.id && PRODUCT_ADMIN_GUARDED_INPUT_IDS.includes(input.id));
+  }
+
+  function resetProductAdminGuardState() {
+    PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE = false;
+  }
+
+  function unlockProductAdminGuardInputs() {
+    PRODUCT_ADMIN_GUARD_SESSION_UNLOCKED = true;
+    try {
+      if (chrome.storage && chrome.storage.session) {
+        chrome.storage.session.set({ [PRODUCT_ADMIN_GUARD_SESSION_STORAGE_KEY]: true });
+      }
+    } catch (error) {}
+    PRODUCT_ADMIN_GUARDED_INPUT_IDS.forEach((id) => {
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.removeAttribute('readonly');
+      input.removeAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR);
+      input.setAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR, 'true');
+      input.title = 'Campo liberado com senha de administrador';
+      input.style.cursor = '';
+    });
+  }
+
+  function syncProductAdminGuardInputs() {
+    PRODUCT_ADMIN_GUARDED_INPUT_IDS.forEach((id) => {
+      const input = document.getElementById(id);
+      if (!input) return;
+
+      if (!isProductAdminGuardInput(input)) {
+        if (
+          input.getAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR) === 'true'
+          || input.getAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR) === 'true'
+        ) {
+          input.removeAttribute('readonly');
+          input.removeAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR);
+          input.removeAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR);
+          input.style.cursor = '';
+          input.title = '';
+        }
+        return;
+      }
+
+      if (PRODUCT_ADMIN_GUARD_SESSION_UNLOCKED || input.getAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR) === 'true') {
+        input.removeAttribute('readonly');
+        input.removeAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR);
+        input.setAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR, 'true');
+        input.title = 'Campo liberado com senha de administrador';
+        input.style.cursor = '';
+        return;
+      }
+
+      input.setAttribute('readonly', 'true');
+      input.setAttribute(PRODUCT_ADMIN_GUARD_LOCK_ATTR, 'true');
+      input.removeAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR);
+      input.title = 'Digite a senha de administrador para alterar este campo';
+      input.style.cursor = 'not-allowed';
+    });
+  }
+
+  function requestProductAdminGuardUnlock(input) {
+    if (!isProductAdminGuardInput(input) || PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE) return false;
+
+    PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE = true;
+    try {
+      const password = window.prompt('Digite a senha de administrador para alterar Custo e Quantidade atual.', '');
+      if (password === PRODUCT_ADMIN_PASSWORD) {
+        unlockProductAdminGuardInputs();
+        window.setTimeout(() => {
+          if (!input || !document.contains(input)) return;
+          try {
+            input.focus({ preventScroll: true });
+            input.select && input.select();
+          } catch (error) {}
+        }, 0);
+        return true;
+      }
+
+      if (password != null) {
+        window.alert('Senha de administrador inválida.');
+      }
+      if (input && document.contains(input)) input.blur();
+      return false;
+    } finally {
+      PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE = false;
+      syncProductAdminGuardInputs();
+    }
+  }
+
+  function handleProductAdminGuardActivation(event) {
+    if (!event || !event.target || !event.isTrusted) return;
+
+    const input = event.target.closest ? event.target.closest('input') : null;
+    if (!isProductAdminGuardInput(input)) return;
+    if (input.getAttribute(PRODUCT_ADMIN_GUARD_UNLOCK_ATTR) === 'true') return;
+
+    if (event.type === 'keydown') {
+      const key = String(event.key || '');
+      const navigationKeys = ['Tab', 'Shift', 'Control', 'Alt', 'Meta', 'Escape', 'Enter'];
+      if (!key || navigationKeys.includes(key)) return;
+    }
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    requestProductAdminGuardUnlock(input);
+  }
+
+  function normalizeText(value) {
+    return (value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim();
+  }
+
+  function normalizeRawText(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function getBlockedNfceCardBrand(text) {
+    const normalized = normalizeRawText(text);
+    const upper = normalized.toUpperCase();
+    return normalized && normalized === upper && NFCE_BLOCKED_CARD_BRANDS.includes(upper) ? upper : '';
+  }
+
+  function hasAlternateNfceCardBrandVariant(optionTexts, brand) {
+    return optionTexts.some((text) => {
+      const normalized = normalizeRawText(text);
+      return normalized && normalized !== brand && normalized.toUpperCase() === brand;
+    });
+  }
+
+  function hideBlockedNfceBrandMultiselectOptions() {
+    Array.from(document.querySelectorAll('.multiselect__content, ul.multiselect__content, .multiselect__content-wrapper')).forEach((list) => {
+      const optionNodes = Array.from(list.querySelectorAll('.multiselect__option'));
+      if (!optionNodes.length) return;
+
+      const optionTexts = optionNodes.map((option) => normalizeRawText(option.textContent || ''));
+      optionNodes.forEach((option) => {
+        const brand = getBlockedNfceCardBrand(option.textContent || '');
+        const shouldHide = !!brand && hasAlternateNfceCardBrandVariant(optionTexts, brand);
+        const wrapper = option.closest('.multiselect__element') || option;
+        wrapper.style.display = shouldHide ? 'none' : '';
+        option.setAttribute(NFCE_BLOCKED_CARD_BRAND_ATTR, shouldHide ? 'true' : 'false');
+        option.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
+      });
+    });
+  }
+
+  function hideBlockedNfceBrandSelectOptions() {
+    Array.from(document.querySelectorAll('select')).forEach((select) => {
+      const options = Array.from(select.options || []);
+      if (!options.length) return;
+
+      const optionTexts = options.map((option) => normalizeRawText(option.textContent || option.label || ''));
+      options.forEach((option) => {
+        const brand = getBlockedNfceCardBrand(option.textContent || option.label || '');
+        const shouldHide = !!brand && hasAlternateNfceCardBrandVariant(optionTexts, brand);
+        option.hidden = shouldHide;
+        option.disabled = shouldHide;
+        option.setAttribute(NFCE_BLOCKED_CARD_BRAND_ATTR, shouldHide ? 'true' : 'false');
+      });
+    });
+  }
+
+  function syncNfceCardBrandOptions() {
+    if (!isFeatureEnabled('nfceCardBrandCleanupEnabled') || !isTargetNfceRoute()) return;
+    hideBlockedNfceBrandMultiselectOptions();
+    hideBlockedNfceBrandSelectOptions();
+  }
+
+  function getTodayKey() {
+    const nowDate = new Date();
+    const year = nowDate.getFullYear();
+    const month = String(nowDate.getMonth() + 1).padStart(2, '0');
+    const day = String(nowDate.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+  }
+
+  function parsePdvMoney(value) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : NaN;
+    const raw = String(value == null ? '' : value).trim();
+    if (!raw) return NaN;
+    const normalized = raw
+      .replace(/[^\d,.-]/g, '')
+      .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+      .replace(',', '.');
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  function formatPdvMoney(value) {
+    return (Number(value) || 0).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+  }
+
+  function readPdvCashCounterState() {
+    try {
+      const parsed = JSON.parse(window.localStorage && window.localStorage.getItem(PDV_CASH_COUNTER_STORAGE_KEY) || '{}');
+      PDV_CASH_COUNTER_STATE = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (error) {
+      PDV_CASH_COUNTER_STATE = {};
+    }
+
+    if (PDV_CASH_COUNTER_STATE.dateKey !== getTodayKey()) {
+      resetPdvCashCounterState('new-day');
+    } else {
+      PDV_CASH_COUNTER_STATE.total = Number(PDV_CASH_COUNTER_STATE.total) || 0;
+      PDV_CASH_COUNTER_STATE.count = Number(PDV_CASH_COUNTER_STATE.count) || 0;
+      PDV_CASH_COUNTER_STATE.signatures = Array.isArray(PDV_CASH_COUNTER_STATE.signatures)
+        ? PDV_CASH_COUNTER_STATE.signatures.slice(-PDV_CASH_COUNTER_MAX_SIGNATURES)
+        : [];
+    }
+
+    return PDV_CASH_COUNTER_STATE;
+  }
+
+  function writePdvCashCounterState() {
+    const state = readPdvCashCounterState();
+    try {
+      window.localStorage && window.localStorage.setItem(PDV_CASH_COUNTER_STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {}
+  }
+
+  function resetPdvCashCounterState(reason) {
+    PDV_CASH_COUNTER_STATE = {
+      dateKey: getTodayKey(),
+      total: 0,
+      count: 0,
+      signatures: [],
+      resetAt: new Date().toISOString(),
+      resetReason: String(reason || 'manual')
+    };
+    writePdvCashCounterState();
+    syncPdvCashCounterUi();
+  }
+
+  function walkPdvPayload(value, visitor, path, seen) {
+    if (value == null) return;
+    const currentPath = path || [];
+    const visited = seen || new Set();
+    if (typeof value !== 'object') {
+      visitor(value, currentPath);
+      return;
+    }
+    if (visited.has(value)) return;
+    visited.add(value);
+
+    if (Array.isArray(value)) {
+      value.forEach((entry, index) => walkPdvPayload(entry, visitor, currentPath.concat(String(index)), visited));
+      return;
+    }
+
+    visitor(value, currentPath);
+    Object.keys(value).forEach((key) => {
+      walkPdvPayload(value[key], visitor, currentPath.concat(key), visited);
+    });
+  }
+
+  function getPdvValueByKeys(object, keys) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return NaN;
+    for (const key of Object.keys(object)) {
+      const normalized = normalizeText(key);
+      if (!keys.some((candidate) => normalized === candidate || normalized.indexOf(candidate) !== -1)) continue;
+      const parsed = parsePdvMoney(object[key]);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return NaN;
+  }
+
+  function isPdvCashPaymentObject(object, path) {
+    if (!object || typeof object !== 'object' || Array.isArray(object)) return false;
+    const pathText = normalizeText((path || []).join(' '));
+    const keyText = normalizeText(Object.keys(object).join(' '));
+    const paymentHint = pathText.indexOf('pag') !== -1
+      || pathText.indexOf('payment') !== -1
+      || keyText.indexOf('pag') !== -1
+      || keyText.indexOf('payment') !== -1
+      || keyText.indexOf('forma') !== -1
+      || keyText.indexOf('meio') !== -1;
+    if (!paymentHint) return false;
+
+    const textParts = [pathText];
+    Object.keys(object).forEach((key) => {
+      const value = object[key];
+      if (typeof value === 'string' || typeof value === 'number') {
+        textParts.push(key + ' ' + value);
+      }
+    });
+    const text = normalizeText(textParts.join(' '));
+    if (!text) return false;
+    if (text.indexOf('dinheiro') !== -1) return true;
+    if (text.indexOf('especie') !== -1 || text.indexOf('espécie') !== -1) return true;
+    if (/\b01\b/.test(text)) return true;
+    return false;
+  }
+
+  function extractPdvCashAmountFromPayload(payload) {
+    let total = 0;
+    const parsed = typeof payload === 'string' ? JSON.parse(payload || '{}') : payload;
+    walkPdvPayload(parsed, (value, path) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+      if (!isPdvCashPaymentObject(value, path)) return;
+
+      const paid = getPdvValueByKeys(value, [
+        'valorrecebido',
+        'received',
+        'recebido',
+        'paid',
+        'pagamento',
+        'valor'
+      ]);
+      const change = getPdvValueByKeys(value, [
+        'troco',
+        'change'
+      ]);
+      const amount = getPdvValueByKeys(value, [
+        'valorliquido',
+        'valorfinal',
+        'valor'
+      ]);
+
+      let contribution = NaN;
+      if (Number.isFinite(paid)) {
+        contribution = Math.max(0, paid - (Number.isFinite(change) ? change : 0));
+      } else if (Number.isFinite(amount)) {
+        contribution = Math.max(0, amount - (Number.isFinite(change) ? change : 0));
+      }
+
+      if (Number.isFinite(contribution) && contribution > 0) {
+        total += contribution;
+      }
+    }, []);
+
+    return total;
+  }
+
+  function getPdvTransmitSignature(requestPayload, responsePayload, cashAmount) {
+    const candidates = [];
+    [responsePayload, requestPayload].forEach((payload) => {
+      walkPdvPayload(payload, (value, path) => {
+        const key = normalizeText((path || []).slice(-1)[0] || '');
+        if (!/(id|uuid|numero|number|chave|key|serie|series|protocolo|protocol)/.test(key)) return;
+        if (typeof value !== 'string' && typeof value !== 'number') return;
+        const text = String(value || '').trim();
+        if (text) candidates.push(key + ':' + text);
+      }, []);
+    });
+    if (candidates.length) return candidates.slice(0, 8).join('|');
+    return 'cash:' + cashAmount.toFixed(2) + ':' + new Date().toISOString().slice(0, 16);
+  }
+
+  function applyPdvCashCounterSale(requestBody, responseText) {
+    if (!isTargetPdvRoute()) return;
+
+    let requestPayload = null;
+    let responsePayload = null;
+    try {
+      requestPayload = JSON.parse(requestBody || '{}');
+    } catch (error) {
+      return;
+    }
+    try {
+      responsePayload = responseText ? JSON.parse(responseText) : null;
+    } catch (error) {
+      responsePayload = null;
+    }
+
+    const cashAmount = extractPdvCashAmountFromPayload(requestPayload);
+    if (!Number.isFinite(cashAmount) || cashAmount <= 0) return;
+
+    const state = readPdvCashCounterState();
+    const signature = getPdvTransmitSignature(requestPayload, responsePayload, cashAmount);
+    if (state.signatures.includes(signature)) return;
+
+    state.signatures.push(signature);
+    state.signatures = state.signatures.slice(-PDV_CASH_COUNTER_MAX_SIGNATURES);
+    state.total = Math.round(((Number(state.total) || 0) + cashAmount) * 100) / 100;
+    state.count = (Number(state.count) || 0) + 1;
+    state.lastSaleAt = new Date().toISOString();
+    state.lastSaleValue = Math.round(cashAmount * 100) / 100;
+    writePdvCashCounterState();
+    syncPdvCashCounterUi();
+  }
+
+  function ensurePdvCashCounterStyle() {
+    if (document.getElementById(PDV_CASH_COUNTER_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = PDV_CASH_COUNTER_STYLE_ID;
+    style.textContent = [
+      '#' + PDV_CASH_COUNTER_ID + ' { margin-top: 10px; padding: 12px 14px; border-radius: 14px; background: linear-gradient(135deg, #0f5132, #198754); color: #fff; box-shadow: 0 10px 26px rgba(15, 81, 50, .22); font-weight: 700; }',
+      '#' + PDV_CASH_COUNTER_ID + ' .zweb-pdv-cash-counter-label { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; opacity: .78; }',
+      '#' + PDV_CASH_COUNTER_ID + ' .zweb-pdv-cash-counter-value { font-size: 24px; line-height: 1.1; margin-top: 3px; }',
+      '#' + PDV_CASH_COUNTER_ID + ' .zweb-pdv-cash-counter-meta { font-size: 12px; opacity: .82; margin-top: 4px; font-weight: 600; }'
+    ].join('\n');
+    (document.head || document.documentElement).appendChild(style);
+  }
+
+  function findPdvTotalAnchor() {
+    const candidates = Array.from(document.querySelectorAll('div, section, article, aside, footer, form, .card, .row, [class*="total"]'))
+      .filter(isVisible)
+      .map((element) => ({
+        element,
+        text: normalizeText(element.innerText || element.textContent || '')
+      }))
+      .filter((entry) => entry.text && entry.text.indexOf('total') !== -1 && entry.text.indexOf('r$') !== -1);
+
+    candidates.sort((a, b) => {
+      const aLen = (a.element.innerText || a.element.textContent || '').length;
+      const bLen = (b.element.innerText || b.element.textContent || '').length;
+      return aLen - bLen;
+    });
+
+    return candidates.length ? candidates[0].element : null;
+  }
+
+  function syncPdvCashCounterUi() {
+    const existing = document.getElementById(PDV_CASH_COUNTER_ID);
+    if (!isTargetPdvRoute()) {
+      if (existing) existing.remove();
+      return;
+    }
+
+    ensurePdvCashCounterStyle();
+    const anchor = findPdvTotalAnchor();
+    if (!anchor) return;
+
+    const state = readPdvCashCounterState();
+    let counter = existing;
+    if (!counter) {
+      counter = document.createElement('div');
+      counter.id = PDV_CASH_COUNTER_ID;
+    }
+
+    counter.innerHTML = [
+      '<div class="zweb-pdv-cash-counter-label">Dinheiro acumulado no caixa</div>',
+      '<div class="zweb-pdv-cash-counter-value">' + formatPdvMoney(state.total) + '</div>',
+      '<div class="zweb-pdv-cash-counter-meta">' + (Number(state.count) || 0) + ' venda(s) em dinheiro hoje</div>'
+    ].join('');
+
+    if (counter.parentElement !== anchor.parentElement || counter.previousElementSibling !== anchor) {
+      anchor.insertAdjacentElement('afterend', counter);
+    }
+  }
+
+  function handlePdvCashCounterResetClick(event) {
+    if (!isTargetPdvRoute()) return;
+    const target = event && event.target && event.target.closest
+      ? event.target.closest('button, a, [role="button"], .btn')
+      : null;
+    if (!target) return;
+    const text = normalizeText(target.innerText || target.textContent || target.getAttribute('aria-label') || '');
+    if (!text) return;
+    if (text.indexOf('abrir caixa') !== -1 || text.indexOf('fechar caixa') !== -1 || text.indexOf('fechamento de caixa') !== -1) {
+      resetPdvCashCounterState(text);
+    }
+  }
+
+  function parseRgbColor(value) {
+    const match = String(value || '').match(/rgba?\(([^)]+)\)/i);
+    if (!match) return null;
+
+    const parts = match[1].split(',').map(part => Number(String(part).trim()));
+    if (parts.length < 3 || parts.slice(0, 3).some(part => !Number.isFinite(part))) {
+      return null;
+    }
+
+    return {
+      r: parts[0],
+      g: parts[1],
+      b: parts[2],
+      a: Number.isFinite(parts[3]) ? parts[3] : 1
+    };
+  }
+
+  function getSurfaceColor(element) {
+    let current = element;
+    while (current && current !== document.documentElement) {
+      const color = parseRgbColor(window.getComputedStyle(current).backgroundColor);
+      if (color && color.a > 0) return color;
+      current = current.parentElement;
+    }
+
+    const rootColor = parseRgbColor(window.getComputedStyle(document.body || document.documentElement).backgroundColor);
+    return rootColor || { r: 255, g: 255, b: 255, a: 1 };
+  }
+
+  function isDarkSurface(element) {
+    const color = getSurfaceColor(element);
+    const luminance = (color.r * 0.299) + (color.g * 0.587) + (color.b * 0.114);
+    return luminance < 160;
+  }
+
+  function applyCommissionReportHintTheme(hint, modal) {
+    if (!hint) return;
+
+    const darkSurface = isDarkSurface(modal || hint.parentElement);
+    const themedStyles = darkSurface
+      ? {
+        borderColor: 'rgba(125, 185, 255, 0.30)',
+        background: 'rgba(26, 54, 93, 0.88)',
+        color: '#edf5ff',
+        boxShadow: '0 12px 24px rgba(0, 0, 0, 0.22)'
+      }
+      : {
+        borderColor: 'rgba(22, 100, 192, 0.18)',
+        background: 'rgba(22, 100, 192, 0.08)',
+        color: '#18456f',
+        boxShadow: 'none'
+      };
+
+    hint.style.borderColor = themedStyles.borderColor;
+    hint.style.background = themedStyles.background;
+    hint.style.color = themedStyles.color;
+    hint.style.boxShadow = themedStyles.boxShadow;
+  }
+
+  function applyNfeActionCustomizeButtonTheme(button, surface) {
+    if (!button) return;
+
+    const darkSurface = isDarkSurface(surface || button.parentElement);
+    const themedStyles = darkSurface
+      ? {
+        background: 'rgba(26, 54, 93, 0.88)',
+        border: '1px solid rgba(125, 185, 255, 0.30)',
+        color: '#edf5ff',
+        boxShadow: '0 12px 24px rgba(0, 0, 0, 0.18)'
+      }
+      : {
+        background: '#f4f8fc',
+        border: '1px solid #c9d8e6',
+        color: '#1f4f7d',
+        boxShadow: 'none'
+      };
+
+    button.style.background = themedStyles.background;
+    button.style.border = themedStyles.border;
+    button.style.color = themedStyles.color;
+    button.style.boxShadow = themedStyles.boxShadow;
+  }
+
+  function getExtensionOverlayTheme(surface) {
+    const darkSurface = isDarkSurface(surface);
+    return darkSurface
+      ? {
+        isDark: true,
+        modalBackground: '#16181c',
+        modalBorder: '1px solid rgba(125, 185, 255, 0.22)',
+        modalBoxShadow: '0 22px 48px rgba(0, 0, 0, 0.42)',
+        titleColor: '#edf5ff',
+        bodyColor: '#d8e4f0',
+        mutedColor: '#9fb4c8',
+        inputBackground: 'rgba(10, 17, 26, 0.92)',
+        inputBorder: '1px solid rgba(125, 185, 255, 0.2)',
+        inputColor: '#edf5ff',
+        secondaryButtonBackground: 'rgba(24, 37, 52, 0.96)',
+        secondaryButtonBorder: '1px solid rgba(125, 185, 255, 0.2)',
+        secondaryButtonColor: '#edf5ff',
+        subtleButtonColor: '#b9cae0',
+        cardBackground: 'rgba(18, 30, 43, 0.94)',
+        cardBorder: '1px solid rgba(125, 185, 255, 0.14)',
+        cardTextColor: '#e7f0fb',
+        progressBackground: 'rgba(18, 27, 39, 0.96)',
+        progressBorder: '1px solid rgba(125, 185, 255, 0.18)',
+        progressTextColor: '#d8e4f0',
+        progressTrackBackground: 'rgba(10, 17, 26, 0.92)',
+        progressFillColor: '#6eb7ff',
+        backdropBackground: 'rgba(3, 8, 16, 0.52)'
+      }
+      : {
+        isDark: false,
+        modalBackground: '#ffffff',
+        modalBorder: '1px solid #d5dfe8',
+        modalBoxShadow: '0 18px 44px rgba(0,0,0,0.22)',
+        titleColor: '#13283d',
+        bodyColor: '#203040',
+        mutedColor: '#5b6d7d',
+        inputBackground: '#ffffff',
+        inputBorder: '1px solid #d5dfe8',
+        inputColor: '#203040',
+        secondaryButtonBackground: '#f4f8fc',
+        secondaryButtonBorder: '1px solid #d5dfe8',
+        secondaryButtonColor: '#203040',
+        subtleButtonColor: '#4f6070',
+        cardBackground: '#f8fbfd',
+        cardBorder: '1px solid #dbe4ec',
+        cardTextColor: '#203040',
+        progressBackground: '#ffffff',
+        progressBorder: '1px solid #d9dee5',
+        progressTextColor: '#3b4652',
+        progressTrackBackground: '#edf1f5',
+        progressFillColor: '#2b84d6',
+        backdropBackground: 'rgba(15, 23, 42, 0.16)'
+      };
+  }
+
+  function applyBatchModalTheme(modal) {
+    if (!modal) return;
+
+    const theme = getExtensionOverlayTheme(modal.parentElement || document.body);
+    const compact = window.innerWidth < 560;
+    modal.style.background = theme.modalBackground;
+    modal.style.border = theme.modalBorder;
+    modal.style.boxShadow = theme.modalBoxShadow;
+    modal.style.width = compact ? 'calc(100vw - 16px)' : '420px';
+    modal.style.maxWidth = compact ? 'calc(100vw - 16px)' : 'calc(100vw - 24px)';
+    modal.style.maxHeight = 'calc(100vh - 20px)';
+    modal.style.padding = compact ? '14px' : '16px';
+    modal.style.overflow = 'auto';
+
+    const header = modal.querySelector('[data-batch-header]');
+    if (header) {
+      header.style.display = 'flex';
+      header.style.justifyContent = 'space-between';
+      header.style.alignItems = compact ? 'stretch' : 'center';
+      header.style.flexDirection = compact ? 'column' : 'row';
+      header.style.gap = compact ? '10px' : '16px';
+      header.style.marginBottom = '12px';
+    }
+
+    const actions = modal.querySelector('[data-batch-actions]');
+    if (actions) {
+      actions.style.display = 'flex';
+      actions.style.flexDirection = compact ? 'column-reverse' : 'row';
+      actions.style.alignItems = compact ? 'stretch' : 'center';
+      actions.style.gap = '8px';
+      actions.style.marginTop = '14px';
+    }
+
+    const fieldRow = modal.querySelector('[data-batch-field-row]');
+    if (fieldRow) {
+      fieldRow.style.display = 'grid';
+      fieldRow.style.gridTemplateColumns = compact ? '1fr' : '92px minmax(0, 1fr)';
+      fieldRow.style.gap = '10px';
+      fieldRow.style.alignItems = compact ? 'stretch' : 'center';
+      fieldRow.style.marginTop = '12px';
+    }
+
+    Array.from(modal.querySelectorAll('[data-batch-title]')).forEach((element) => {
+      element.style.color = theme.titleColor;
+    });
+    Array.from(modal.querySelectorAll('[data-batch-body]')).forEach((element) => {
+      element.style.color = theme.bodyColor;
+    });
+    Array.from(modal.querySelectorAll('[data-batch-muted]')).forEach((element) => {
+      element.style.color = theme.mutedColor;
+    });
+    Array.from(modal.querySelectorAll('textarea.form-control, input.form-control')).forEach((input) => {
+      input.style.background = theme.inputBackground;
+      input.style.border = theme.inputBorder;
+      input.style.color = theme.inputColor;
+      input.style.caretColor = theme.inputColor;
+    });
+    Array.from(modal.querySelectorAll('textarea.form-control')).forEach((textarea) => {
+      textarea.style.minHeight = compact ? '108px' : '120px';
+      textarea.style.resize = 'vertical';
+    });
+    Array.from(modal.querySelectorAll('[data-batch-secondary]')).forEach((button) => {
+      button.style.background = theme.secondaryButtonBackground;
+      button.style.border = theme.secondaryButtonBorder;
+      button.style.color = theme.secondaryButtonColor;
+    });
+    Array.from(modal.querySelectorAll('[data-batch-subtle]')).forEach((button) => {
+      button.style.color = theme.subtleButtonColor;
+    });
+  }
+
+  function applyBatchProgressTheme(wrap) {
+    if (!wrap) return;
+
+    const theme = getExtensionOverlayTheme(wrap.parentElement || document.body);
+    wrap.style.background = theme.progressBackground;
+    wrap.style.border = theme.progressBorder;
+    wrap.style.boxShadow = theme.isDark
+      ? '0 16px 30px rgba(0,0,0,0.30)'
+      : '0 8px 18px rgba(0,0,0,0.15)';
+
+    const label = wrap.querySelector('#' + BATCH_PROGRESS_TEXT_ID);
+    const track = wrap.querySelector('[data-batch-progress-track]');
+    const fill = wrap.querySelector('#' + BATCH_PROGRESS_FILL_ID);
+    if (label) label.style.color = theme.progressTextColor;
+    if (track) track.style.background = theme.progressTrackBackground;
+    if (fill) fill.style.background = theme.progressFillColor;
+  }
+
+  function applyNfeActionCustomizeModalTheme(modal) {
+    if (!modal) return;
+
+    const theme = getExtensionOverlayTheme(modal.parentElement || document.body);
+    const compact = window.innerWidth < 620;
+    modal.style.background = theme.modalBackground;
+    modal.style.border = theme.modalBorder;
+    modal.style.boxShadow = theme.modalBoxShadow;
+    modal.style.width = compact ? 'calc(100vw - 16px)' : '420px';
+    modal.style.maxWidth = compact ? 'calc(100vw - 16px)' : 'calc(100vw - 24px)';
+    modal.style.maxHeight = 'calc(100vh - 20px)';
+    modal.style.padding = compact ? '14px' : '16px';
+
+    const header = modal.querySelector('[data-nfe-action-header]');
+    if (header) {
+      header.style.display = 'flex';
+      header.style.justifyContent = 'space-between';
+      header.style.alignItems = compact ? 'stretch' : 'flex-start';
+      header.style.flexDirection = compact ? 'column' : 'row';
+      header.style.gap = compact ? '10px' : '16px';
+      header.style.marginBottom = '12px';
+    }
+
+    const toolRow = modal.querySelector('[data-nfe-action-tools]');
+    if (toolRow) {
+      toolRow.style.display = 'flex';
+      toolRow.style.flexWrap = 'wrap';
+      toolRow.style.gap = '8px';
+      toolRow.style.marginBottom = '12px';
+    }
+
+    const footer = modal.querySelector('[data-nfe-action-footer]');
+    if (footer) {
+      footer.style.display = 'flex';
+      footer.style.justifyContent = compact ? 'stretch' : 'flex-end';
+      footer.style.flexDirection = compact ? 'column-reverse' : 'row';
+      footer.style.gap = '8px';
+      footer.style.marginTop = '14px';
+    }
+
+<10582 linhas não apresentadas>

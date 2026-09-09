@@ -1,6 +1,29 @@
 (function(global) {
   'use strict';
 
+  // Cada operação precisa de liberação explícita. A lista abaixo é a barreira
+  // de produção: qualquer item não aprovado continua negado individualmente.
+  const PRODUCTION_ZWEB_AUTOMATION_ENABLED = true;
+  const ZWEB_OPERATION_POLICY = Object.freeze({
+    pdvCashCounterRead: false,
+    personLookup: false,
+    supplierLookup: true,
+    negativeStockAutomaticClose: false,
+    productRangeRead: false,
+    productBulkRead: true,
+    productPreferredSupplierWrite: true,
+    fiscalDocumentRead: true,
+    fiscalDocumentWrite: true,
+    fiscalTransmission: true,
+    fiscalCancellation: true,
+    davClone: false,
+    commissionReturnsRefresh: true,
+    productLocationMigration: false,
+    productBarcodeWrite: true,
+    productShelfBatchWrite: true,
+    referenceCategoryRefresh: false
+  });
+
   // Register every user-facing automation here so the popup can render a toggle
   // automatically and the runtime can share the same defaults.
   const FEATURE_DEFINITIONS = [
@@ -69,6 +92,14 @@
       defaultValue: true,
     },
     {
+      key: 'productLocationsEnabled',
+      group: 'Produtos',
+      title: 'Enderecamento',
+      description: 'Mostra e permite atualizar o local do produto sem usar o campo Observacao.',
+      reloadPrompt: false,
+      defaultValue: true,
+    },
+    {
       key: 'itemSearchHashEnabled',
       group: 'Fiscal',
       title: 'Busca com #',
@@ -115,15 +146,6 @@
       description: 'Exibe um painel auxiliar na compra para calcular valores sugeridos a partir do XML importado.',
       reloadPrompt: false,
       defaultValue: true,
-    },
-    {
-      key: 'stockPriceSimulationEnabled',
-      group: 'Fiscal',
-      title: 'Simular Pre\u00e7o',
-      description: 'Desativado temporariamente. No popup da compra, usava o l\u00e1pis do cadastro para preencher o Pre\u00e7o sem salvar.',
-      reloadPrompt: false,
-      defaultValue: false,
-      forceDisabled: true,
     },
     {
       key: 'noteAssistantEnabled',
@@ -230,4 +252,13 @@
     getDefaults,
     normalizeState,
   };
+  global.ZWEB_RUNTIME_GUARDS = Object.freeze({
+    productionZwebAutomationEnabled: PRODUCTION_ZWEB_AUTOMATION_ENABLED,
+    operationPolicy: ZWEB_OPERATION_POLICY,
+    canRun(operationId) {
+      return PRODUCTION_ZWEB_AUTOMATION_ENABLED === true
+        && typeof operationId === 'string'
+        && ZWEB_OPERATION_POLICY[operationId] === true;
+    }
+  });
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -19,8 +19,10 @@ const NOTE_ASSISTANT_FSIST_URL = 'https://www.fsist.com.br/';
 const NOTE_ASSISTANT_NFE_URL_PATTERN = /^https?:\/\/(www\.)?nfe\.fazenda\.gov\.br\//i;
 const COMMISSION_REPORT_URL_PATTERN = /^https:\/\/compufour\.s3\.amazonaws\.com\/production\/uploads\/reports\/report\/.+\.html(?:[?#].*)?$/i;
 const ZWEB_BFF_DASHBOARD_API_URL = 'https://api.zweb.com.br/rpc/v2/BFF.get-dashboard';
+const ZWEB_INTERNAL_SERVICE_URL = 'http://192.168.1.240:8788';
+const ZWEB_INTERNAL_SERVICE_KEY = 'REDACTED_INTERNAL_SERVICE_KEY';
 const ZWEB_APPLICATION_PUT_CONFIGURATION_API_URL = 'https://api.zweb.com.br/rpc/v1/application.put-configuration';
-const ZWEB_DOCUMENT_CONFIGURATION_URL = 'https://zweb.com.br/#/document/document-configuration';
+const ZWEB_DOCUMENT_CONFIGURATION_URL = 'https://zweb.com.br/#/account/general-configuration';
 const DOCUMENT_NEGATIVE_STOCK_GUARD_ALARM_NAME = 'zweb-document-negative-stock-disable';
 const DOCUMENT_NEGATIVE_STOCK_GUARD_BACKGROUND_STORAGE_KEY = 'zwebDocumentNegativeStockBackgroundSchedule';
 const DOCUMENT_NEGATIVE_STOCK_VISUAL_TAB_TIMEOUT_MS = 35000;
@@ -36,9 +38,21 @@ const FEATURE_DEFAULTS = self.ZWEB_FEATURES && typeof self.ZWEB_FEATURES.getDefa
       xmlDownloadEnabled: true,
       nfeBatchDownloadEnabled: true,
       noteAssistantEnabled: true,
-      stockPriceSimulationEnabled: true,
       commissionReturnsEnabled: true,
     };
+
+function isProductionZwebAutomationEnabled(operationId) {
+  return !!(self.ZWEB_RUNTIME_GUARDS
+    && typeof self.ZWEB_RUNTIME_GUARDS.canRun === 'function'
+    && self.ZWEB_RUNTIME_GUARDS.canRun(operationId));
+}
+
+function assertProductionZwebAutomationEnabled(operationId) {
+  if (isProductionZwebAutomationEnabled(operationId)) return;
+  throw new Error(operationId
+    ? 'Esta operação do ZWeb permanece suspensa até a homologação.'
+    : 'Esta operação não possui cobertura para homologação e permanece bloqueada.');
+}
 const pendingXmlDownloads = new Map();
 const recentDirectXmlDownloads = new Map();
 const pendingPdfDownloads = new Map();
@@ -47,7 +61,6 @@ const pendingAdjustedReportDownloads = new Map();
 let XML_DOWNLOAD_ENABLED = FEATURE_DEFAULTS.xmlDownloadEnabled !== false;
 let NFE_BATCH_DOWNLOAD_ENABLED = FEATURE_DEFAULTS.nfeBatchDownloadEnabled !== false;
 let NOTE_ASSISTANT_ENABLED = FEATURE_DEFAULTS.noteAssistantEnabled !== false;
-let STOCK_PRICE_SIMULATION_ENABLED = FEATURE_DEFAULTS.stockPriceSimulationEnabled !== false;
 let COMMISSION_RETURNS_ENABLED = FEATURE_DEFAULTS.commissionReturnsEnabled !== false;
 let offscreenDownloadDocumentPromise = null;
 let lastFsistTabId = null;
@@ -63,17 +76,28 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', () => {
   self.clients.claim();
-  restoreDocumentNegativeStockGuardSchedule();
+  clearDocumentNegativeStockScheduledDisable().catch(() => {});
 });
 
+// O chrome.storage.session nasce restrito a contextos confiaveis, e o
+// content.js le a liberacao da senha de administrador por ele. Sem isto o
+// Chrome recusa a leitura com "Access to storage is not allowed from this
+// context", a liberacao nunca e lembrada e a senha volta a cada tela.
+try {
+  chrome.storage.session
+    .setAccessLevel({ accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS' })
+    .catch(() => {});
+} catch (error) {}
+
 chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.session.remove('zwebProductLocationMigrationClaimed');
+  clearDocumentNegativeStockScheduledDisable().catch(() => {});
   refreshContextMenus();
-  restoreDocumentNegativeStockGuardSchedule();
   appendLog('Extensao instalada ou atualizada.', 'info');
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  restoreDocumentNegativeStockGuardSchedule();
+  clearDocumentNegativeStockScheduledDisable().catch(() => {});
 });
 
 function isNumber(value) {
@@ -111,6 +135,7 @@ function hasNegativeStockConfigurationPayload(payload) {
 }
 
 async function postZwebApiJson(token, url, body) {
+  assertProductionZwebAutomationEnabled();
   const cleanToken = String(token || '').trim();
   if (!cleanToken) throw new Error('Token da Zweb ausente.');
 
@@ -142,6 +167,54 @@ async function postZwebApiJson(token, url, body) {
   return payload;
 }
 
+async function getZwebInternalCategories() {
+  assertProductionZwebAutomationEnabled('referenceCategoryRefresh');
+  const response = await fetch(`${ZWEB_INTERNAL_SERVICE_URL}/api/zweb/categories`, {
+    method: 'GET',
+    headers: { Accept: 'application/json', 'X-Zweb-Service-Key': ZWEB_INTERNAL_SERVICE_KEY }
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body && body.error || `Serviço interno respondeu HTTP ${response.status}.`);
+  }
+  return body;
+}
+
+async function requestZwebInternalCommissionReturns(method, entries) {
+  const response = await fetch(`${ZWEB_INTERNAL_SERVICE_URL}/api/zweb/commission-returns`, {
+    method,
+    headers: {
+      Accept: 'application/json',
+      ...(method === 'PUT' ? { 'Content-Type': 'application/json' } : {}),
+      'X-Zweb-Service-Key': ZWEB_INTERNAL_SERVICE_KEY
+    },
+    ...(method === 'PUT' ? { body: JSON.stringify({ entries }) } : {})
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(body && body.error || `Serviço interno respondeu HTTP ${response.status}.`);
+  }
+  return body;
+}
+
+async function requestZwebInternalService(path, options = {}) {
+  const method = options.method || 'GET';
+  const response = await fetch(`${ZWEB_INTERNAL_SERVICE_URL}${path}`, {
+    method,
+    headers: {
+      Accept: 'application/json',
+      ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      'X-Zweb-Service-Key': ZWEB_INTERNAL_SERVICE_KEY
+    },
+    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {})
+  });
+  const rawBody = response.status === 204 ? null : await response.json();
+  if (!response.ok) {
+    throw new Error(rawBody && rawBody.error || `Servico interno respondeu HTTP ${response.status}.`);
+  }
+  return rawBody;
+}
+
 async function fetchNegativeStockConfiguration(token) {
   const payload = await postZwebApiJson(token, ZWEB_BFF_DASHBOARD_API_URL, {
     'get-client': {
@@ -160,6 +233,11 @@ async function persistNegativeStockConfiguration(token, payload) {
     throw new Error('Configuracao de estoque invalida.');
   }
   return await postZwebApiJson(token, ZWEB_APPLICATION_PUT_CONFIGURATION_API_URL, payload);
+}
+
+async function verifyNegativeStockDisabled(token) {
+  const payload = await fetchNegativeStockConfiguration(token);
+  return payload.fiscal.emissor.isAllowedNegativeStock === false;
 }
 
 function getStorageLocal(keys) {
@@ -491,10 +569,15 @@ function disableNegativeStockInConfigurationPage() {
     }
   };
 
+  const inputById = document.querySelector('input#isAllowedNegativeStock, input[id="isAllowedNegativeStock"]');
   const rows = Array.from(document.querySelectorAll('.row, [class~="row"], .v-row, [class*="row"]'));
-  const row = rows.find((candidate) => {
+  const row = inputById && (
+    inputById.closest('.row, [class~="row"], .v-row, [class*="row"]')
+    || inputById.parentElement && inputById.parentElement.parentElement
+    || inputById.parentElement
+  ) || rows.find((candidate) => {
     const text = normalize(candidate.innerText || candidate.textContent || '');
-    return text.indexOf('permitir vender com estoque zerado') !== -1;
+    return text.indexOf('permitir estoque negativo') !== -1;
   });
 
   if (!row) {
@@ -556,7 +639,7 @@ function disableNegativeStockInConfigurationPage() {
 
     const finish = (extra) => {
       resolve({
-        ok: true,
+        ok: getInputChecked() === false,
         found: true,
         clicked: attempts.some((attempt) => attempt.clicked),
         attempts,
@@ -672,26 +755,36 @@ async function disableNegativeStockThroughConfigurationTab(sourceWindowId) {
 }
 
 async function forceNegativeStockDisabled(token, sourceWindowId) {
-  let apiPayload = null;
   let apiChanged = false;
   let visualResult = null;
 
   try {
-    apiPayload = await fetchNegativeStockConfiguration(token);
+    const apiPayload = await fetchNegativeStockConfiguration(token);
     if (apiPayload && apiPayload.fiscal && apiPayload.fiscal.emissor) {
       apiPayload.fiscal.emissor.isAllowedNegativeStock = false;
       await persistNegativeStockConfiguration(token, apiPayload);
-      apiChanged = true;
+      await delay(700);
+      apiChanged = await verifyNegativeStockDisabled(token);
+      if (!apiChanged) {
+        appendLog('A API respondeu ao fechamento de estoque, mas a configuracao continuou ativa.', 'error');
+      }
     }
   } catch (error) {
     appendLog('Falha ao desativar estoque zerado pela API; tentando pela tela: ' + getErrorMessage(error), 'error');
   }
 
-  try {
+  if (!apiChanged) {
     visualResult = await disableNegativeStockThroughConfigurationTab(sourceWindowId);
-  } catch (error) {
-    if (!apiChanged) throw error;
-    visualResult = { ok: false, message: getErrorMessage(error) };
+    if (!visualResult || !visualResult.ok) {
+      throw new Error('O interruptor de estoque continuou ativo na tela de configuracao.');
+    }
+
+    await delay(1200);
+    apiChanged = await verifyNegativeStockDisabled(token);
+  }
+
+  if (!apiChanged) {
+    throw new Error('Não foi possível confirmar o fechamento automático do estoque.');
   }
 
   return {
@@ -784,6 +877,10 @@ async function readDocumentNegativeStockScheduledDisable() {
 }
 
 async function runDocumentNegativeStockScheduledDisable() {
+  if (!isProductionZwebAutomationEnabled('negativeStockAutomaticClose')) {
+    await clearDocumentNegativeStockScheduledDisable();
+    return { ok: true, skipped: true, reason: 'production_automation_suspended' };
+  }
   if (documentNegativeStockGuardDisableRunning) {
     return { ok: true, skipped: true, reason: 'already_running' };
   }
@@ -949,7 +1046,6 @@ function syncFeatureFlags() {
       XML_DOWNLOAD_ENABLED = state.xmlDownloadEnabled !== false;
       NFE_BATCH_DOWNLOAD_ENABLED = state.nfeBatchDownloadEnabled !== false;
       NOTE_ASSISTANT_ENABLED = state.noteAssistantEnabled !== false;
-      STOCK_PRICE_SIMULATION_ENABLED = state.stockPriceSimulationEnabled !== false;
       COMMISSION_RETURNS_ENABLED = state.commissionReturnsEnabled !== false;
       if (!XML_DOWNLOAD_ENABLED) {
         pendingXmlDownloads.clear();
@@ -1689,6 +1785,84 @@ function directNfeBatchDownloadContent(kind, content, fileNameHint) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || typeof message.type !== 'string') return;
 
+  if (message.type === 'zweb-internal-categories') {
+    getZwebInternalCategories()
+      .then((payload) => sendResponse({ ok: true, payload }))
+      .catch((error) => sendResponse({ ok: false, reason: 'internal_service_failed', message: getErrorMessage(error) }));
+    return true;
+  }
+
+  if (message.type === 'zweb-internal-default-dav-recipient') {
+    fetch(`${ZWEB_INTERNAL_SERVICE_URL}/api/zweb/default-dav-recipient`, {
+      method: 'GET',
+      headers: { Accept: 'application/json', 'X-Zweb-Service-Key': ZWEB_INTERNAL_SERVICE_KEY }
+    })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload && payload.error || `Serviço interno respondeu HTTP ${response.status}.`);
+        sendResponse({ ok: true, payload });
+      })
+      .catch((error) => sendResponse({ ok: false, reason: 'internal_service_failed', message: getErrorMessage(error) }));
+    return true;
+  }
+
+  if (message.type === 'zweb-internal-commission-returns-get') {
+    requestZwebInternalCommissionReturns('GET')
+      .then((payload) => sendResponse({ ok: true, payload }))
+      .catch((error) => sendResponse({ ok: false, reason: 'internal_service_failed', message: getErrorMessage(error) }));
+    return true;
+  }
+
+  if (message.type === 'zweb-internal-commission-returns-put') {
+    requestZwebInternalCommissionReturns('PUT', message.entries)
+      .then((payload) => sendResponse({ ok: true, payload }))
+      .catch((error) => sendResponse({ ok: false, reason: 'internal_service_failed', message: getErrorMessage(error) }));
+    return true;
+  }
+
+  if (message.type === 'zweb-product-location-request') {
+    const path = typeof message.path === 'string' && message.path.startsWith('/api/zweb/product-')
+      ? message.path
+      : '';
+    const method = ['GET', 'POST', 'PUT'].includes(message.method) ? message.method : 'GET';
+    if (!path) {
+      sendResponse({ ok: false, reason: 'invalid_request', message: 'Rota interna invalida.' });
+      return;
+    }
+    requestZwebInternalService(path, { method, body: message.body })
+      .then((payload) => sendResponse({ ok: true, payload }))
+      .catch((error) => sendResponse({ ok: false, reason: 'internal_service_failed', message: getErrorMessage(error) }));
+    return true;
+  }
+
+  if (message.type === 'zweb-internal-cache-invalidate') {
+    const acceptedKeys = new Set(['categories', 'paymentModes', 'recipients', 'salesStatuses']);
+    const keys = [...new Set((Array.isArray(message.keys) ? message.keys : [])
+      .filter(cacheKey => acceptedKeys.has(cacheKey)))];
+    if (!keys.length) {
+      sendResponse({ ok: false, reason: 'invalid_request', message: 'Nenhum cache reconhecido foi informado.' });
+      return;
+    }
+    requestZwebInternalService('/api/zweb/cache/invalidate', { method: 'POST', body: { keys } })
+      .then((payload) => sendResponse({ ok: true, payload }))
+      .catch((error) => sendResponse({ ok: false, reason: 'internal_service_failed', message: getErrorMessage(error) }));
+    return true;
+  }
+
+  if (message.type === 'zweb-product-location-migration-claim') {
+    chrome.storage.session.get({ zwebProductLocationMigrationClaimed: false }, (stored) => {
+      if (stored && stored.zwebProductLocationMigrationClaimed) {
+        sendResponse({ ok: true, allowed: false });
+        return;
+      }
+      chrome.storage.session.set({ zwebProductLocationMigrationClaimed: true }, () => {
+        sendResponse({ ok: true, allowed: true });
+      });
+    });
+    return true;
+  }
+
+
   if (message.type === 'document-negative-stock-get-configuration') {
     fetchNegativeStockConfiguration(message.token)
       .then((payload) => {
@@ -1855,42 +2029,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === 'stock-price-simulation-open') {
-    if (!STOCK_PRICE_SIMULATION_ENABLED) {
-      sendResponse({ ok: false, reason: 'disabled' });
-      return;
-    }
-
-    const pending = message.pending && typeof message.pending === 'object' ? message.pending : null;
-    if (!pending || (!pending.code && !pending.description) || !Number.isFinite(Number(pending.targetPrice))) {
-      sendResponse({ ok: false, reason: 'invalid_pending' });
-      return;
-    }
-
-    const targetWindowId = sender && sender.tab && isNumber(sender.tab.windowId) ? sender.tab.windowId : undefined;
-    chrome.storage.local.set({ pendingStockPriceSimulation: pending }, () => {
-      const tabOptions = {
-        url: 'https://zweb.com.br/#/register/stock/product',
-        active: false,
-      };
-
-      if (isNumber(targetWindowId)) {
-        tabOptions.windowId = targetWindowId;
-      }
-
-      chrome.tabs.create(tabOptions, (tab) => {
-        const error = chrome.runtime.lastError;
-        if (error) {
-          sendResponse({ ok: false, reason: 'tab_create_failed', message: error.message });
-          return;
-        }
-
-        sendResponse({ ok: true, tabId: tab && tab.id });
-      });
-    });
-    return true;
-  }
-
   if (message.type === 'xml-download-arm') {
     if (!XML_DOWNLOAD_ENABLED) {
       sendResponse({ ok: false, reason: 'disabled' });
@@ -2036,7 +2174,7 @@ try {
   });
 } catch (error) {}
 
-restoreDocumentNegativeStockGuardSchedule();
+clearDocumentNegativeStockScheduledDisable().catch(() => {});
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (!info || info.menuItemId !== NOTE_ASSISTANT_CONTEXT_MENU_ID) return;
@@ -2284,13 +2422,6 @@ try {
 
     if (changes.noteAssistantEnabled) {
       NOTE_ASSISTANT_ENABLED = changes.noteAssistantEnabled.newValue !== false;
-    }
-
-    if (changes.stockPriceSimulationEnabled) {
-      const state = self.ZWEB_FEATURES && typeof self.ZWEB_FEATURES.normalizeState === 'function'
-        ? self.ZWEB_FEATURES.normalizeState({ stockPriceSimulationEnabled: changes.stockPriceSimulationEnabled.newValue })
-        : { stockPriceSimulationEnabled: changes.stockPriceSimulationEnabled.newValue !== false };
-      STOCK_PRICE_SIMULATION_ENABLED = state.stockPriceSimulationEnabled !== false;
     }
 
     if (changes.commissionReturnsEnabled) {

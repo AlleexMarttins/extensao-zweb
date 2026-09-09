@@ -1,0 +1,14 @@
+{
+  "name": "zweb-api-service",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Camada interna para consumir a API pública do Zweb com segurança.",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "node-firebird": "^2.14.4"
+  }
+}
