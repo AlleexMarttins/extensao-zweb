@@ -44,6 +44,9 @@ config/field_encryption_key
 .manual-*
 .codex-chrome-extension-test/
 .claude/
+criticas_inscricoes_*
+services/zweb-api/data/*.sqlite*
+services/zweb-api/test/.mobile-product-locations.sqlite
 
 tmp/
 output/
