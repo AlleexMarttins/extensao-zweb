@@ -3,10 +3,20 @@
   "name": "Assistente Zweb",
   "version": "1.4",
   "description": "Bloqueios e automações para fluxos administrativos, fiscais e de notas na Zweb.",
-  "permissions": ["alarms", "contextMenus", "debugger", "downloads", "offscreen", "scripting", "storage", "tabs"],
+  "permissions": [
+    "alarms",
+    "contextMenus",
+    "debugger",
+    "downloads",
+    "offscreen",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
   "host_permissions": [
     "https://zweb.com.br/*",
     "http://192.168.1.240:8788/*",
+    "http://192.168.1.240:8790/*",
     "https://api.zweb.com.br/*",
     "https://compufour.s3.amazonaws.com/production/uploads/nfe/*",
     "https://compufour.s3.amazonaws.com/production/uploads/reports/report/*",
@@ -36,20 +46,28 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://zweb.com.br/*"],
-      "js": ["nucleo/page-bridge.js", "nucleo/clone-dav-log-helper.js"],
+      "matches": [
+        "https://zweb.com.br/*"
+      ],
+      "js": [
+        "nucleo/page-bridge.js",
+        "nucleo/clone-dav-log-helper.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     },
     {
-      "matches": ["https://zweb.com.br/*"],
+      "matches": [
+        "https://zweb.com.br/*"
+      ],
       "js": [
         "nucleo/features.js",
-          "nucleo/zweb-product-payload.js",
+        "nucleo/zweb-product-payload.js",
         "setores/notas/note-assistant.js",
         "setores/fiscal/fiscal-value-settings.js",
         "setores/fiscal/purchase-value-sync.js",
         "setores/produtos/product-locations.js",
+        "setores/caixa/dav-watcher.js",
         "nucleo/content.js"
       ],
       "run_at": "document_idle"
@@ -61,21 +79,32 @@
         "https://www.nfe.fazenda.gov.br/*",
         "https://nfe.fazenda.gov.br/*"
       ],
-      "js": ["nucleo/features.js", "setores/notas/note-assistant.js"],
+      "js": [
+        "nucleo/features.js",
+        "setores/notas/note-assistant.js"
+      ],
       "run_at": "document_idle"
     },
     {
       "matches": [
         "https://compufour.s3.amazonaws.com/production/uploads/reports/report/*"
       ],
-      "js": ["nucleo/features.js", "setores/fiscal/report-adjustments.js"],
+      "js": [
+        "nucleo/features.js",
+        "setores/fiscal/report-adjustments.js"
+      ],
       "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["nucleo/page-bridge.js", "nucleo/clone-dav-log-helper.js"],
-      "matches": ["https://zweb.com.br/*"]
+      "resources": [
+        "nucleo/page-bridge.js",
+        "nucleo/clone-dav-log-helper.js"
+      ],
+      "matches": [
+        "https://zweb.com.br/*"
+      ]
     }
   ]
 }

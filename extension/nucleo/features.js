@@ -115,6 +115,20 @@
       reloadPrompt: false,
       defaultValue: true,
     },
+    // AutoCaixa: NAO faz nenhuma chamada na Zweb. So le o que o proprio ZWeb
+    // ja mandou ao salvar o DAV e repassa pro servidor da rede local, que
+    // imprime a etiqueta e alimenta o totem. Por isso nao tem chave na
+    // ZWEB_OPERATION_POLICY: nao ha operacao contra a Zweb pra liberar.
+    // Desligado por padrao: so a loja que tem o totem deve ligar.
+    {
+      key: 'autoCaixaDavWatcherEnabled',
+      group: 'DAV',
+      title: 'AutoCaixa (autoatendimento)',
+      description: 'Ao salvar um DAV, envia o pedido para o totem de '
+        + 'autoatendimento na rede local. N\u00e3o consulta a Zweb.',
+      reloadPrompt: true,
+      defaultValue: false,
+    },
     {
       key: 'xmlDownloadEnabled',
       group: 'Fiscal',

@@ -715,6 +715,32 @@
       );
   }
 
+  // AutoCaixa: o vendedor clicou em `Salvar` num DAV. `post-sale` é DAV novo,
+  // `put-sale` é edição — as duas contam como "cliente pode ir pagar".
+  //
+  // Só XHR: medido na Fase 0, o ZWEB manda essas duas por XMLHttpRequest.
+  // Não foi replicado no hook de fetch de propósito — lá são 4 caminhos de
+  // retorno e o risco de mexer não se paga por um caso que não acontece.
+  function isSaleSaveRequest(url) {
+    const text = String(url || '').toLowerCase();
+    return text.indexOf('inventory.post-sale') !== -1
+      || text.indexOf('inventory.put-sale') !== -1;
+  }
+
+  function postAutoCaixaDavSaved(requestBody, responseText, status) {
+    if (status < 200 || status >= 300) return;   // não salvou; não avisa ninguém
+    const requisicao = safeParseJson(typeof requestBody === 'string' ? requestBody : '');
+    if (!requisicao || typeof requisicao !== 'object') return;
+    const resposta = safeParseJson(typeof responseText === 'string' ? responseText : '');
+    // A requisição traz itens/total/cliente; a resposta traz o número do DAV
+    // no caso do `post-sale`. Os dois vão inteiros: quem monta o pacote é o
+    // `dav-watcher.js`, no content script.
+    postBridgeMessage('autocaixa-dav-salvo', {
+      requisicao: requisicao,
+      resposta: resposta && typeof resposta === 'object' ? resposta : {}
+    });
+  }
+
   function postFiscalCancelRequestLog(url, requestBody, responseText, status) {
     if (!isFiscalCancelRequest(url)) return;
     postBridgeMessage('fiscal-cancel-request-log', {
@@ -1489,6 +1515,11 @@
     if (isFiscalCancelRequest(this.__zwebBridgeUrl)) {
       this.addEventListener('loadend', () => {
         postFiscalCancelRequestLog(this.__zwebBridgeUrl, this.__zwebBridgeRequestBody, getRawXhrResponseText(this), this.status);
+      }, true);
+    }
+    if (isSaleSaveRequest(this.__zwebBridgeUrl)) {
+      this.addEventListener('loadend', () => {
+        postAutoCaixaDavSaved(this.__zwebBridgeRequestBody, getRawXhrResponseText(this), this.status);
       }, true);
     }
 

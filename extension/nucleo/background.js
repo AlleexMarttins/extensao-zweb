@@ -1785,6 +1785,31 @@ function directNfeBatchDownloadContent(kind, content, fileNameHint) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || typeof message.type !== 'string') return;
 
+  // AutoCaixa: repassa o DAV salvo pro servidor da rede local.
+  //
+  // Precisa passar por aqui, e não pelo content script: a Zweb é HTTPS e o
+  // servidor do AutoCaixa é HTTP, então um fetch feito no content script morre
+  // no bloqueio de mixed content do Chrome. O service worker não tem essa
+  // restrição. É uma chamada na REDE LOCAL — nada sai pra internet.
+  if (message.type === 'autocaixa-dav') {
+    const { url, token, pacote } = message;
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['X-AutoCaixa-Token'] = token;
+    fetch(`${String(url).replace(/\/$/, '')}/api/dav`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(pacote)
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        sendResponse({ ok: true });
+      })
+      // Sem retry: se o servidor estiver fora, o DAV volta no próximo Salvar.
+      // Insistir daqui só empilha requisição em cima de um serviço já caído.
+      .catch((error) => sendResponse({ ok: false, message: getErrorMessage(error) }));
+    return true;
+  }
+
   if (message.type === 'zweb-internal-categories') {
     getZwebInternalCategories()
       .then((payload) => sendResponse({ ok: true, payload }))
