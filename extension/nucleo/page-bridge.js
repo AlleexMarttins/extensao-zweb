@@ -1671,6 +1671,38 @@
 
   window.addEventListener('message', (event) => {
     if (event.source !== window) return;
+    if (event.data && event.data.source === 'zweb-dav-cached-select' && typeof event.data.requestId === 'string') {
+      if (!/^#\/(?:document\/)?davs\/(?:sale|estimate)\/new\/?$/.test(String(location.hash || '').split('?')[0])) return;
+      const data = event.data;
+      const input = data.kind === 'client' ? document.querySelector('input#client.multiselect__input')
+        : document.querySelector('input[data-zweb-dav-product-target="true"]');
+      globalThis.ZWEB_DAV_RECIPIENT_MODEL.selectCached(input, data.target || {})
+        .then(status => window.postMessage({ source: 'zweb-dav-cached-select-result', requestId: data.requestId, status }, location.origin))
+        .catch(() => window.postMessage({ source: 'zweb-dav-cached-select-result', requestId: data.requestId, status: 'failed' }, location.origin));
+      return;
+    }
+    if (event.data && event.data.source === 'zweb-dav-quantity-set') {
+      if (!/^#\/(?:document\/)?davs\/(?:sale|estimate)\/new\/?$/.test(String(location.hash || '').split('?')[0])) return;
+      const input = document.querySelector('input[data-zweb-dav-quantity-target="true"]');
+      if (input && Number.isSafeInteger(event.data.quantity) && event.data.quantity > 0) globalThis.ZWEB_DAV_RECIPIENT_MODEL.setQuantity(input, event.data.quantity);
+      return;
+    }
+    if (event.data && event.data.source === 'zweb-default-dav-select' && typeof event.data.requestId === 'string') {
+      const route = String(location.hash || '').split('?')[0];
+      if (!/^#\/(?:document\/)?davs\/(?:sale|estimate)\/new\/?$/.test(route)) return;
+      const input = document.querySelector('input#client.multiselect__input');
+      const requestId = event.data.requestId;
+      const recipient = event.data.recipient;
+      let attempts = 0;
+      const check = async () => {
+        if (String(location.hash || '').split('?')[0] !== route || !input || !input.isConnected || document.querySelector('input#client.multiselect__input') !== input) return;
+        const status = await globalThis.ZWEB_DAV_RECIPIENT_MODEL.selectRecipient(input, recipient);
+        if (status === 'waiting' && ++attempts < 40) { setTimeout(check, 150); return; }
+        window.postMessage({ source: 'zweb-default-dav-select-result', requestId, status }, location.origin);
+      };
+      check().catch(() => window.postMessage({ source: 'zweb-default-dav-select-result', requestId, status: 'failed' }, location.origin));
+      return;
+    }
     if (event.data && event.data.source === 'zweb-negative-stock-native-read'
       && typeof event.data.leaseId === 'string'
       && String(location.hash || '').split('?')[0] === '#/account/general-configuration') {

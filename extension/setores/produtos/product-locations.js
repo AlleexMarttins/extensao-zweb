@@ -458,6 +458,7 @@
   }
 
   function updateQuickViewer() {
+    if (!featureEnabled || !isProductListRoute()) return;
     const viewer = ensureQuickViewer();
     const productValue = viewer && viewer.querySelector('[data-product-location-quick-value]');
     const locationValue = viewer && viewer.querySelector('[data-product-location-quick-location]');
@@ -838,7 +839,12 @@
   }
 
   async function syncVisibleListLocations() {
-    if (!featureEnabled || !isProductListRoute()) return;
+    if (!featureEnabled || !isProductListRoute()) {
+      const viewer = document.getElementById(QUICK_VIEWER_ID);
+      if (viewer) viewer.remove();
+      quickViewerProduct = null;
+      return;
+    }
     ensureQuickViewer();
     updateQuickViewer();
   }
@@ -848,10 +854,10 @@
     if (refreshTimer) clearTimeout(refreshTimer);
     refreshTimer = window.setTimeout(() => {
       refreshTimer = 0;
+      try { syncVisibleListLocations(); } catch (error) {}
       if (getProductIdFromRoute()) {
         try { syncEditPanel(); } catch (error) {}
       } else if (isProductListRoute()) {
-        try { syncVisibleListLocations(); } catch (error) {}
         try { requestAutomaticMigration(); } catch (error) {}
       }
       try { processOnePendingBarcodeRequest(); } catch (error) {}

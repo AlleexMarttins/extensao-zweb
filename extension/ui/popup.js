@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const resetDecimalPrefsBtn = document.getElementById('resetDecimalPrefs');
   const decimalPrefsStatus = document.getElementById('decimalPrefsStatus');
   const inputsByKey = new Map();
+  const featureSearch = document.getElementById('featureSearch');
+  const groupFilters = document.getElementById('groupFilters');
+  let selectedGroup = '';
   const RELOAD_WARNING = 'Salve os dados da p\u00e1gina antes de recarregar para evitar perda de informa\u00e7\u00f5es.';
   const LOCAL_DECIMAL_PREFS_STORAGE_KEY = 'zwebLocalDecimalPreferences';
   const GLOBAL_DECIMAL_CONFIG_STORAGE_KEY = 'zwebGlobalDecimalConfig';
@@ -27,26 +30,26 @@ document.addEventListener('DOMContentLoaded', () => {
   function createFeatureCard(feature) {
     const card = document.createElement('div');
     card.className = 'feature-card';
+    card.dataset.featureGroup = feature.group;
+    card.dataset.featureSearch = (feature.title + ' ' + feature.description).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
     const body = document.createElement('div');
 
     const title = document.createElement('h2');
     title.className = 'feature-title';
+    title.id = 'feature-title-' + feature.key;
     title.textContent = feature.title;
     body.appendChild(title);
 
     const description = document.createElement('p');
     description.className = 'feature-description';
+    description.id = 'feature-description-' + feature.key;
     description.textContent = feature.description;
     body.appendChild(description);
 
     const meta = document.createElement('div');
     meta.className = 'feature-meta';
 
-    const scopeBadge = document.createElement('span');
-    scopeBadge.className = 'badge';
-    scopeBadge.textContent = feature.group;
-    meta.appendChild(scopeBadge);
 
     if (feature.reloadPrompt) {
       const reloadBadge = document.createElement('span');
@@ -58,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (feature.forceDisabled) {
       const disabledBadge = document.createElement('span');
       disabledBadge.className = 'badge';
-      disabledBadge.textContent = 'Desativado';
+      disabledBadge.textContent = feature.disabledReason || 'Desativado';
       meta.appendChild(disabledBadge);
     }
 
@@ -71,6 +74,9 @@ document.addEventListener('DOMContentLoaded', () => {
     input.type = 'checkbox';
     input.id = 'feature-' + feature.key;
     input.dataset.featureKey = feature.key;
+    input.setAttribute('role', 'switch');
+    input.setAttribute('aria-labelledby', title.id);
+    input.setAttribute('aria-describedby', description.id);
     input.disabled = !!feature.forceDisabled;
 
     const slider = document.createElement('span');
@@ -431,22 +437,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function persistFeatureState(featureKey, nextValue) {
     const feature = features.find((entry) => entry.key === featureKey);
-    if (!feature) return;
-
-    chrome.storage.local.get(featureDefaults, (currentState) => {
-      const nextState = normalizeState(currentState);
-      nextState[featureKey] = nextValue !== false;
-
-      chrome.storage.local.set(nextState, () => {
-        const shouldReload = maybePromptReload(feature);
-        applyInputs(nextState);
-
-        if (shouldReload) reloadActiveTab();
-      });
+    if (!feature || feature.forceDisabled) return;
+    const input = inputsByKey.get(featureKey);
+    if (input) input.disabled = true;
+    const value = nextValue !== false;
+    chrome.storage.local.set({ [featureKey]: value }, () => {
+      const error = chrome.runtime && chrome.runtime.lastError;
+      if (input) input.disabled = false;
+      if (error) {
+        if (input) input.checked = !value;
+        const status = document.getElementById('featureStatus');
+        if (status) status.textContent = 'Não foi possível salvar a opção.';
+        return;
+      }
+      const status = document.getElementById('featureStatus');
+      if (status) status.textContent = '';
+      if (maybePromptReload(feature)) reloadActiveTab();
     });
   }
 
   renderFeatureGroups();
+
+  function filterFeatures() {
+    const query = String(featureSearch && featureSearch.value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    let visible = 0;
+    featureGroups.querySelectorAll('section').forEach(section => {
+      let groupVisible = 0;
+      section.querySelectorAll('.feature-card').forEach(card => {
+        card.hidden = !!((selectedGroup && card.dataset.featureGroup !== selectedGroup) || !card.dataset.featureSearch.includes(query));
+        if (!card.hidden) groupVisible++;
+      });
+      section.hidden = groupVisible === 0;
+      visible += groupVisible;
+    });
+    const empty = document.getElementById('featureEmpty');
+    if (empty) empty.hidden = visible !== 0;
+  }
+
+  if (groupFilters) {
+    ['', ...new Set(features.map(feature => feature.group))].forEach(group => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'group-filter';
+      button.textContent = group || 'Todas';
+      button.setAttribute('aria-pressed', String(group === selectedGroup));
+      button.addEventListener('click', () => {
+        selectedGroup = group;
+        groupFilters.querySelectorAll('button').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+        filterFeatures();
+      });
+      groupFilters.appendChild(button);
+    });
+  }
+  if (featureSearch) featureSearch.addEventListener('input', filterFeatures);
+  const version = document.getElementById('extensionVersion');
+  if (version && chrome.runtime && chrome.runtime.getManifest) version.textContent = 'v' + chrome.runtime.getManifest().version;
 
   chrome.storage.local.get(featureDefaults, (stored) => {
     const state = normalizeState(stored);

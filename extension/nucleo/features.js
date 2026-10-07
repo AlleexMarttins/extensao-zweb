@@ -62,6 +62,8 @@
     },
     {
       key: 'productPreviewEnabled',
+      forceDisabled: true,
+      disabledReason: 'Consulta de faixa suspensa',
       group: 'Produtos',
       title: 'Filtro de C\u00f3digos',
       description: 'Exibe um filtro especializado por faixa de c\u00f3digos na lista de produtos.',
@@ -96,7 +98,7 @@
       key: 'productLocationsEnabled',
       group: 'Produtos',
       title: 'Enderecamento',
-      description: 'Mostra e permite atualizar o local do produto sem usar o campo Observacao.',
+      description: 'Mostra a faixa de endereçamento na lista. O campo no cadastro permanece disponível.',
       reloadPrompt: false,
       defaultValue: true,
     },
@@ -188,6 +190,8 @@
     },
     {
       key: 'nfeCloneAssistEnabled',
+      forceDisabled: true,
+      disabledReason: 'Assistente indisponível neste fluxo',
       group: 'Fiscal',
       title: 'Clonar NF-e',
       description: 'Controla separadamente o fluxo assistido de Clonar na tela de NF-e. Desligado: o clone volta a seguir o comportamento nativo.',
@@ -264,7 +268,8 @@
     const nextState = Object.assign({}, defaults, rawState || {});
 
     FEATURE_DEFINITIONS.forEach((feature) => {
-      nextState[feature.key] = feature.forceDisabled ? false : nextState[feature.key] !== false;
+      nextState[feature.key] = feature.forceDisabled ? false
+        : nextState[feature.key] === undefined ? defaults[feature.key] : nextState[feature.key] !== false;
     });
 
     return nextState;

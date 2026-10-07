@@ -1829,6 +1829,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === 'zweb-internal-default-dav-recipient') {
     fetch(`${ZWEB_INTERNAL_SERVICE_URL}/api/zweb/default-dav-recipient`, {
+      signal: AbortSignal.timeout(8000),
       method: 'GET',
       headers: { Accept: 'application/json', 'X-Zweb-Service-Key': ZWEB_INTERNAL_SERVICE_KEY }
     })

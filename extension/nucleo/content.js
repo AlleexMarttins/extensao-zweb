@@ -287,7 +287,11 @@
   let DAV_ITEM_CODE_CACHE = Object.create(null);
   let DAV_PENDING_SELECTED_ITEM_META = null;
   let DAV_DEFAULT_RECIPIENT_STATE = 'idle';
+  let DAV_DEFAULT_RECIPIENT_FORM = null;
   let BATCH_RUNNING = false;
+  let DAV_BATCH_NEXT_ALLOWED_AT = 0;
+  const DAV_BATCH_COOLDOWN_MS = 30 * 60 * 1000;
+  const DAV_BATCH_MIN_INTERVAL_MS = 1000;
   let DAV_QTY_AUTO_CLEAR_TIMER = 0;
   let LAST_XML_DOWNLOAD_ARM_AT = 0;
   let NFE_CASH_SALE_BOLETO_PENDING_ACTION = null;
@@ -404,9 +408,10 @@
   }
 
   function applyFeatureState(nextState) {
+    const mergedState = Object.assign({}, FEATURE_DEFAULTS, FEATURE_STATE, nextState || {});
     const normalized = globalThis.ZWEB_FEATURES && typeof globalThis.ZWEB_FEATURES.normalizeState === 'function'
-      ? globalThis.ZWEB_FEATURES.normalizeState(nextState)
-      : Object.assign({}, FEATURE_DEFAULTS, nextState || {});
+      ? globalThis.ZWEB_FEATURES.normalizeState(mergedState)
+      : mergedState;
 
     Object.keys(FEATURE_DEFAULTS).forEach((key) => {
       FEATURE_STATE[key] = normalized[key] !== false;
@@ -426,9 +431,24 @@
     return href.indexOf('/document/') !== -1;
   }
 
+  let EXTENSION_RUNTIME_INVALIDATED = false;
+
   function getRuntimeApi() {
+    if (EXTENSION_RUNTIME_INVALIDATED) return null;
     if (typeof chrome === 'undefined' || !chrome || !chrome.runtime) return null;
     return chrome.runtime;
+  }
+
+  function getExtensionResourceUrl(path) {
+    const runtime = getRuntimeApi();
+    if (!runtime || typeof runtime.getURL !== 'function') return '';
+    try {
+      return runtime.getURL(path);
+    } catch (error) {
+      EXTENSION_RUNTIME_INVALIDATED = true;
+      console.warn('[zweb] Extensão recarregada ou indisponível. Atualize esta aba para continuar.');
+      return '';
+    }
   }
 
   function sendRuntimeMessage(message) {
@@ -464,21 +484,54 @@
       .some(element => String(element.textContent || '').trim().length > 0);
   }
 
+  function requestDavCachedSelection(kind, target) {
+    return new Promise((resolve, reject) => {
+      const requestId = 'cached-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      const finish = () => { window.removeEventListener('message', onReply); clearTimeout(timer); };
+      const onReply = event => {
+        if (event.source !== window || !event.data || event.data.source !== 'zweb-dav-cached-select-result' || event.data.requestId !== requestId) return;
+        finish(); resolve(event.data.status);
+      };
+      window.addEventListener('message', onReply);
+      const timer = setTimeout(() => { finish(); reject(new Error('Comunicacao com o formulario nao confirmou.')); }, 2000);
+      window.postMessage({ source: 'zweb-dav-cached-select', requestId, kind, target }, location.origin);
+    });
+  }
+
   function ensureDefaultDavRecipient() {
-    if (!isTargetDavRoute() || DAV_DEFAULT_RECIPIENT_STATE === 'done' || DAV_DEFAULT_RECIPIENT_STATE === 'loading') return;
+    if (!isTargetDavRoute()) {
+      DAV_DEFAULT_RECIPIENT_FORM = null;
+      DAV_DEFAULT_RECIPIENT_STATE = 'idle';
+      return;
+    }
     const clientInput = document.querySelector('input#client.multiselect__input');
     const clientWrapper = clientInput && clientInput.closest('.multiselect');
+    if (clientInput && DAV_DEFAULT_RECIPIENT_FORM !== clientInput) {
+      DAV_DEFAULT_RECIPIENT_FORM = clientInput;
+      DAV_DEFAULT_RECIPIENT_STATE = 'idle';
+    }
+    if (DAV_DEFAULT_RECIPIENT_STATE !== 'idle') return;
     if (!clientInput || !clientWrapper || hasDavRecipientSelection(clientWrapper)) return;
 
     const runtime = getRuntimeApi();
     if (!runtime || typeof runtime.sendMessage !== 'function') return;
     DAV_DEFAULT_RECIPIENT_STATE = 'loading';
-    sendRuntimeMessage({ type: 'zweb-internal-default-dav-recipient' }).then((reply) => {
-      if (!reply || !reply.ok || !reply.payload || !reply.payload.name) {
-        DAV_DEFAULT_RECIPIENT_STATE = 'idle';
+    const currentForm = () => isTargetDavRoute() && clientInput.isConnected &&
+      DAV_DEFAULT_RECIPIENT_FORM === clientInput && document.querySelector('input#client.multiselect__input') === clientInput;
+    const stop = () => { if (DAV_DEFAULT_RECIPIENT_FORM === clientInput) DAV_DEFAULT_RECIPIENT_STATE = 'failed'; };
+    sendRuntimeMessage({ type: 'zweb-internal-default-dav-recipient' }).then(async (reply) => {
+      if (!currentForm()) return;
+      if (hasDavRecipientSelection(clientWrapper) || clientInput.value.trim()) { stop(); return; }
+      if (!reply || !reply.ok || !reply.payload || !reply.payload.name || reply.payload.active === false) {
+        stop();
         return;
       }
 
+      const cached = await requestDavCachedSelection('client', reply.payload);
+      if (!currentForm()) return;
+      if (cached === 'selected') { DAV_DEFAULT_RECIPIENT_STATE = 'done'; return; }
+      if (cached !== 'unavailable') { stop(); return; }
+      if (hasDavRecipientSelection(clientWrapper) || clientInput.value.trim()) { stop(); return; }
       clientWrapper.click();
       clientInput.focus();
       const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -486,26 +539,23 @@
       clientInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
       clientInput.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true, cancelable: true, key: 'a', code: 'KeyA' }));
 
-      let attempts = 0;
-      const selectMatchingOption = () => {
-        const options = Array.from(clientWrapper.querySelectorAll('.multiselect__option, [role="option"]'));
-        const matchingOption = options.find(option => String(option.textContent || '').trim().toLocaleUpperCase('pt-BR').includes(reply.payload.name.toLocaleUpperCase('pt-BR')));
-        if (matchingOption) {
-          const optionContainer = matchingOption.closest('.multiselect__element, li, [role="option"]') || matchingOption;
-          optionContainer.click();
-          DAV_DEFAULT_RECIPIENT_STATE = 'done';
-          return;
-        }
-        attempts += 1;
-        if (attempts < 40) {
-          window.setTimeout(selectMatchingOption, 150);
-        } else {
-          DAV_DEFAULT_RECIPIENT_STATE = 'idle';
-        }
+      const requestId = 'dav-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      let timer;
+      const finish = (status) => {
+        window.removeEventListener('message', onResult);
+        window.clearTimeout(timer);
+        if (!currentForm()) return;
+        DAV_DEFAULT_RECIPIENT_STATE = status === 'selected' ? 'done' : 'failed';
       };
-      selectMatchingOption();
+      const onResult = (event) => {
+        if (event.source !== window || !event.data || event.data.source !== 'zweb-default-dav-select-result' || event.data.requestId !== requestId) return;
+        finish(event.data.status);
+      };
+      window.addEventListener('message', onResult);
+      timer = window.setTimeout(() => finish('timeout'), 7000);
+      window.postMessage({ source: 'zweb-default-dav-select', requestId, recipient: reply.payload }, location.origin);
     }).catch(() => {
-      DAV_DEFAULT_RECIPIENT_STATE = 'idle';
+      stop();
     });
   }
 
@@ -3659,8 +3709,8 @@
 
   function ensurePageBridge() {
     if (!shouldUsePageBridge()) return;
-    const runtime = getRuntimeApi();
-    if (!runtime || typeof runtime.getURL !== 'function') return;
+    const resourceUrl = getExtensionResourceUrl('nucleo/page-bridge.js');
+    if (!resourceUrl) return;
 
     const parent = document.head || document.documentElement;
     if (!parent) return;
@@ -3674,7 +3724,7 @@
     const script = document.createElement('script');
     script.id = XML_BRIDGE_SCRIPT_ID;
     script.dataset.bridgeVersion = XML_BRIDGE_VERSION;
-    script.src = runtime.getURL('nucleo/page-bridge.js') + '?v=' + encodeURIComponent(XML_BRIDGE_VERSION);
+    script.src = resourceUrl + '?v=' + encodeURIComponent(XML_BRIDGE_VERSION);
     script.async = false;
     parent.appendChild(script);
   }
@@ -5101,9 +5151,9 @@
 
     // Normally installed by the MAIN-world content script declared in the
     // manifest. Reload the same external file as a CSP-safe fallback.
-    const runtime = getRuntimeApi();
+    const resourceUrl = getExtensionResourceUrl('nucleo/page-bridge.js');
     const parent = document.head || document.documentElement;
-    if (!runtime || typeof runtime.getURL !== 'function' || !parent) return;
+    if (!resourceUrl || !parent) return;
 
     const existing = document.getElementById(XML_BRIDGE_SCRIPT_ID);
     if (existing) existing.remove();
@@ -5111,7 +5161,7 @@
     const script = document.createElement('script');
     script.id = XML_BRIDGE_SCRIPT_ID;
     script.dataset.bridgeVersion = XML_BRIDGE_VERSION;
-    script.src = runtime.getURL('nucleo/page-bridge.js') + '?v=' + encodeURIComponent(XML_BRIDGE_VERSION);
+    script.src = resourceUrl + '?v=' + encodeURIComponent(XML_BRIDGE_VERSION);
     script.async = false;
     parent.appendChild(script);
   }
@@ -5293,11 +5343,12 @@
     if (!text) return '';
 
     const compact = text.replace(/\s+/g, '');
-    const integerPart = compact.split(/[,.]/)[0].replace(/\D+/g, '');
+    if (!/^\d+(?:[,.]0+)?$/.test(compact) && !/^\d{1,3}(?:\.\d{3})+,0+$/.test(compact)) return '';
+    const integerPart = compact.includes(',') ? compact.split(',')[0].replace(/\./g, '') : compact.split('.')[0];
     if (!integerPart) return '';
 
     const parsed = Number(integerPart);
-    if (!Number.isFinite(parsed) || parsed <= 0) return '';
+    if (!Number.isSafeInteger(parsed) || parsed <= 0) return '';
     return String(parsed);
   }
 
@@ -5653,7 +5704,9 @@
     ensureDavQuantityUserBinding(input);
     ensureDavIntegerInputGuard(input);
     input.dataset.zwebDavQtyUserEdited = '';
-    setInputValueAndNotify(input, formatted);
+    input.setAttribute('data-zweb-dav-quantity-target', 'true');
+    input.removeAttribute('data-zweb-dav-quantity-confirmed');
+    window.postMessage({ source: 'zweb-dav-quantity-set', quantity: Number(normalizeDavIntegerQuantityText(rawValue)) }, location.origin);
     return true;
   }
 
@@ -5665,7 +5718,7 @@
     let stableReads = 0;
 
     while ((Date.now() - start) < timeout) {
-      const current = parseDavIntegerQuantity(input.value || '');
+      const current = Number(input.getAttribute('data-zweb-dav-quantity-confirmed'));
       if (current !== quantityNumber) {
         setDavQuantityValue(input, quantityNumber);
         stableReads = 0;
@@ -5676,7 +5729,7 @@
       await delay(120);
     }
 
-    return parseDavIntegerQuantity(input.value || '') === quantityNumber;
+    return Number(input.getAttribute('data-zweb-dav-quantity-confirmed')) === quantityNumber;
   }
 
   function scheduleDavQuantityAutoClear(delayMs) {
@@ -5861,22 +5914,8 @@
 
   async function resolveBatchSearchOption(input, normalizedCode) {
     if (!input) return null;
-
-    const attempts = [
-      { clearDelay: 40, waitTimeout: 5200 },
-      { clearDelay: 80, waitTimeout: 7800 }
-    ];
-
-    for (const attempt of attempts) {
-      setInputValueDirect(input, '');
-      await delay(attempt.clearDelay);
-      setInputValueDirect(input, normalizedCode);
-
-      const option = await waitForSearchResult(input, normalizedCode, attempt.waitTimeout);
-      if (option) return option;
-    }
-
-    return null;
+    setInputValueDirect(input, normalizedCode);
+    return waitForSearchResult(input, normalizedCode, 7800);
   }
 
   function clickLikeUser(el) {
@@ -5990,15 +6029,20 @@
 
     const normalizedCode = normalizeBatchCode(code);
 
-    const option = await resolveBatchSearchOption(input, normalizedCode);
-    if (option) {
-      clickOptionDirect(option);
-      await delay(80);
-    } else {
-      throw new Error('Nenhum resultado encontrado para ' + normalizedCode);
+    input.setAttribute('data-zweb-dav-product-target', 'true');
+    const cached = await requestDavCachedSelection('product', { code: normalizedCode.replace(/^#/, '') });
+    if (cached === 'unconfirmed' || cached === 'failed') throw new Error('Selecao direta nao confirmada para ' + normalizedCode);
+    if (cached !== 'selected') {
+      const option = await resolveBatchSearchOption(input, normalizedCode);
+      if (option) {
+        clickOptionDirect(option);
+        await delay(80);
+      } else {
+        throw new Error('Nenhum resultado encontrado para ' + normalizedCode);
+      }
     }
 
-    await ensureDescriptionConfirmed(input, normalizedCode);
+    if (cached !== 'selected') await ensureDescriptionConfirmed(input, normalizedCode);
     await delay(60);
 
     const qtyInput = findQuantityInput();
@@ -6020,7 +6064,9 @@
     if (!addButton) throw new Error('Botao adicionar nao habilitou para ' + normalizedCode);
 
     if (qtyInput && quantityNumber) {
-      await ensureDavQuantityApplied(qtyInput, quantityNumber, 1200);
+      if (!await ensureDavQuantityApplied(qtyInput, quantityNumber, 1200)) {
+        throw new Error('Quantidade nao confirmada para ' + normalizedCode + '. O item nao foi adicionado.');
+      }
     }
 
     clickLikeUser(addButton);
@@ -12040,6 +12086,20 @@
 
   function showExtensionNativeModal(modal, backdrop) {
     if (!modal || !backdrop) return;
+    if (modal.__zwebHideTimer) window.clearTimeout(modal.__zwebHideTimer);
+    modal.__zwebHideTimer = 0;
+    // O ZWeb pode elevar seus formularios; o aviso precisa ficar acima deles.
+    let topLayer = 1060;
+    document.querySelectorAll('.modal, .modal-backdrop, [role="dialog"]').forEach(element => {
+      if (element === modal || element === backdrop) return;
+      const style = getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden') return;
+      const layer = Number.parseInt(style.zIndex, 10);
+      if (Number.isFinite(layer)) topLayer = Math.max(topLayer, layer);
+    });
+    const backdropLayer = Math.min(topLayer + 1, 2147483646);
+    backdrop.style.setProperty('z-index', String(backdropLayer), 'important');
+    modal.style.setProperty('z-index', String(backdropLayer + 1), 'important');
     modal.style.display = 'block';
     backdrop.style.display = 'block';
     modal.setAttribute('aria-hidden', 'false');
@@ -12055,7 +12115,10 @@
       modal.setAttribute('aria-hidden', 'true');
     }
     if (backdrop) backdrop.classList.remove('show');
-    window.setTimeout(() => {
+    const timerHost = modal || backdrop;
+    if (timerHost.__zwebHideTimer) window.clearTimeout(timerHost.__zwebHideTimer);
+    timerHost.__zwebHideTimer = window.setTimeout(() => {
+      timerHost.__zwebHideTimer = 0;
       if (modal) modal.style.display = 'none';
       if (backdrop) backdrop.style.display = 'none';
     }, EXTENSION_DIALOG_TRANSITION_MS);
@@ -13649,6 +13712,13 @@
   }
 
   async function executeBatchByCodes(codes, quantityRaw) {
+    if (BATCH_RUNNING) return;
+    if (Date.now() < DAV_BATCH_NEXT_ALLOWED_AT) {
+      updateBatchStatus('Lote em espera apos falha. Tente novamente mais tarde.');
+      return;
+    }
+    codes = Array.from(new Set(codes.map(code => String(code || '').trim().replace(/^#/, '')).filter(Boolean)));
+    if (codes.length > 50) { updateBatchStatus('Limite de 50 codigos por lote.'); return; }
     if (!codes.length) return;
     const quantity = parseDavIntegerQuantity(quantityRaw);
     if (!quantity) {
@@ -13662,23 +13732,6 @@
     let apiValidatedCodes = codes.slice();
     updateProgressBar(0, 'Iniciando lote...');
 
-    try {
-      updateBatchStatus('Validando produtos pela API...');
-      updateProgressBar(2, 'Validando produtos pela API...');
-      const products = await withTimeout(fetchProductsByCodes(codes), 1200, null);
-      if (!products) throw new Error('validacao por API excedeu o tempo limite');
-      const foundCodes = new Set(products.map((item) => String(item && item.sequence || '').trim()).filter(Boolean));
-      if (foundCodes.size > 0) {
-        const missingCodes = codes.filter((code) => !foundCodes.has(String(code || '').trim()));
-        missingCodes.forEach((code) => {
-          failed.push(code + ' (produto nao encontrado pela API)');
-        });
-        apiValidatedCodes = codes.filter((code) => foundCodes.has(String(code || '').trim()));
-      }
-    } catch (error) {
-      console.warn('Validacao API do lote DAV falhou; usando fluxo visual.', error);
-    }
-
     if (!apiValidatedCodes.length) {
       updateBatchStatus('Nenhum codigo valido para processar.');
       updateProgressBar(100, 'Nenhum codigo valido');
@@ -13691,10 +13744,13 @@
       updateBatchStatus('Processando ' + (i + 1) + '/' + apiValidatedCodes.length + ': ' + code);
       updateProgressBar(Math.round((i / apiValidatedCodes.length) * 100), 'Processando ' + code + '...');
       try {
+        if (i > 0) await delay(DAV_BATCH_MIN_INTERVAL_MS);
         await addSingleItemInBatch(code, quantityRaw, quantity);
         ok++;
       } catch (err) {
         failed.push(code + ' (' + (err && err.message ? err.message : 'erro') + ')');
+        DAV_BATCH_NEXT_ALLOWED_AT = Date.now() + DAV_BATCH_COOLDOWN_MS;
+        break;
       }
     }
 
@@ -13702,8 +13758,8 @@
       updateBatchStatus('Concluido: ' + ok + ' itens adicionados.');
       updateProgressBar(100, 'Concluido: ' + ok + ' itens');
     } else {
-      updateBatchStatus('Concluido com falhas. OK: ' + ok + ', Falhas: ' + failed.length + '.');
-      console.warn('Falhas lote:', failed);
+      updateBatchStatus('Lote interrompido. OK: ' + ok + ', Falhas: ' + failed.length + ', Pendentes: ' + Math.max(0, apiValidatedCodes.length - ok - failed.length) + '.');
+      console.warn('Falhas lote:', { at: new Date().toISOString(), completed: ok, failed, pending: Math.max(0, apiValidatedCodes.length - ok - failed.length), nextAttemptAt: new Date(DAV_BATCH_NEXT_ALLOWED_AT).toISOString() });
       updateProgressBar(100, 'Concluido com falhas: ' + failed.length);
     }
 
@@ -14236,7 +14292,45 @@
     input.dispatchEvent(new Event('change', { bubbles: true }));
     input.dispatchEvent(new Event('blur', { bubbles: true }));
   }
+  function syncProductCreateProtection() {
+    const attr = 'data-zweb-create-protected';
+    const active = isFeatureEnabled('enabled') && isTargetProductRoute();
+    // Apenas controles e links de cadastro: nao percorre textos de toda a grade.
+    const buttons = document.querySelectorAll('button, a[role="button"], a[id="grid.primaryButton"], a[id="botaoCadastrar"], a[href*="/register/stock/product/new"], input[type="button"], input[type="submit"], [' + attr + ']');
+    buttons.forEach(button => {
+      const text = normalizeText(button.innerText || button.value || button.getAttribute('aria-label') || '');
+      const matches = text === normalizeText('Cadastrar produto');
+      if (active && matches) {
+        if (!button.hasAttribute(attr)) {
+          button.setAttribute(attr, JSON.stringify({ disabled: button.hasAttribute('disabled'), display: button.style.display, displayPriority: button.style.getPropertyPriority('display'), pointerEvents: button.style.pointerEvents, opacity: button.style.opacity, title: button.getAttribute('title') }));
+          if (!button.__zwebCreateGuardBound) button.addEventListener('click', event => {
+            if (!button.hasAttribute(attr) || !isFeatureEnabled('enabled')) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }, true);
+          button.__zwebCreateGuardBound = true;
+        }
+        if (!button.disabled) button.disabled = true;
+        if (button.style.display !== 'none' || button.style.getPropertyPriority('display') !== 'important') button.style.setProperty('display', 'none', 'important');
+        if (button.style.pointerEvents !== 'none') button.style.pointerEvents = 'none';
+        if (button.style.opacity !== '0.6') button.style.opacity = '0.6';
+        if (button.title !== 'Botao bloqueado pelo usuario') button.title = 'Botao bloqueado pelo usuario';
+      } else if (button.hasAttribute(attr)) {
+        const original = JSON.parse(button.getAttribute(attr));
+        button.disabled = original.disabled;
+        if (original.display) button.style.setProperty('display', original.display, original.displayPriority || '');
+        else button.style.removeProperty('display');
+        button.style.pointerEvents = original.pointerEvents;
+        button.style.opacity = original.opacity;
+        if (original.title === null) button.removeAttribute('title');
+        else button.setAttribute('title', original.title);
+        button.removeAttribute(attr);
+      }
+    });
+  }
+
   function scan() {
+    syncProductCreateProtection();
     if (!isFeatureEnabled('enabled')) return;
 
     blockSpecificInputs();
@@ -14782,9 +14876,7 @@
   }
 
   function refreshFeatureUi() {
-    if (isFeatureEnabled('enabled')) {
-      scan();
-    }
+    scan();
 
     syncClientIdentificationUnlock();
     syncProductAdminGuardInputs();
@@ -14825,6 +14917,7 @@
       ensureBatchUi();
       syncDavItemCodeColumn();
     } else {
+      ensureDefaultDavRecipient();
       removeBatchUi();
     }
 

@@ -1,5 +1,43 @@
 ## Registro de mudanças
 
+### 07/10/2026 — Correção das preferências e publicação 1.4.14
+
+Corrigi as preferências para que alterar uma opção não reative as outras na página. O painel agora salva somente a escolha modificada, evitando que duas alterações rápidas se sobrescrevam. Se não for possível salvar, a escolha volta ao estado anterior e aparece um aviso.
+
+A faixa de endereçamento agora some ao desligar sua opção ou sair da lista de produtos. O campo no cadastro continua disponível, como já estava combinado; deixei essa diferença clara na descrição. Corrigi também o fechamento atrasado dos avisos para que não esconda uma janela que acabei de reabrir.
+
+O filtro por faixa e o assistente de Clonar NF-e continuam indisponíveis: o painel mostra o motivo e não permite ativar esses controles. Não liberei consultas ou operações suspensas. Também tratei a falha da ponte quando a extensão é recarregada e a aba ainda mantém o código antigo, sem deixar a tentativa se repetir nessa aba. Nesse caso, é preciso atualizar a página para carregar o novo contexto.
+
+Validei os casos em ambiente local: 86 testes da extensão, 126 do serviço interno e todos os casos da bateria de investigação passaram. A publicação inclui o painel, o ícone e os ajustes de DAV que já estavam disponíveis na pasta compartilhada, mas ainda não tinham sido registrados no Git. As alterações do aplicativo de celular e os arquivos temporários de banco não fazem parte desta publicação.
+
+### 07/10/2026 — Investigação das configurações e avisos
+
+Executei uma bateria local para procurar problemas que os testes anteriores ainda não cobriam. Encontrei duas falhas importantes nas preferências: mudar uma opção pode reativar outras na página, e mudar duas rapidamente pode fazer uma escolha sobrescrever a outra. Também confirmei que a faixa de endereçamento não some ao desligar a opção e que um aviso reaberto durante o fechamento pode desaparecer depois.
+
+Encontrei ainda duas diferenças entre o painel e as funções disponíveis: o controle de Clonar NF-e não governa o fluxo atual e o filtro por faixa é oferecido apesar da consulta continuar suspensa. A suspensão não foi removida. Registrei os casos e as correções propostas no relatório de revisão. Nesta etapa não publiquei uma nova versão nem alterei o funcionamento da extensão. Os 82 testes anteriores da extensão e os 126 do serviço continuaram passando, mostrando que precisamos ampliar a cobertura com esses cenários.
+
+### 07/10/2026 — Novo visual do painel da extensão
+
+Troquei o ícone da extensão e reorganizei o painel de opções. Agora posso buscar uma opção pelo nome ou pela descrição e filtrar por área, sem precisar percorrer a lista inteira. Deixei os controles mais compactos e coloquei as casas decimais em uma seção que abre quando preciso. Mantive as preferências existentes e acrescentei identificação dos controles para uso por teclado e leitores de tela.
+
+Testei o painel em Chrome local no tamanho de um popup, incluindo busca com acentos, caracteres especiais, filtros por área e salvamento dos interruptores. A suíte ficou com 82 testes aprovados. Publiquei a versão 1.4.13 na pasta compartilhada, incluindo o ajuste do aviso de devoluções preparado nesta revisão. Não fiz consultas ao ZWeb nem alterei o serviço do servidor para essa atualização.
+
+### 07/10/2026 — Revisão das opções e aviso de devoluções
+
+Comecei uma revisão geral das opções da extensão. Testei cada interruptor do painel ligado e desligado, conferindo se a escolha fica salva e se não altera as outras opções. Isso verifica os interruptores, mas ainda não significa que todas as funções foram conferidas na tela real do ZWeb.
+
+Reproduzi localmente o aviso de devoluções ficando atrás do formulário de relatório e preparei uma correção para ele abrir acima da janela existente. Também testei se, depois de fechar o aviso, o formulário volta a receber cliques. Os 81 testes da extensão e os 126 testes do serviço interno passaram em ambiente local. Incluí a correção na publicação 1.4.13, junto com o novo painel.
+
+Também tentei usar a revisão nativa de código do Codex. Ela foi interrompida porque o modelo configurado no CLI não foi aceito pela conta. Não alterei essa configuração e não estou considerando essa revisão concluída.
+
+### 07/10/2026 — Botão de cadastro oculto com a proteção
+
+Ajustei a proteção para esconder o botão “Cadastrar produto”, em vez de apenas deixá-lo desabilitado. Também incluí o cadastro apresentado como link. Testei se ele some com a proteção ligada, continua oculto quando a tela recria o botão e reaparece quando desligo a proteção. Esses testes foram feitos localmente, sem consultas ao ZWeb.
+
+### 07/10/2026 — Proteção do cadastro de produtos
+
+Corrigi o botão “Cadastrar produto”, que tinha deixado de ficar bloqueado com a proteção ligada depois dos ajustes de desempenho da grade. Mantive a melhoria de desempenho e passei a cuidar desse botão separadamente. Ao desligar a proteção, o botão volta ao estado anterior. Testei em navegador local o bloqueio, a troca do botão durante a navegação e a liberação, sem fazer consultas ao ZWeb.
+
 Serve para dar um parecer pra vocês a partir do ponto de vista do cliente, reunindo as alterações que estou fazendo na extensão e na estrutura de integração com o ZWeb. A ideia é registrar o motivo de cada mudança, o impacto esperado na operação da loja e o que foi validado antes da publicação.
 
 Estou migrando gradualmente partes da extensão para um serviço interno da loja, sem retirar as funções que ainda dependem da interface autenticada do ZWeb. A extensão continua sendo o ponto de uso nos computadores, enquanto o serviço compartilhado concentra consultas que podem ser reaproveitadas por várias estações.
@@ -216,6 +254,42 @@ Depois da recarga, conferi pessoalmente a consulta pelo fluxo da extensão: ela 
 Validei a correção na página real: a consulta levou aproximadamente 407 milissegundos, retornou o estoque negativo desativado e guardou essa confirmação no serviço. Simulei um botão visualmente ligado apenas na memória da tela; a atualização corrigiu o botão para desligado. A captura confirmou que não houve chamada para salvar configurações durante esse teste. O fechamento automático real continua sem validação nesta rodada.
 
 Após o teste em outras máquinas, corrigi duas situações de uso simultâneo: as estações que estão aguardando uma consulta agora recebem seu resultado, sem fazer outra consulta ao ZWeb; e uma resposta antiga não substitui uma alteração salva enquanto a consulta estava em andamento. A espera é limitada e não gera repetição automática. Esses casos foram reproduzidos em testes locais antes da correção.
+
+### 07/10/2026 — Reaproveitamento no formulário e redução de consultas do lote
+
+Acrescentei um caminho direto para usar clientes e produtos que já estejam carregados no seletor do DAV. Quando o formulário permite esse acesso, a extensão usa a seleção nativa pelo identificador do cliente ou pelo código exato do produto, sem pesquisar novamente. Quando os dados não estão disponíveis, continua usando a seleção pela interface que já foi confirmada em uso. Não criei linhas artificiais: a quantidade e a adição continuam passando pelo ZWeb para preservar seus cálculos e validações. Esse reaproveitamento é uma otimização quando os dados estão disponíveis, não uma substituição completa da interface por API.
+
+Removi a consulta por páginas que o lote fazia antes de começar. Ela podia continuar em andamento enquanto o preenchimento visual já tinha começado. Também retirei a segunda tentativa automática de pesquisa. O lote agora elimina códigos repetidos, aceita até 50 códigos por execução, processa um por vez com intervalo mínimo de um segundo entre itens, para na primeira falha e mantém uma espera de trinta minutos naquela aba. O resultado informa os itens que ficaram pendentes. Essas proteções valem para a execução do lote, não para todas as ações manuais de todos os navegadores da loja.
+
+A revisão está na versão 1.4.10. Os testes locais verificaram seleção sem nova pesquisa, preservação da escolha manual, ausência de consulta duplicada, espaçamento e interrupção por falha. Não foram feitas consultas ao ZWeb de produção nesta implementação. A homologação real depende da recarga da extensão.
+
+### 07/10/2026 — Quantidade inteira no lote
+
+Depois da confirmação do cliente padrão, reproduzi o erro do lote em que uma unidade virava cem. A extensão acrescentava duas casas decimais quando não conseguia ler a configuração da máscara; o campo inteiro removia a vírgula e aproveitava os zeros. Corrigi esse preenchimento para não acrescentar casas decimais sem uma configuração conhecida. Mantive a interrupção quando a quantidade não é confirmada, para não adicionar um item errado. Os testes locais conferiram os valores 1, 2, 10 e 100, incluindo perder o foco depois de preencher. A revisão está na versão 1.4.9. O teste da linha adicionada no ZWeb real continua pendente da recarga da extensão; nenhum DAV foi salvo.
+
+### 07/10/2026 — Seleção nativa quando o componente interno não está acessível
+
+Ajustei o cliente padrão para não depender somente do acesso ao componente interno do formulário. Quando esse acesso não está disponível, a extensão aciona a opção nativa da lista, sem desenhar um cliente selecionado por conta própria. Só confirma o resultado quando o cliente aparece como seleção e a lista está fechada. Se existir mais de uma opção de mesmo nome, não escolhe uma ao acaso. O teste de navegador agora cobre também essa situação, incluindo clicar fora depois da seleção. Essa revisão está na versão 1.4.8, validada localmente; a conferência real depende da recarga da extensão. Não foi salvo nenhum DAV.
+
+### 07/10/2026 — Preparação dos próximos testes no navegador
+
+Registrei como preparar a homologação com o perfil Vendas autenticado e a extensão carregada da pasta compartilhada, sempre conferindo a versão instalada. Após a recarga informada, retomei a aba real: o cliente ainda apareceu como pesquisa e sumiu ao perder o foco. Não considerei a correção concluída. A tentativa seguinte de operar o campo foi interrompida por falha na conexão de controle do navegador; nenhum DAV foi salvo. O teste do lote nessa rodada permanece pendente.
+
+### 07/10/2026 — Correção da rota usada na homologação
+
+Na aba autenticada, identifiquei que o ZWeb abre o novo DAV com uma barra no final do endereço. A integração nova não aceitava essa variação e ignorava os comandos de selecionar o cliente e preencher a quantidade. Reproduzi o endereço real no teste, confirmei a falha e corrigi a aceitação das duas formas. Os testes de navegador agora passam pela comunicação completa entre a extensão e a página, inclusive no envio da quantidade. Essa revisão está na versão 1.4.7. A homologação real ficou aguardando a recarga da extensão; não foi salvo nenhum DAV.
+
+### 07/10/2026 — Seleção real do cliente e quantidade do lote
+
+Depois do teste em uso, ficou claro que a primeira correção ainda podia deixar apenas o texto de pesquisa: ao clicar fora, ele sumia. Substituí a seleção por texto pela rotina do próprio formulário, usando o identificador do cliente. A confirmação agora depende do cliente estar guardado no formulário, não somente aparecer na tela. Acrescentei um teste no Chrome que clica fora e confere se o cliente continua selecionado, inclusive quando existem dois clientes com o mesmo nome.
+
+Também corrigi o envio da quantidade do lote para respeitar a máscara numérica do ZWeb. Uma unidade não deve se transformar em dez mil por diferença de casas decimais. A extensão confere o valor recebido pelo campo e interrompe o item se a quantidade não for confirmada. Entradas inválidas não são transformadas silenciosamente em outra quantidade. A revisão está na versão 1.4.6, com testes locais e sem consultas à produção; ainda depende da conferência no ZWeb real após recarregar.
+
+### 07/10/2026 — Correção do cliente padrão nos novos DAVs
+
+Corrigi o preenchimento que podia mostrar o nome sem selecionar o cliente de verdade. A extensão agora aciona a opção da lista e só considera a etapa concluída depois que a seleção aparece no formulário. Também corrigi o controle para cada novo DAV, sem ficar repetindo o preenchimento na mesma tela ou substituir um cliente escolhido pela pessoa. Clientes com nomes parecidos não são tratados como o cliente padrão; se houver duas opções com o mesmo nome, a extensão não escolhe uma ao acaso. Uma falha não provoca novas buscas automáticas naquela tela, e a consulta ao serviço interno tem prazo máximo de oito segundos.
+
+Criei 14 testes para essa função, incluindo um teste no Chrome isolado com opções e seleção chegando com atraso. Não foram feitas consultas ao ZWeb de produção. Os testes locais passaram; a confirmação no formulário real depende da recarga da extensão e da homologação. Essa atualização está na versão 1.4.5.
 
 ### 07/10/2026 — Atualização do repositório da extensão
 
