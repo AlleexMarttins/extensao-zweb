@@ -228,6 +228,16 @@ async function fetchNegativeStockConfiguration(token) {
   return client;
 }
 
+async function requestZwebInternalStockSchedule(message) {
+  const response = await fetch(`${ZWEB_INTERNAL_SERVICE_URL}/api/zweb/negative-stock-schedule`, {
+    method: 'POST', signal: AbortSignal.timeout(10000),
+    headers: { 'content-type': 'application/json', 'x-zweb-service-key': ZWEB_INTERNAL_SERVICE_KEY },
+    body: JSON.stringify({ enabled: message.enabled === true, token: message.token, confirmedWrite: message.confirmedWrite === true })
+  });
+  if (!response.ok) throw new Error('Agendamento indisponivel.');
+  return response.json();
+}
+
 async function persistNegativeStockConfiguration(token, payload) {
   if (!hasNegativeStockConfigurationPayload(payload)) {
     throw new Error('Configuracao de estoque invalida.');
@@ -1887,6 +1897,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+
+  if (message.type === 'document-negative-stock-observed') {
+    requestZwebInternalStockSchedule(message)
+      .then(payload => sendResponse({ ok: true, payload }))
+      .catch(() => sendResponse({ ok: false, message: 'Nao foi possivel agendar o fechamento do estoque.' }));
+    return true;
+  }
+
+  if (message.type === 'document-negative-stock-read-state') {
+    requestZwebInternalService('/api/zweb/negative-stock-state', { method: 'POST', body: { token: message.token } })
+      .then(payload => sendResponse({ ok: true, payload }))
+      .catch(error => sendResponse({ ok: false, message: getErrorMessage(error) }));
+    return true;
+  }
+
+  if (message.type === 'document-negative-stock-browser-result') {
+    requestZwebInternalService('/api/zweb/negative-stock-browser-result', { method: 'POST', body: { leaseId: message.leaseId, enabled: message.enabled, reason: message.reason, token: message.token } })
+      .then(payload => sendResponse({ ok: true, payload }))
+      .catch(error => sendResponse({ ok: false, message: getErrorMessage(error) }));
+    return true;
+  }
 
   if (message.type === 'document-negative-stock-get-configuration') {
     fetchNegativeStockConfiguration(message.token)

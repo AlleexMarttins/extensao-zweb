@@ -22,7 +22,8 @@ test('libera somente as operações homologadas e mantém o restante bloqueado',
   assert.match(features, /productPreferredSupplierWrite: true/);
   assert.match(features, /fiscalDocumentRead: true/);
   assert.match(features, /fiscalDocumentWrite: true/);
-  assert.match(features, /fiscalTransmission: true/);
+  assert.match(features, /fiscalTransmission: false/);
+  assert.match(features, /terminalZetaManualPrint: true/);
   assert.match(features, /fiscalCancellation: true/);
   assert.match(features, /davClone: false/);
   assert.match(features, /canRun\(operationId\)/);
@@ -35,8 +36,7 @@ test('libera somente as operações homologadas e mantém o restante bloqueado',
   assert.doesNotMatch(content, /Promise\.all\(pageNumbers\.map\(\(pageNumber\) => fetchProductCodeRangePage/);
   assert.match(content, /postZwebJson\(PERSON_API_URL, \{ id: personId \}, 'personLookup'\)/);
   assert.match(content, /isSupplier: true,[\s\S]*?'supplierLookup'/);
-  assert.match(content, /fetchNfeBatchDetail\(entry, 'fiscalTransmission'\)/);
-  assert.match(content, /NFE_TRANSMIT_API_URL, payload, 'fiscalTransmission'/);
+  assert.doesNotMatch(content, /transmitNfeByApiFromAction|NFE_TRANSMIT_API_URL|data-zweb-nfe-transmit-action/);
   assert.match(content, /FISCAL_CANCEL_NFE_API_URL, request, 'fiscalCancellation'/);
   assert.match(content, /INVENTORY_POST_SALE_API_URL, postPayload, 'davClone'/);
   assert.match(content, /FISCAL_READ_MIN_INTERVAL_MS = 1000/);

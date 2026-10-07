@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Assistente Zweb",
-  "version": "1.4",
+  "version": "1.4.4",
   "description": "Bloqueios e automações para fluxos administrativos, fiscais e de notas na Zweb.",
   "permissions": [
     "alarms",
@@ -50,6 +50,7 @@
         "https://zweb.com.br/*"
       ],
       "js": [
+        "nucleo/negative-stock-ui-state.js",
         "nucleo/page-bridge.js",
         "nucleo/clone-dav-log-helper.js"
       ],
@@ -99,6 +100,7 @@
   "web_accessible_resources": [
     {
       "resources": [
+        "nucleo/negative-stock-ui-state.js",
         "nucleo/page-bridge.js",
         "nucleo/clone-dav-log-helper.js"
       ],

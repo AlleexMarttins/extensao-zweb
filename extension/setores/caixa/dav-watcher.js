@@ -131,7 +131,25 @@
       tem_desconto: descontoTotal > 0,
       desconto_total: brl(descontoTotal),
       total: brl(requisicao.price),
-      total_valor: Number(requisicao.price || 0)
+      total_valor: Number(requisicao.price || 0),
+      // Bloco da NFC-e. NAO e' consulta nova: e' o MESMO corpo do
+      // `post-sale`/`put-sale` que o ZWeb acabou de mandar, so que sem passar
+      // pelo resumo que a etiqueta usa.
+      //
+      // Por que o servidor precisa disto: o `fiscal.post-nfce` exige o
+      // documento inteiro, com as linhas e o objeto do produto em cada uma
+      // (`product: s.item`, igual ao `importSaleProducts` do front). Nenhum
+      // campo fiscal vai aqui -- CST/CFOP/ICMS sao calculados pela Zweb.
+      // Medido na captura de 21/09/2026 (NFC-e 111411).
+      fiscal: {
+        itens: linhas,
+        buyer: requisicao.buyer || {},
+        seller: requisicao.seller || {},
+        wholesaleProducts: requisicao.wholesaleProducts || {},
+        freightPrice: Number(requisicao.freightPrice || 0),
+        discount: Number(requisicao.discount || 0),
+        extraValue: Number(requisicao.extraValue || 0)
+      }
     };
   }
 
@@ -152,17 +170,47 @@
   /// script roda sob a origem da página e morre no bloqueio de mixed content do
   /// Chrome — silenciosamente, o que renderia horas de "por que não chega nada".
   /// O service worker não tem essa restrição.
-  function enviar(pacote) {
+  // Tentativas extras quando o service worker some no meio da mensagem (ver
+  // comentário em `enviar()`). 3 retries com espera crescente — visto em
+  // produção 2026-09-16 que uma segunda tentativa quase sempre resolve
+  // (o novo `sendMessage` acorda um service worker fresco).
+  const MAX_TENTATIVAS_ENVIO = 4;
+  const ESPERA_RETRY_MS = [500, 1500, 3000];
+
+  function enviar(pacote, tentativa = 1) {
     chrome.runtime.sendMessage(
       { type: 'autocaixa-dav', url: config.url, token: config.token, pacote: pacote },
       resposta => {
         if (chrome.runtime.lastError) {
-          log('falha ao falar com o service worker:', chrome.runtime.lastError.message);
-          enviados.delete(pacote.numero);      // não deu; deixa reenviar
+          // MV3: o Chrome pode suspender o service worker NO MEIO do fetch
+          // (ocioso demais, ou memória apertada) — a mensagem nunca recebe
+          // resposta e cai aqui com "message port closed before a response
+          // was received". Não significa que o servidor recusou; muitas vezes
+          // o fetch nem chegou a sair. Sem retry, o DAV ficava esperando o
+          // vendedor clicar Salvar de novo pra reenviar — descoberto em
+          // produção 2026-09-16 (DAV 15556 "enviado" no log mas nada saiu na
+          // impressora).
+          if (tentativa < MAX_TENTATIVAS_ENVIO) {
+            const espera = ESPERA_RETRY_MS[tentativa - 1] || 3000;
+            log(
+              'service worker sumiu (tentativa', tentativa, 'de', MAX_TENTATIVAS_ENVIO + ') -',
+              'tentando de novo em', espera, 'ms:', chrome.runtime.lastError.message,
+            );
+            setTimeout(() => enviar(pacote, tentativa + 1), espera);
+            return;
+          }
+          log(
+            'falha ao falar com o service worker (desistindo após', MAX_TENTATIVAS_ENVIO, 'tentativas):',
+            chrome.runtime.lastError.message,
+          );
+          enviados.delete(pacote.numero);      // não deu; deixa reenviar no próximo Salvar
           return;
         }
         if (resposta && resposta.ok) {
-          log('DAV', pacote.numero, 'enviado (' + pacote.qtd_itens + ' itens, ' + pacote.total + ')');
+          log(
+            'DAV', pacote.numero, 'enviado (' + pacote.qtd_itens + ' itens, ' + pacote.total + ')',
+            tentativa > 1 ? '[tentativa ' + tentativa + ']' : '',
+          );
         } else {
           log('servidor recusou o DAV', pacote.numero, '-', (resposta && resposta.message) || '?');
           enviados.delete(pacote.numero);
@@ -184,6 +232,13 @@
     }
     if (!pacote) {
       log('Salvar sem número de DAV na requisição nem na resposta — ignorado');
+      return;
+    }
+    // Sem itens = a requisição não era o DAV inteiro (formato novo da Zweb,
+    // ou outro método com nome parecido). Etiqueta com R$ 0,00 confunde o
+    // caixa e a NFC-e falharia depois; melhor não mandar.
+    if (!pacote.qtd_itens) {
+      log('DAV', pacote.numero, 'chegou sem itens — não enviado');
       return;
     }
 

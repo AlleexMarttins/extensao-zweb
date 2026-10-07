@@ -1,4 +1,6 @@
 import { createServer } from 'node:http';
+import { readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
+import { NegativeStockScheduler, stockRpcHeaders } from './negative-stock-scheduler.js';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +25,44 @@ const allowedZwebOperations = new Set(String(process.env.ZWEB_ALLOWED_OPERATIONS
 const mobileDeviceKeys = parseMobileDeviceKeys(process.env.ZWEB_MOBILE_DEVICE_KEYS);
 const companies = parseCompanies(process.env.ZWEB_COMPANIES);
 const serviceDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const stockScheduleFile = resolve(serviceDirectory, 'data/negative-stock-schedule.json');
+let stockCloseEnabled = process.env.ZWEB_NEGATIVE_STOCK_AUTOCLOSE_ENABLED === 'true';
+try {
+  stockCloseEnabled ||= JSON.parse(readFileSync(resolve(serviceDirectory, 'negative-stock-config.json'), 'utf8')).enabled === true;
+} catch {}
+let stockLastCallAt = 0;
+let stockCallCount = 0;
+let stockCallQueue = Promise.resolve();
+const stockScheduler = new NegativeStockScheduler({
+  enabled: stockCloseEnabled,
+  load: () => { try { return JSON.parse(readFileSync(stockScheduleFile, 'utf8')); } catch { return {}; } },
+  save: state => {
+    mkdirSync(dirname(stockScheduleFile), { recursive: true });
+    writeFileSync(stockScheduleFile + '.tmp', JSON.stringify(state), 'utf8');
+    renameSync(stockScheduleFile + '.tmp', stockScheduleFile);
+  },
+  call: (token, operation, body) => {
+    const request = stockCallQueue.then(async () => {
+    const waitMs = Math.max(0, 2000 - (Date.now() - stockLastCallAt));
+    if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
+    stockLastCallAt = Date.now();
+    stockCallCount++;
+    const version = operation === 'application.put-configuration' ? 'v1' : 'v2';
+    const response = await fetch(`https://api.zweb.com.br/rpc/${version}/${operation}`, {
+      method: 'POST', signal: AbortSignal.timeout(12000),
+      headers: stockRpcHeaders(token),
+      body: JSON.stringify(body)
+    });
+    if (!response.ok) throw new Error(`Consulta de estoque recusada: HTTP ${response.status}.`);
+    return response.json();
+    });
+    stockCallQueue = request.catch(() => {});
+    return request;
+  }
+});
+setInterval(() => stockScheduler.tick().then(result => {
+  if (result) console.info(JSON.stringify({ event: 'negative-stock-close', timestamp: new Date().toISOString(), totalCalls: stockCallCount, ...result }));
+}).catch(() => console.error('Falha ao guardar agendamento de estoque.')), 10000).unref();
 let zwebClient;
 let configurationError;
 const serviceResponseCache = new Map();
@@ -409,12 +449,41 @@ const server = createServer(async (request, response) => {
 
   if (request.method === 'GET' && request.url === '/health') {
     const healthy = !configurationError;
-    writeJson(response, healthy ? 200 : 503, { service: 'zweb-api', configured: healthy }, requestOrigin);
+    writeJson(response, healthy ? 200 : 503, { service: 'zweb-api', configured: healthy, negativeStockAutomaticClose: stockCloseEnabled }, requestOrigin);
     return;
   }
 
   const requestUrl = new URL(request.url, 'http://zweb-api.local');
   const productLocationPath = requestUrl.pathname;
+  if (productLocationPath === '/api/zweb/negative-stock-state' && request.method === 'POST') {
+    try {
+      const body = await readRequestBody(request);
+      const result = stockScheduler.reserveBrowserRead();
+      writeJson(response, 200, result.pending ? await stockScheduler.waitForBrowserRead() : result, requestOrigin);
+    } catch (error) {
+      const detail = error.name === 'TimeoutError' ? 'Tempo de espera excedido.' : error.message;
+      console.warn(JSON.stringify({ event: 'negative-stock-state-failed', timestamp: new Date().toISOString(), detail }));
+      writeJson(response, 503, { error: detail }, requestOrigin);
+    }
+    return;
+  }
+  if (productLocationPath === '/api/zweb/negative-stock-schedule' && request.method === 'POST') {
+    try {
+      const body = await readRequestBody(request);
+      writeJson(response, 200, stockScheduler.observe(body), requestOrigin);
+    } catch (error) {
+      writeJson(response, 400, { error: error.message }, requestOrigin);
+    }
+    return;
+  }
+  if (productLocationPath === '/api/zweb/negative-stock-browser-result' && request.method === 'POST') {
+    try {
+      writeJson(response, 200, stockScheduler.completeBrowserRead(await readRequestBody(request)), requestOrigin);
+    } catch (error) {
+      writeJson(response, 503, { error: error.message }, requestOrigin);
+    }
+    return;
+  }
   if (productLocationPath === '/api/zweb/cache/invalidate' && request.method === 'POST') {
     try {
       writeJson(response, 200, invalidateServiceCaches(await readRequestBody(request)), requestOrigin);

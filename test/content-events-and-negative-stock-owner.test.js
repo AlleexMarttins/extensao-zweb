@@ -11,13 +11,9 @@ test('atualiza a interface por eventos, sem intervalo global de 1,5 segundo', ()
   assert.match(contentSource, /new MutationObserver\(\(\) => \{\s*if \(shouldUsePageBridge\(\)\) ensurePageBridge\(\);\s*scheduleFeatureUiRefresh\(90\);/);
 });
 
-test('só agenda o fechamento após a transição real de desligado para ligado', () => {
-  assert.match(contentSource, /pendingSwitchOnBeforeInteraction/);
-  assert.match(contentSource, /const enabledByThisInteraction = previousSwitchOn === false && currentSwitchOn === true;/);
-  assert.match(contentSource, /if \(enabledByThisInteraction\) \{[\s\S]*DOCUMENT_NEGATIVE_STOCK_GUARD_STATE\.lastUserToggleAt = Date\.now\(\);/);
-  assert.match(contentSource, /if \(disabledByThisInteraction\) \{[\s\S]*clearDocumentNegativeStockBackgroundDisable\(\);/);
-  assert.match(contentSource, /document\.addEventListener\('change', handleDocumentNegativeStockGuardInteraction, true\);/);
-  assert.doesNotMatch(contentSource, /document\.addEventListener\('mousedown', handleDocumentNegativeStockGuardInteraction, true\);/);
+test('encaminha o estado ao servico sem agendar fechamento por computador', () => {
+  assert.match(contentSource, /type: 'document-negative-stock-observed'/);
+  assert.doesNotMatch(contentSource, /function handleDocumentNegativeStockGuardInteraction/);
 });
 
 test('não consulta o painel do ZWeb repetidamente para vigiar estoque negativo', () => {

@@ -6,6 +6,7 @@
   const EXTENSION_MODAL_BRIDGE_SOURCE = 'zweb-extension-modal-bridge';
   const EXTENSION_MODAL_BRIDGE_VERSION = '20260701-1';
   const ARM_TTL_MS = 15000;
+  const negativeStockNativeReadLeases = new Set();
   const POLL_INTERVAL_MS = 300;
   const PRODUCT_PAGINATE_URL_FRAGMENT = 'inventory.get-product-paginate';
   const PURCHASE_DETAILED_URL_FRAGMENT = 'consumers.find-detailed-purchase';
@@ -495,23 +496,25 @@
     } catch (error) {}
   }
 
-  function postDocumentNegativeStockConfigurationSnapshot(payload) {
+  function postDocumentNegativeStockConfigurationSnapshot(payload, confirmedWrite = false) {
     if (!hasDocumentNegativeStockConfiguration(payload)) return;
     storeDocumentNegativeStockConfigurationPayload(payload);
 
     const emitter = getClientFiscalEmitter(payload);
     postBridgeMessage('document-negative-stock-configuration-request', {
       enabled: emitter.isAllowedNegativeStock === true,
+      confirmedWrite,
       payload: payload
     });
   }
 
-  function maybePostDocumentNegativeStockConfigurationRequest(url, body) {
+  function maybePostDocumentNegativeStockConfigurationRequest(url, body, status) {
+    if (!(status >= 200 && status < 300)) return;
     if (!isApplicationPutConfigurationRequest(url)) return;
     if (typeof body !== 'string' || !body) return;
 
     const payload = safeParseJson(body);
-    postDocumentNegativeStockConfigurationSnapshot(payload);
+    postDocumentNegativeStockConfigurationSnapshot(payload, true);
   }
 
   function getDashboardClient(payload) {
@@ -1499,7 +1502,11 @@
   XMLHttpRequest.prototype.send = function(body) {
     body = normalizeOutgoingRequestPayload(this.__zwebBridgeUrl, body);
     this.__zwebBridgeRequestBody = body;
-    maybePostDocumentNegativeStockConfigurationRequest(this.__zwebBridgeUrl, body);
+    if (isApplicationPutConfigurationRequest(this.__zwebBridgeUrl)) {
+      this.addEventListener('loadend', () => {
+        maybePostDocumentNegativeStockConfigurationRequest(this.__zwebBridgeUrl, body, this.status);
+      }, { once: true });
+    }
 
     if (getReferenceCacheKeysForRequest(this.__zwebBridgeUrl).length) {
       this.addEventListener('loadend', () => {
@@ -1554,10 +1561,10 @@
 
       const nextInit = init ? Object.assign({}, init) : {};
       const normalizedBody = normalizeOutgoingRequestPayload(url, nextInit.body);
-      maybePostDocumentNegativeStockConfigurationRequest(nextUrl, normalizedBody);
       if (normalizedBody !== nextInit.body) {
         nextInit.body = normalizedBody;
         const response = await nativeFetch(nextInput, nextInit);
+        maybePostDocumentNegativeStockConfigurationRequest(nextUrl, normalizedBody, response.status);
         postReferenceCacheInvalidation(nextUrl, response.status);
         if (isNfceTransmitRequest(nextUrl)) {
           let responseText = '';
@@ -1592,10 +1599,10 @@
           const requestInput = nextInput instanceof Request ? nextInput : input;
           const bodyText = await requestInput.clone().text();
           const rewrittenBody = normalizeOutgoingRequestPayload(url, bodyText);
-          maybePostDocumentNegativeStockConfigurationRequest(nextUrl, rewrittenBody);
           if (rewrittenBody !== bodyText) {
             const rewrittenRequest = new Request(requestInput, { body: rewrittenBody });
             const response = await nativeFetch(rewrittenRequest);
+            maybePostDocumentNegativeStockConfigurationRequest(nextUrl, rewrittenBody, response.status);
             postReferenceCacheInvalidation(nextUrl, response.status);
             if (isNfceTransmitRequest(nextUrl)) {
               let responseText = '';
@@ -1617,6 +1624,7 @@
           }
 
           const response = await nativeFetch(requestInput, init);
+          maybePostDocumentNegativeStockConfigurationRequest(nextUrl, bodyText, response.status);
           postReferenceCacheInvalidation(nextUrl, response.status);
           if (isNfceTransmitRequest(nextUrl)) {
             let responseText = '';
@@ -1639,6 +1647,7 @@
       }
 
       const response = await nativeFetch(nextInput, init);
+      maybePostDocumentNegativeStockConfigurationRequest(nextUrl, nextInit.body, response.status);
       postReferenceCacheInvalidation(nextUrl, response.status);
       if (isNfceTransmitRequest(nextUrl)) {
         let responseText = '';
@@ -1662,6 +1671,30 @@
 
   window.addEventListener('message', (event) => {
     if (event.source !== window) return;
+    if (event.data && event.data.source === 'zweb-negative-stock-native-read'
+      && typeof event.data.leaseId === 'string'
+      && String(location.hash || '').split('?')[0] === '#/account/general-configuration') {
+      const leaseId = event.data.leaseId;
+      if (negativeStockNativeReadLeases.has(leaseId)) return;
+      negativeStockNativeReadLeases.add(leaseId);
+      if (negativeStockNativeReadLeases.size > 16) negativeStockNativeReadLeases.delete(negativeStockNativeReadLeases.values().next().value);
+      globalThis.ZWEB_NEGATIVE_STOCK_UI_STATE.readFromBrowser()
+        .then(enabled => postBridgeMessage('negative-stock-native-read-result', { leaseId, enabled }))
+        .catch(error => postBridgeMessage('negative-stock-native-read-result', { leaseId, reason: error.name === 'TimeoutError' ? 'Tempo de espera excedido' : error.message }));
+      return;
+    }
+    if (event.data && event.data.source === 'zweb-negative-stock-ui-sync'
+      && typeof event.data.enabled === 'boolean'
+      && String(location.hash || '').split('?')[0] === '#/account/general-configuration') {
+      let applied = false;
+      if (globalThis.ZWEB_NEGATIVE_STOCK_UI_STATE) {
+        for (const root of document.querySelectorAll('[data-v-app], #app, #z_app')) {
+          applied = globalThis.ZWEB_NEGATIVE_STOCK_UI_STATE.applyToApp(root.__vue_app__, event.data.enabled) || applied;
+        }
+      }
+      if (!applied) console.warn('[zweb] Nao foi possivel sincronizar o interruptor de estoque com o estado da pagina.');
+      return;
+    }
 
     const data = event && event.data;
     if (!data || data.source !== CONTENT_SOURCE || data.type !== 'arm-xml-download' || !data.requestId) {

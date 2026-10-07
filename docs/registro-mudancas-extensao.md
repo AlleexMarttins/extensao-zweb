@@ -148,3 +148,83 @@ Os tempos acima foram medidos do computador de administração até o serviço i
 O cliente padrão de DAV é um caso diferente. Ele não busca a lista de clientes, não depende de posição na tela e não faz consulta externa. O serviço devolve diretamente o identificador previamente definido. Na medição, dez pedidos simultâneos foram atendidos entre 2 e 16 ms, com mediana de 4 ms depois da primeira chamada local.
 
 Durante a medição encontrei e corrigi uma divergência interna nos nomes de cache de formas de pagamento e status de vendas. Elas respondiam normalmente, mas não estavam sendo reaproveitadas. Depois da correção, as duas passaram pelo mesmo teste de dez pedidos simultâneos, com uma única chamada externa e nove respostas agrupadas. A correção foi publicada no serviço em uso e protegida por teste automatizado.
+
+### 17. Leitura de prateleira sem sinal de rede
+
+O coletor passou a guardar no próprio aparelho os lotes lidos quando ele estiver sem conexão. A leitura, a escolha do endereço e o botão de envio continuam sendo usados da mesma forma.
+
+Quando a conexão voltar, os lotes guardados seguem para o serviço interno na ordem em que foram feitos. Não foi criada uma tela ou aviso extra para isso, para não acrescentar etapas ao trabalho de quem está no estoque.
+
+Também foi mantida uma proteção para não repetir tentativas em sequência caso o serviço continue indisponível. Cada retorno de conexão inicia somente uma conferência ordenada da fila que ficou guardada.
+
+A versão do aplicativo foi atualizada para 1.1.3, mantendo a instalação anterior e as informações já guardadas no aparelho.
+
+Também foi ajustada a configuração usada apenas para gerar a instalação do Android, evitando que o compilador reserve memória demais no computador de manutenção.
+
+Depois de uma conferência em uso, corrigi também o retorno do Wi-Fi durante uma leitura. Se o sinal cair antes de a descrição do item aparecer, o coletor agora termina essas conferências pendentes em uma busca única quando a conexão volta.
+
+Essa correção foi preparada na versão 1.1.4 do aplicativo.
+
+Também foi separado o caso de item ausente do caso de perda de sinal durante a leitura. Sem resposta do serviço, o item continua pendente para ser confirmado depois; ele só é marcado como ausente quando o serviço realmente devolve essa confirmação.
+
+Essa separação foi incluída na versão 1.1.5 do aplicativo.
+
+Também foi retirada a espera visual da leitura. O código entra na lista imediatamente e a conferência do catálogo, quando disponível, acontece sem prender a leitura seguinte. O endereço pode ser informado normalmente e a confirmação final permanece concentrada no envio do lote.
+
+Esse ajuste foi incluído na versão 1.1.6 do aplicativo.
+
+Também deixei disponível a associação manual de código de barras para itens lidos sem conexão. Assim, se o item ainda não tiver sido conferido pelo catálogo, é possível informar o código do produto e seguir para o envio final do lote.
+
+Esse ajuste foi incluído na versão 1.1.7 do aplicativo.
+
+### 30/09/2026 — Transmissão pela grade passa a ser feita pelo ZWeb
+
+Retirei a opção de transmitir NF-e que a extensão acrescentava à grade, pois o ZWeb passou a oferecer essa função diretamente. Também retirei as chamadas e os avisos usados por essa automação. A transmissão agora fica por conta da opção do próprio sistema, evitando duas opções para a mesma tarefa.
+
+Os arquivos atualizados foram disponibilizados na pasta compartilhada usada pelos computadores da loja, com conferência de que são iguais aos arquivos testados. As próximas atualizações também serão copiadas para essa pasta e conferidas antes de serem consideradas entregues.
+
+### 02/10/2026 — Fechamento de estoque com prazo compartilhado
+
+Passei o fechamento automático da opção Permitir estoque negativo, em Configurações Gerais, para o serviço compartilhado da loja. Quando a extensão identifica essa opção ligada, o serviço guarda um prazo de cinco minutos. Outros computadores vendo a mesma opção não reiniciam a contagem, e fechar o navegador não apaga o prazo.
+
+Ao terminar o prazo, o serviço consulta a configuração atual, desliga a opção se necessário e consulta novamente para confirmar. As chamadas são feitas uma por vez, com espaçamento e limite de espera. Após uma falha, uma nova tentativa só acontece depois de uma hora.
+
+O prazo permanece guardado após reiniciar o serviço. A autorização de acesso fica apenas na memória: após um reinício, é necessário que um navegador atualizado abra o ZWeb para fornecer uma sessão válida. Os testes locais conferiram vários computadores, reinício, cancelamento manual e falhas; a confirmação do fechamento no ZWeb ainda depende do teste em uso.
+
+A atualização foi copiada para o servidor e o serviço foi reiniciado. A conferência confirmou a função ativa no serviço, com 47 testes da extensão e 115 testes do serviço aprovados.
+
+### 02/10/2026 — Interruptor de estoque acompanha o estado salvo
+
+Acrescentei uma conferência ao abrir Configurações Gerais para que o interruptor de estoque acompanhe a configuração salva. A atualização usa o estado da página, sem clicar no botão ou mandar salvar novamente. Se a pessoa começar a mexer na configuração enquanto a consulta estiver chegando, essa resposta não substitui a escolha dela.
+
+As consultas de várias estações compartilham a mesma resposta por trinta segundos. Após falha, a consulta fica em espera por uma hora. A extensão passou para a versão 1.4.1. O comportamento foi verificado em testes locais; a aparência no ZWeb precisa ser conferida depois de recarregar a extensão.
+
+Depois do teste em duas estações, corrigi a prioridade das informações: uma alteração salva com sucesso passa a atualizar imediatamente o estado compartilhado, mesmo que uma consulta anterior tenha falhado. Um painel antigo não substitui essa confirmação recente. Também acrescentei o motivo da falha ao diagnóstico, pois a mensagem anterior não mostrava por que a consulta havia sido recusada. Essa correção está na versão 1.4.2 e ainda precisa de nova conferência na interface real.
+
+A pedido, liberei uma nova conferência visual para teste. Separei a espera dessa consulta da espera do fechamento automático: uma falha ao fechar não impede a conferência do botão. Mantive a proteção de uma hora após falha em cada operação e preservei o agendamento existente.
+
+Passei a guardar o motivo e o horário das falhas de conferência do estoque no servidor. O aviso de espera agora informa a causa e quando uma nova tentativa será permitida. Reiniciar o serviço não apaga mais essa proteção. O registro não guarda senhas, tokens nem o conteúdo das respostas. Também passei a guardar uma causa resumida quando o fechamento automático falha. Os testes foram feitos localmente; a causa da falha anterior não pode ser recuperada retroativamente.
+
+Ao investigar a resposta sem configuração de estoque, encontrei uma diferença na identificação de acesso: o serviço usava uma identificação antiga, enquanto o código do ZWeb já usa outra. Ajustei o serviço para seguir o formato usado pelo ZWeb. Essa correção vale tanto para conferir o botão quanto para o fechamento automático. Os testes locais validaram o formato; a confirmação da resposta real ainda depende da homologação em uso.
+
+Na homologação, confirmei que a consulta funciona no navegador autenticado, mas devolve uma resposta sem configuração quando parte do servidor. Por isso, a conferência visual passou a usar a sessão do navegador. O serviço libera somente uma estação para consultar, compartilha o resultado por trinta segundos e bloqueia por uma hora se houver falha ou ausência de resposta. A consulta usa apenas os dados da empresa, sem carregar o dashboard inteiro. Não altera nem salva a opção de estoque. Essa revisão está na versão 1.4.3. O fechamento automático não foi testado com alteração real da configuração nesta homologação.
+
+Os 51 testes da extensão e 14 testes específicos do serviço passaram. A consulta direta na página retornou a configuração corretamente. O teste do fluxo completo da versão nova ficou pendente da recarga da extensão no Chrome: o navegador ainda estava executando a versão anterior. Não considerei essa etapa concluída.
+
+Depois da recarga, conferi pessoalmente a consulta pelo fluxo da extensão: ela recebeu a configuração em uma única chamada e atualizou o registro compartilhado. O teste do botão revelou outra diferença: o formulário usa um estado separado dos dados da empresa. Corrigi a atualização para alcançar também esse estado, sem clicar, salvar ou alterar outras opções. Essa correção está na versão 1.4.4.
+
+Validei a correção na página real: a consulta levou aproximadamente 407 milissegundos, retornou o estoque negativo desativado e guardou essa confirmação no serviço. Simulei um botão visualmente ligado apenas na memória da tela; a atualização corrigiu o botão para desligado. A captura confirmou que não houve chamada para salvar configurações durante esse teste. O fechamento automático real continua sem validação nesta rodada.
+
+Após o teste em outras máquinas, corrigi duas situações de uso simultâneo: as estações que estão aguardando uma consulta agora recebem seu resultado, sem fazer outra consulta ao ZWeb; e uma resposta antiga não substitui uma alteração salva enquanto a consulta estava em andamento. A espera é limitada e não gera repetição automática. Esses casos foram reproduzidos em testes locais antes da correção.
+
+### 07/10/2026 — Atualização do repositório da extensão
+
+Conferi os arquivos usados pelos computadores e trouxe para o repositório as alterações da extensão 1.4.4 e do serviço de estoque que trabalha com ela. Preservei a versão mais recente do captador de DAV que já estava no servidor. Os arquivos ativos da extensão correspondem à versão publicada; cópias antigas de segurança e uma ferramenta de diagnóstico não utilizada pela extensão ficaram fora. As alterações do app do celular e os arquivos temporários do banco também ficaram fora desta atualização. Os 52 testes da extensão e os 16 testes específicos do controle de estoque passaram. Essa conferência não substitui o teste do fechamento automático em uso.
+
+### 03/10/2026 — Escolha da empresa no coletor sem Wi-Fi
+
+Corrigi a escolha entre Horizonte e MVA no app do coletor para não depender da conexão. A lista de empresas passa a ficar guardada no aparelho, junto com a última escolha. Mesmo ao reabrir sem rede, o seletor continua disponível. A perda da sessão online não apaga essa lista. Os lotes já guardados continuam vinculados à empresa em que foram preparados; trocar a seleção não muda esses lotes. Não acrescentei mensagens de modo offline à interface.
+
+Os 45 testes do app passaram, incluindo a reabertura sem rede e o envio posterior de lotes das duas empresas sem misturar os destinos. A análise do código não apontou problemas. Gerei o APK da versão 1.1.8; a instalação e a conferência física no celular ainda precisam ser feitas.
+
+Instalei a versão 1.1.8 no celular conectado, um Moto E20, por cima da versão 1.1.7, sem desinstalar nem limpar os dados. A instalação retornou sucesso e conferi no aparelho a versão 1.1.8, código 1010. O teste de uso com o Wi-Fi desligado ainda não foi feito no aparelho nesta instalação.
