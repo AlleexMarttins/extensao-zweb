@@ -1,6 +1,9 @@
 try {
   importScripts('features.js');
 } catch (error) {}
+try {
+  importScripts('installation-config.local.js');
+} catch (error) {}
 
 const XML_DOWNLOAD_TTL_MS = 15000;
 const PDF_DOWNLOAD_TTL_MS = 20000;
@@ -20,7 +23,7 @@ const NOTE_ASSISTANT_NFE_URL_PATTERN = /^https?:\/\/(www\.)?nfe\.fazenda\.gov\.b
 const COMMISSION_REPORT_URL_PATTERN = /^https:\/\/compufour\.s3\.amazonaws\.com\/production\/uploads\/reports\/report\/.+\.html(?:[?#].*)?$/i;
 const ZWEB_BFF_DASHBOARD_API_URL = 'https://api.zweb.com.br/rpc/v2/BFF.get-dashboard';
 const ZWEB_INTERNAL_SERVICE_URL = 'http://192.168.1.240:8788';
-const ZWEB_INTERNAL_SERVICE_KEY = 'REDACTED_INTERNAL_SERVICE_KEY';
+const ZWEB_INTERNAL_SERVICE_KEY = String(self.ZWEB_LOCAL_SETTINGS && self.ZWEB_LOCAL_SETTINGS.internalServiceKey || '');
 const ZWEB_APPLICATION_PUT_CONFIGURATION_API_URL = 'https://api.zweb.com.br/rpc/v1/application.put-configuration';
 const ZWEB_DOCUMENT_CONFIGURATION_URL = 'https://zweb.com.br/#/account/general-configuration';
 const DOCUMENT_NEGATIVE_STOCK_GUARD_ALARM_NAME = 'zweb-document-negative-stock-disable';
@@ -1794,6 +1797,12 @@ function directNfeBatchDownloadContent(kind, content, fileNameHint) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || typeof message.type !== 'string') return;
+
+  if (message.type === 'zweb-local-product-admin-config') {
+    if (sender.id !== chrome.runtime.id) return;
+    sendResponse({ password: String(self.ZWEB_LOCAL_SETTINGS && self.ZWEB_LOCAL_SETTINGS.productAdminPassword || '') });
+    return;
+  }
 
   // AutoCaixa: repassa o DAV salvo pro servidor da rede local.
   //

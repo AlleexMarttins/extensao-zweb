@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Assistente Zweb",
-  "version": "1.4.14",
+  "version": "1.4.15",
   "description": "Bloqueios e automações para fluxos administrativos, fiscais e de notas na Zweb.",
   "permissions": [
     "alarms",

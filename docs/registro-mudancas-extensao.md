@@ -1,5 +1,11 @@
 ## Registro de mudanças
 
+### 07/10/2026 — Preparação do repositório público
+
+Retirei do código publicado a senha de proteção e a chave do serviço interno. A instalação da loja passa a usar um arquivo de configuração privado, fora do Git. Também removi do histórico os bancos de teste, capturas e documentos internos encontrados na revisão. Os arquivos usados localmente foram preservados fora da cópia pública.
+
+A limpeza reescreve os commits antigos, por isso outras cópias do repositório precisam ser atualizadas com cuidado. A versão 1.4.15 separa a configuração privada do código compartilhado. Não publiquei os valores de configuração e não fiz consultas ao ZWeb para essa mudança.
+
 ### 07/10/2026 — Correção das preferências e publicação 1.4.14
 
 Corrigi as preferências para que alterar uma opção não reative as outras na página. O painel agora salva somente a escolha modificada, evitando que duas alterações rápidas se sobrescrevam. Se não for possível salvar, a escolha volta ao estado anterior e aparece um aviso.

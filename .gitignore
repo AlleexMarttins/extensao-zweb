@@ -1,4 +1,13 @@
 # Dependencies
+extension/nucleo/installation-config.local.js
+config/codex.toml
+services/zweb-api/test/*.sqlite*
+tools/*.json
+tools/*.png
+tools/*.jpg
+tools/tmp_pdfwatcher_sim_check/
+tools/zweb-index.html
+docs/evidencias-homologacao-estoque-2026-10-02.json
 node_modules/
 .pnp
 .pnp.js

@@ -5,7 +5,7 @@
   const BLOCK_INPUT_IDS = ['itemForm.price'];
   const BLOCK_INPUT_SELECTORS = ['input#itemForm\\.price'];
   const PRODUCT_ADMIN_GUARDED_INPUT_IDS = ['product.cost', 'product.quantity'];
-  const PRODUCT_ADMIN_PASSWORD = 'REDACTED_PRODUCT_ADMIN_PASSWORD';
+  let PRODUCT_ADMIN_PASSWORD = '';
   const PRODUCT_ADMIN_GUARD_LOCK_ATTR = 'data-zweb-admin-guard-locked';
   const PRODUCT_ADMIN_GUARD_UNLOCK_ATTR = 'data-zweb-admin-guard-unlocked';
   const PRODUCT_ADMIN_GUARD_SESSION_STORAGE_KEY = 'productAdminGuardSessionUnlocked';
@@ -779,7 +779,7 @@
     PRODUCT_ADMIN_GUARD_PROMPT_ACTIVE = true;
     try {
       const password = window.prompt('Digite a senha de administrador para alterar Custo e Quantidade atual.', '');
-      if (password === PRODUCT_ADMIN_PASSWORD) {
+      if (PRODUCT_ADMIN_PASSWORD && password === PRODUCT_ADMIN_PASSWORD) {
         unlockProductAdminGuardInputs();
         window.setTimeout(() => {
           if (!input || !document.contains(input)) return;
@@ -14944,6 +14944,9 @@
   }
 
   function init() {
+    sendRuntimeMessage({ type: 'zweb-local-product-admin-config' }).then(reply => {
+      PRODUCT_ADMIN_PASSWORD = String(reply && reply.password || '');
+    }).catch(() => {});
     if (shouldUsePageBridge()) ensurePageBridge();
     startDocumentNegativeStockGuardHeartbeat();
     resetProductAdminGuardState();
