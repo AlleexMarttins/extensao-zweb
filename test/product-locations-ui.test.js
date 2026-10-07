@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const vm = require('node:vm');
 
 const PRODUCT_PUT_API_URL_LITERAL = 'inventory.put-product';
-const source = readFileSync(join(__dirname, '..', 'extension', 'setores', 'produtos', 'product-locations.js'), 'utf8');
+const source = readFileSync(join(__dirname, '..', 'extension', 'setores', 'produtos', 'product-locations.js'), 'utf8').replace(/\r\n/g, '\n');
 
 test('enderecamento usa uma faixa propria sem alterar a grade nem fazer consulta periodica', () => {
   assert.equal(source.includes('setInterval('), false);
