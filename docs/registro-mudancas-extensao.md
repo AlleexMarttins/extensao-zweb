@@ -1,5 +1,9 @@
 ## Registro de mudanças
 
+### 07/10/2026 — Novo repositório para compartilhar a extensão
+
+Separei a publicação em um repositório novo, chamado extensao-zweb, com o histórico limpo. Mantive o anterior como zweb-private-backup, privado, porque o GitHub ainda permitia abrir um registro antigo pelo endereço direto. Confirmei que esse registro não existe no novo repositório. A configuração particular da loja continua fora do Git. Essa mudança não altera a extensão em uso nos computadores nem faz consultas ao ZWeb.
+
 ### 07/10/2026 — Preparação do repositório público
 
 Retirei do código publicado a senha de proteção e a chave do serviço interno. A instalação da loja passa a usar um arquivo de configuração privado, fora do Git. Também removi do histórico os bancos de teste, capturas e documentos internos encontrados na revisão. Os arquivos usados localmente foram preservados fora da cópia pública.
